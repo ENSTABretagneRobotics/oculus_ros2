@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include <narval_oculus/Oculus.h>
+#include <narval_oculus/utils.h>
 
 std::ostream& operator<<(std::ostream& os, const OculusMessageHeader& msg);
 std::ostream& operator<<(std::ostream& os, const OculusStatusMsg& msg);

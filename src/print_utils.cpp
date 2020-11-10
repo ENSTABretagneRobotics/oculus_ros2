@@ -1,13 +1,5 @@
 #include <narval_oculus/print_utils.h>
 
-void print_ipv4(std::ostream& os, uint32_t ip)
-{
-    os << (ip & 0x000000ff)         << "."
-       << ((ip & 0x0000ff00) >>  8) << "."
-       << ((ip & 0x00ff0000) >> 16) << "."
-       << ((ip & 0xff000000) >> 24);
-}
-
 void print_mac(std::ostream& os, const uint8_t* mac)
 {
     std::ostringstream oss;
@@ -44,9 +36,9 @@ std::ostream& operator<<(std::ostream& os, const OculusStatusMsg& msg)
        << prefix << "deviceId        : " << msg.deviceId
        << prefix << "status          : " << msg.status
        << prefix << "part number     : " << msg.partNumber
-       << prefix << "ipAddr          : "; print_ipv4(os, msg.ipAddr); os
-       << prefix << "ipMask          : "; print_ipv4(os, msg.ipMask); os
-       << prefix << "connectedIpAddr : "; print_ipv4(os, msg.connectedIpAddr); os
+       << prefix << "ipAddr          : " <<  narval::oculus::ip_to_string(msg.ipAddr)
+       << prefix << "ipMask          : " << narval::oculus::ip_to_string(msg.ipMask)
+       << prefix << "connectedIpAddr : " << narval::oculus::ip_to_string(msg.connectedIpAddr)
        << prefix << "macAddr         : "; print_mac(os, &msg.macAddr0); os
        << prefix << "temperature0    : " << msg.temperature0
        << prefix << "temperature1    : " << msg.temperature1
