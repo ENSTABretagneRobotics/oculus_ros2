@@ -2,16 +2,12 @@
 #define _DEF_NARVAL_OCULUS_STATUS_LISTENER_H_
 
 #include <iostream>
-#include <functional>
-#include <mutex>
-#include <unordered_map>
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
 #include <narval_oculus/Oculus.h>
-#include <narval_oculus/print_utils.h>
 #include <narval_oculus/CallbackQueue.h>
 
 namespace narval { namespace oculus {

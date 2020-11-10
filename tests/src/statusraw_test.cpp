@@ -2,6 +2,8 @@
 #include <sstream>
 using namespace std;
 
+#include <narval_oculus/Oculus.h>
+#include <narval_oculus/print_utils.h>
 #include <narval_oculus/StatusListener.h>
 using namespace narval::oculus;
 

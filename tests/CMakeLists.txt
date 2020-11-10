@@ -3,6 +3,7 @@ project(narval_oculus_tests VERSION 0.1)
 
 list(APPEND test_names
     statusraw_test
+    status_display
 )
 
 list(APPEND test_deps
