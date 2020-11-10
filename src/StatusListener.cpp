@@ -28,6 +28,16 @@ void StatusListener::get_one_message()
                           boost::bind(&StatusListener::message_callback, this, _1, _2));
 }
 
+StatusListener::CallbackId StatusListener::add_callback(const CallbackT& callback)
+{
+    return callbacks_.add_callback(callback);
+}
+
+bool StatusListener::remove_callback(CallbackId index)
+{
+    return callbacks_.remove_callback(index);
+}
+
 void StatusListener::message_callback(const boost::system::error_code& err,
                                       std::size_t bytesReceived)
 {
@@ -42,7 +52,8 @@ void StatusListener::message_callback(const boost::system::error_code& err,
     }
     
     // we are clean here
-    std::cout << msg_ << std::endl;
+    //std::cout << msg_ << std::endl;
+    callbacks_.call(msg_);
     this->get_one_message();
 }
 
