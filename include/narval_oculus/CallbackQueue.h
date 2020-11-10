@@ -62,8 +62,17 @@ bool CallbackQueue<ArgTypes...>::remove_callback(CallbackId index)
 template <class ...ArgTypes>
 void CallbackQueue<ArgTypes...>::call(ArgTypes... args)
 {
-    const std::lock_guard<std::mutex> lock(mutex_); // will release mutex when out of scope
-    for(auto& item : callbacks_) {
+    CallbackDict callbacks;
+    
+    {
+        // Copying callbacks first allows to release the mutex while callbacks
+        // are called. This allows callbacks to modify this object (
+        // adding/removing callbacks...)  without creating deadlocks.
+        const std::lock_guard<std::mutex> lock(mutex_); // will release mutex when out of scope
+        callbacks = callbacks_;
+    }
+
+    for(auto& item : callbacks) {
         item.second(args...);
     }
 }
