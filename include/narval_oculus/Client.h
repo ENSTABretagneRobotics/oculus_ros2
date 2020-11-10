@@ -42,6 +42,9 @@ class Client
     Client(boost::asio::io_service& service);
 
     void on_first_status(const OculusStatusMsg& msg);
+    void on_connect(const boost::system::error_code& err);
+
+    bool connected() const;
 };
 
 }; //namespace oculus
