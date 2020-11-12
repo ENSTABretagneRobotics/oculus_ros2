@@ -9,11 +9,9 @@
 #include <boost/bind.hpp>
 
 #include <narval_oculus/Oculus.h>
-#include <narval_oculus/utils.h>
+#include <narval_oculus/print_utils.h>
 #include <narval_oculus/CallbackQueue.h>
 #include <narval_oculus/StatusListener.h>
-
-#include <narval_oculus/print_utils.h>
 
 namespace narval { namespace oculus {
 
@@ -66,23 +64,32 @@ class Client
 
     uint16_t sourceDevice_;
 
-    OculusMessageHeader initialHeader_;
+    OculusMessageHeader    initialHeader_;
+    OculusSimplePingResult pingResult_;
 
     public:
 
     Client(boost::asio::io_service& service);
 
+    void send_config(const OculusSimpleFireMessage& config);
+    bool validate_header(const OculusMessageHeader& header);
+    bool connected() const;
+
+    // The client is actually a state machine
+    // These function represent the states
+
+    // initialization states
     void on_first_status(const OculusStatusMsg& msg);
     void on_connect(const boost::system::error_code& err);
 
-    void send_config(const OculusSimpleFireMessage& config);
-
+    // main loop begin
     void initiate_receive();
     void initiate_callback(const boost::system::error_code err,
                            std::size_t receivedByteCount);
-
-    bool validate_header(const OculusMessageHeader& header);
-    bool connected() const;
+    
+    void simple_ping_metadata_receive();
+    void simple_ping_metadata_callback(const boost::system::error_code err,
+                                       std::size_t receivedByteCount);
 };
 
 }; //namespace oculus
