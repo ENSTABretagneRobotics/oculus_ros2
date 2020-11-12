@@ -24,6 +24,79 @@ std::string mac_to_string(const uint8_t* mac)
     return oss.str();
 }
 
+std::string to_string(DataSizeType dataType)
+{
+    switch(dataType)
+    {
+        case dataSize8Bit:
+            return "8bit";
+        case dataSize16Bit:
+            return "16bit";
+        case dataSize24Bit:
+            return "24bit";
+        case dataSize32Bit:
+            return "32bit";
+        default:
+            return "invalid";
+    }
+}
+
+std::string to_string(PingRateType pingRate)
+{
+    switch(pingRate)
+    {
+        case pingRateNormal:
+            return "normal (10Hz)";
+        case pingRateHigh:
+            return "high (15Hz)";
+        case pingRateHighest:
+            return "highest (40Hz)";
+        case pingRateLow:
+            return "low (5Hz)";
+        case pingRateLowest:
+            return "lowest (2Hz)";
+        case pingRateStandby:
+            return "standby (0Hz)";
+        default:
+            return "invalid (" + std::to_string(pingRate) + ")";
+    }
+}
+
+std::string to_string(OculusPartNumberType partNumber)
+{
+    switch(partNumber)
+    {
+        case partNumberM370s:
+            return "M370s";
+        case partNumberM370s_Artemis:
+            return "M370s_Artemis";
+        case partNumberM370s_Deep:
+            return "M370s_Deep";
+        case partNumberM373s:
+            return "M373s";
+        case partNumberM373s_Deep:
+            return "M373s_Deep";
+        case partNumberM750d:
+            return "M750d";
+        case partNumberM750d_Fusion:
+            return "M750d_Fusion";
+        case partNumberM750d_Artemis:
+            return "M750d_Artemis";
+        case partNumberM1200d:
+            return "M1200d";
+        case partNumberM1200d_Deep:
+            return "M1200d_Deep";
+        case partNumberM1200d_Artemis:
+            return "M1200d_Artemis";
+        case partNumberN1200s:
+            return "N1200s";
+        case partNumberN1200s_Deep:
+            return "N1200s_Deep";
+        default:
+            return "unknown";
+    }
+}
+
 std::string to_string(const OculusMessageHeader& msg, const std::string& prefix)
 {
     std::ostringstream oss;
@@ -96,6 +169,24 @@ std::string to_string(const OculusSimplePingResult& msg, const std::string& pref
 
 }; //namespace oculus
 }; //namespace narval
+
+std::ostream& operator<<(std::ostream& os, DataSizeType dataType)
+{
+    os << narval::oculus::to_string(dataType);
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, PingRateType pingRate)
+{
+    os << narval::oculus::to_string(pingRate);
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, OculusPartNumberType partNumber)
+{
+    os << narval::oculus::to_string(partNumber);
+    return os;
+}
 
 std::ostream& operator<<(std::ostream& os, const OculusMessageHeader& msg)
 {
