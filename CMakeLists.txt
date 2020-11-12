@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 project(narval_oculus VERSION 0.1)
 
 find_package(Boost COMPONENTS system thread REQUIRED)
+message(STATUS "Boost version  : ${Boost_VERSION}")
+message(STATUS "Boost location : ${Boost_INCLUDE_DIRS}")
 
 list(APPEND narval_oculus
     include/narval_oculus/Oculus.h
