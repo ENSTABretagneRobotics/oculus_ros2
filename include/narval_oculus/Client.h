@@ -19,8 +19,8 @@ class Client
 {
     public:
 
-    using Socket     = boost::asio::ip::tcp::socket;
-    using EndPoint   = boost::asio::ip::tcp::endpoint;
+    using Socket   = boost::asio::ip::tcp::socket;
+    using EndPoint = boost::asio::ip::tcp::endpoint;
 
     static EndPoint remote_from_status(const OculusStatusMsg& status)
     {
@@ -58,21 +58,24 @@ class Client
 
     Socket   socket_;
     EndPoint remote_;
+    uint16_t sourceDevice_;
     
     StatusListener             statusListener_;
     StatusListener::CallbackId statusCallbackId_;
 
-    uint16_t sourceDevice_;
-
     OculusMessageHeader    initialHeader_;
-    OculusSimplePingResult pingResult_;
 
+    OculusSimplePingResult pingResult_;
+    std::vector<uint8_t>   pingData_;
+
+    std::vector<uint8_t> flushedData_;
+    
     public:
 
     Client(boost::asio::io_service& service);
 
     void send_config(const OculusSimpleFireMessage& config);
-    bool validate_header(const OculusMessageHeader& header);
+    bool is_valid(const OculusMessageHeader& header);
     bool connected() const;
 
     // The client is actually a state machine
@@ -90,6 +93,15 @@ class Client
     void simple_ping_metadata_receive();
     void simple_ping_metadata_callback(const boost::system::error_code err,
                                        std::size_t receivedByteCount);
+
+    void simple_ping_data_receive();
+    void simple_ping_data_callback(const boost::system::error_code err,
+                                   std::size_t receivedByteCount);
+
+    void flush(std::size_t byteCount);
+    void flush_callback(const boost::system::error_code err,
+                        std::size_t receivedByteCount);
+    bool flush_now(std::size_t byteCount);
 };
 
 }; //namespace oculus
