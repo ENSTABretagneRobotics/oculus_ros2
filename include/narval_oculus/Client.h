@@ -20,8 +20,10 @@ class Client
 {
     public:
 
-    using Socket   = boost::asio::ip::tcp::socket;
-    using EndPoint = boost::asio::ip::tcp::endpoint;
+    using Socket        = boost::asio::ip::tcp::socket;
+    using EndPoint      = boost::asio::ip::tcp::endpoint;
+    using PingCallbacks = CallbackQueue<const OculusSimplePingResult&,
+                                        const std::vector<uint8_t>&>; 
 
     protected:
 
@@ -36,9 +38,13 @@ class Client
 
     OculusMessageHeader    initialHeader_;
 
+    // data structure used for ping reception
     OculusSimplePingResult pingResult_;
     std::vector<uint8_t>   pingData_;
+    // callbacks to be called when a full ping is received.
+    PingCallbacks          pingCallbacks_;
 
+    // used of discarding bytes
     std::vector<uint8_t> flushedData_;
 
     void check_reception(const boost::system::error_code& err);
@@ -75,7 +81,20 @@ class Client
     void flush_callback(const boost::system::error_code err,
                         std::size_t receivedByteCount);
     bool flush_now(std::size_t byteCount);
+    
+    template <typename F, class... Args>
+    unsigned int add_ping_callback(F&& func, Args&&... args);
+    unsigned int add_ping_callback(const PingCallbacks::CallbackT& callback);
+    bool remove_ping_callback(unsigned int callbackId);
 };
+
+template <typename F, class... Args>
+unsigned int Client::add_ping_callback(F&& func, Args&&... args)
+{
+    // static_cast is to avoid infinite loop at type resolution at compile time
+    return this->add_ping_callback(static_cast<const PingCallbacks::CallbackT&>(
+        std::bind(func, args..., std::placeholders::_1, std::placeholders::_2)));
+}
 
 }; //namespace oculus
 }; //namespace narval

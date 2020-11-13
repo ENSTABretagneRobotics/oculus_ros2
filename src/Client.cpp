@@ -183,8 +183,8 @@ void Client::simple_ping_data_callback(const boost::system::error_code err,
         this->initiate_receive();
         return;
     }
-    //std::cout << "\rPing count : " << pingResult_.pingId << std::flush;
-    std::cout << pingResult_ << std::endl;
+    // we got a full ping
+    pingCallbacks_.call(pingResult_, pingData_);
     this->initiate_receive();
 }
 
@@ -214,6 +214,16 @@ bool Client::flush_now(std::size_t byteCount)
     flushedData_.resize(byteCount);
     return byteCount == boost::asio::read(socket_,
         boost::asio::buffer(flushedData_.data(), flushedData_.size()));
+}
+
+unsigned int Client::add_ping_callback(const PingCallbacks::CallbackT& callback)
+{
+    return pingCallbacks_.add_callback(callback);
+}
+
+bool Client::remove_ping_callback(unsigned int callbackId)
+{
+    return pingCallbacks_.remove_callback(callbackId);
 }
 
 }; //namespace oculus
