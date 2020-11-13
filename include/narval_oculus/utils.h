@@ -1,0 +1,50 @@
+#ifndef _DEF_NARVAL_OCULUS_UTILS_H_
+#define _DEF_NARVAL_OCULUS_UTILS_H_
+
+#include <iostream>
+
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#include <boost/asio.hpp>
+
+#include <narval_oculus/Oculus.h>
+#include <narval_oculus/print_utils.h>
+
+namespace narval { namespace oculus {
+
+template <typename EndPointT>
+inline EndPointT remote_from_status(const OculusStatusMsg& status)
+{
+    // going through string conversion allows to not care about
+    // endianess. (fix this)
+    return EndPointT(boost::asio::ip::address_v4::from_string(
+        ip_to_string(status.ipAddr)), 52100);
+}
+
+inline OculusSimpleFireMessage default_fire_config()
+{
+    OculusSimpleFireMessage msg;
+    std::memset(&msg, 0, sizeof(msg));
+
+    msg.head.oculusId    = OCULUS_CHECK_ID;
+    msg.head.msgId       = messageSimpleFire;
+    msg.head.srcDeviceId = 0;
+    msg.head.dstDeviceId = 0;
+    msg.head.payloadSize = sizeof(OculusSimpleFireMessage) - sizeof(OculusMessageHeader);
+
+    msg.masterMode      = 2;
+    msg.networkSpeed    = 0xff;
+    msg.gammaCorrection = 127;
+    msg.pingRate        = pingRateNormal;
+    msg.range           = 2;
+    msg.gainPercent     = 50;
+    msg.flags           = 0x19;
+    msg.speedOfSound    = 0.0;
+    msg.salinity        = 0.0;
+    
+    return msg;
+}
+
+}; //namespace oculus
+}; //namespace narval
+
+#endif //_DEF_NARVAL_OCULUS_UTILS_H_

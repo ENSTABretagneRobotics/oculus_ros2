@@ -10,6 +10,7 @@
 
 #include <narval_oculus/Oculus.h>
 #include <narval_oculus/print_utils.h>
+#include <narval_oculus/utils.h>
 #include <narval_oculus/CallbackQueue.h>
 #include <narval_oculus/StatusListener.h>
 
@@ -22,38 +23,6 @@ class Client
     using Socket   = boost::asio::ip::tcp::socket;
     using EndPoint = boost::asio::ip::tcp::endpoint;
 
-    static EndPoint remote_from_status(const OculusStatusMsg& status)
-    {
-        // going through string conversion allows to not care about
-        // endianess. (fix this)
-        return EndPoint(boost::asio::ip::address_v4::from_string(
-            ip_to_string(status.ipAddr)), 52100);
-    }
-
-    static OculusSimpleFireMessage default_configuration()
-    {
-        OculusSimpleFireMessage msg;
-        std::memset(&msg, 0, sizeof(msg));
-
-        msg.head.oculusId    = OCULUS_CHECK_ID;
-        msg.head.msgId       = messageSimpleFire;
-        msg.head.srcDeviceId = 0;
-        msg.head.dstDeviceId = 0;
-        msg.head.payloadSize = sizeof(OculusSimpleFireMessage) - sizeof(OculusMessageHeader);
-
-        msg.masterMode      = 2;
-        msg.networkSpeed    = 0xff;
-        msg.gammaCorrection = 127;
-        msg.pingRate        = pingRateNormal;
-        msg.range           = 2;
-        msg.gainPercent     = 50;
-        msg.flags           = 0x19;
-        msg.speedOfSound    = 0.0;
-        msg.salinity        = 0.0;
-        
-        return msg;
-    }
-
     protected:
 
     Socket   socket_;
@@ -62,6 +31,8 @@ class Client
     
     StatusListener             statusListener_;
     StatusListener::CallbackId statusCallbackId_;
+    
+    OculusSimpleFireMessage requestedFireConfig_;
 
     OculusMessageHeader    initialHeader_;
 
@@ -69,14 +40,16 @@ class Client
     std::vector<uint8_t>   pingData_;
 
     std::vector<uint8_t> flushedData_;
+
+    void check_reception(const boost::system::error_code& err);
     
     public:
 
     Client(boost::asio::io_service& service);
 
-    void send_config(const OculusSimpleFireMessage& config);
     bool is_valid(const OculusMessageHeader& header);
     bool connected() const;
+    void send_fire_config(const OculusSimpleFireMessage& fireMsg);
 
     // The client is actually a state machine
     // These function represent the states
@@ -90,14 +63,14 @@ class Client
     void initiate_callback(const boost::system::error_code err,
                            std::size_t receivedByteCount);
     
-    void simple_ping_metadata_receive();
+    // OculusSimplePingResult related states.
+    void simple_ping_receive_start();
     void simple_ping_metadata_callback(const boost::system::error_code err,
                                        std::size_t receivedByteCount);
-
-    void simple_ping_data_receive();
     void simple_ping_data_callback(const boost::system::error_code err,
                                    std::size_t receivedByteCount);
-
+    
+    // Not states. Utility function to discard bytes in the data stream.
     void flush(std::size_t byteCount);
     void flush_callback(const boost::system::error_code err,
                         std::size_t receivedByteCount);
