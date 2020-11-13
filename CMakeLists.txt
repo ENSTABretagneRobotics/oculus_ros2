@@ -5,7 +5,7 @@ find_package(Boost COMPONENTS system thread REQUIRED)
 message(STATUS "Boost version  : ${Boost_VERSION}")
 message(STATUS "Boost location : ${Boost_INCLUDE_DIRS}")
 
-list(APPEND narval_oculus
+list(APPEND narval_oculus_headers
     include/narval_oculus/Oculus.h
     include/narval_oculus/utils.h
     include/narval_oculus/print_utils.h
@@ -20,6 +20,9 @@ add_library(narval_oculus SHARED
     src/StatusListener.cpp
     src/Client.cpp
 )
+set_target_properties(narval_oculus PROPERTIES
+    PUBLIC_HEADER "${narval_oculus_headers}"
+)
 target_include_directories(narval_oculus PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
@@ -29,6 +32,9 @@ target_link_libraries(narval_oculus PUBLIC
     Boost::thread
 )
 target_compile_features(narval_oculus PUBLIC cxx_std_11)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/narval_installation.cmake)
+narval_install_target(narval_oculus)
 
 add_subdirectory(tools)
 add_subdirectory(tests)
