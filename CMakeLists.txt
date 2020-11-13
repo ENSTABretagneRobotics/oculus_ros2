@@ -30,6 +30,7 @@ target_link_libraries(narval_oculus PUBLIC
 )
 target_compile_features(narval_oculus PUBLIC cxx_std_11)
 
+add_subdirectory(tools)
 add_subdirectory(tests)
 
 
