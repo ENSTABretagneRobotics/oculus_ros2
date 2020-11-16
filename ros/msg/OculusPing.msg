@@ -14,3 +14,5 @@ uint32  imageOffset
 uint32  imageSize
 uint32  messageSize
 
+uint8[] data
+

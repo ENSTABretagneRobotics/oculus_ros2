@@ -26,6 +26,9 @@ void publish_ping(ros::Publisher& publisher, const OculusSimplePingResult& pingM
     static oculus_sonar::OculusPing msg;
     
     narval::oculus::copy_to_ros(msg, pingMetadata);
+    msg.data.resize(pingData.size());
+    for(int i = 0; i < msg.data.size(); i++)
+        msg.data[i] = pingData[i];
 
     publisher.publish(msg);
 }
