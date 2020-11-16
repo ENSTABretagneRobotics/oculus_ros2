@@ -226,6 +226,16 @@ bool SonarClient::remove_ping_callback(unsigned int callbackId)
     return pingCallbacks_.remove_callback(callbackId);
 }
 
+unsigned int SonarClient::add_status_callback(const StatusListener::CallbackT& callback)
+{
+    return statusListener_.add_callback(callback);
+}
+
+bool SonarClient::remove_status_callback(unsigned int callbackId)
+{
+    return statusListener_.remove_callback(callbackId);
+}
+
 }; //namespace oculus
 }; //namespace narval
 

@@ -81,11 +81,16 @@ class SonarClient
     void flush_callback(const boost::system::error_code err,
                         std::size_t receivedByteCount);
     bool flush_now(std::size_t byteCount);
-    
+
     template <typename F, class... Args>
     unsigned int add_ping_callback(F&& func, Args&&... args);
     unsigned int add_ping_callback(const PingCallbacks::CallbackT& callback);
     bool remove_ping_callback(unsigned int callbackId);
+    
+    template <typename F, class... Args>
+    unsigned int add_status_callback(F&& func, Args&&... args);
+    unsigned int add_status_callback(const StatusListener::CallbackT& callback);
+    bool remove_status_callback(unsigned int callbackId);
 };
 
 template <typename F, class... Args>
@@ -94,6 +99,12 @@ unsigned int SonarClient::add_ping_callback(F&& func, Args&&... args)
     // static_cast is to avoid infinite loop at type resolution at compile time
     return this->add_ping_callback(static_cast<const PingCallbacks::CallbackT&>(
         std::bind(func, args..., std::placeholders::_1, std::placeholders::_2)));
+}
+
+template <typename F, class... Args>
+unsigned int SonarClient::add_status_callback(F&& func, Args&&... args)
+{
+    return statusListener_.add_callback(func, args...);
 }
 
 }; //namespace oculus
