@@ -1,24 +1,24 @@
-#include <narval_oculus/Sonar.h>
+#include <narval_oculus/AsyncService.h>
 
 namespace narval { namespace oculus {
 
-Sonar::Sonar() :
-    SonarClient(ioService_),
+AsyncService::AsyncService() :
     isRunning_(false)
 {}
 
-Sonar::~Sonar()
+AsyncService::~AsyncService()
 {
     this->stop();
 }
 
-bool Sonar::is_running() const
+bool AsyncService::is_running() const
 {
     return isRunning_;
 }
 
-void Sonar::start()
+void AsyncService::start()
 {
+    std::cout << "starting" << std::endl;
     if(this->is_running()) return;
 
     if(ioService_.stopped())
@@ -26,12 +26,12 @@ void Sonar::start()
 
     thread_ = std::thread(boost::bind(&boost::asio::io_service::run, &ioService_));
     if(!thread_.joinable())
-        throw std::runtime_error("Failed to start Sonar");
+        throw std::runtime_error("Failed to start AsyncService");
 
     isRunning_ = true;
 }
 
-void Sonar::stop()
+void AsyncService::stop()
 {
     if(!this->is_running()) return;
 
@@ -40,7 +40,7 @@ void Sonar::stop()
     ioService_.stop();
     thread_.join();
     if(thread_.joinable())
-        throw std::runtime_error("Failed to stop Sonar");
+        throw std::runtime_error("Failed to stop AsyncService");
 
     isRunning_ = false;
 
