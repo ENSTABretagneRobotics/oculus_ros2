@@ -4,17 +4,7 @@ uint8   pingRate
 uint8   networkSpeed
 uint8   gammaCorrection
 uint8   flags
-float64 rangePercent
+float64 range
 float64 gainPercent
 float64 speedOfSound
 float64 salinity
-uint32  extFlags
-uint32  reserved0
-uint32  reserved1
-uint32  reserved2
-uint32  reserved3
-uint32  reserved4
-uint32  reserved5
-uint32  reserved6
-uint32  reserved7
-

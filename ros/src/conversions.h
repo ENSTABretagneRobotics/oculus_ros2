@@ -64,6 +64,40 @@ void copy_to_ros(oculus_sonar::OculusStatus& msg, const OculusStatusMsg& status)
     msg.pressure        = status.pressure;
 }
 
+void copy_to_ros(oculus_sonar::OculusFireConfig& msg, const OculusSimpleFireMessage& fireConfig)
+{
+    copy_to_ros(msg.head, fireConfig.head);
+
+    msg.masterMode      = fireConfig.masterMode;
+    msg.pingRate        = fireConfig.pingRate;
+    msg.networkSpeed    = fireConfig.networkSpeed;
+    msg.gammaCorrection = fireConfig.gammaCorrection;
+    msg.flags           = fireConfig.flags;
+    msg.range           = fireConfig.range;
+    msg.gainPercent     = fireConfig.gainPercent;
+    msg.speedOfSound    = fireConfig.speedOfSound;
+    msg.salinity        = fireConfig.salinity;
+}
+
+void copy_to_ros(oculus_sonar::OculusPing& msg, const OculusSimplePingResult& ping)
+{
+    copy_to_ros(msg.fireMessage, ping.fireMessage);
+    msg.pingId            = ping.pingId;
+    msg.status            = ping.status;
+    msg.frequency         = ping.frequency;
+    msg.temperature       = ping.temperature;
+    msg.pressure          = ping.pressure;
+    msg.speeedOfSoundUsed = ping.speeedOfSoundUsed;
+    msg.pingStartTime     = ping.pingStartTime;
+    msg.dataSize          = ping.dataSize;
+    msg.rangeResolution   = ping.rangeResolution;
+    msg.nRanges           = ping.nRanges;
+    msg.nBeams            = ping.nBeams;
+    msg.imageOffset       = ping.imageOffset;
+    msg.imageSize         = ping.imageSize;
+    msg.messageSize       = ping.messageSize;
+}
+
 }; //namespace oculus
 }; //namespace narval
 
