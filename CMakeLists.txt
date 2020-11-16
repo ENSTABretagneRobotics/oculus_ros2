@@ -11,14 +11,16 @@ list(APPEND narval_oculus_headers
     include/narval_oculus/print_utils.h
     include/narval_oculus/CallbackQueue.h
     include/narval_oculus/StatusListener.h
-    include/narval_oculus/Client.h
+    include/narval_oculus/SonarClient.h
+    include/narval_oculus/Sonar.h
 )
 
 add_library(narval_oculus SHARED
     # src/utils.cpp
     src/print_utils.cpp
     src/StatusListener.cpp
-    src/Client.cpp
+    src/SonarClient.cpp
+    src/Sonar.cpp
 )
 set_target_properties(narval_oculus PROPERTIES
     PUBLIC_HEADER "${narval_oculus_headers}"

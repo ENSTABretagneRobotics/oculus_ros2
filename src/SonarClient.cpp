@@ -1,27 +1,27 @@
-#include <narval_oculus/Client.h>
+#include <narval_oculus/SonarClient.h>
 
 namespace narval { namespace oculus {
 
-Client::Client(boost::asio::io_service& service) :
+SonarClient::SonarClient(boost::asio::io_service& service) :
     socket_(service),
     remote_(),
     sourceDevice_(0),
     statusListener_(service),
-    statusCallbackId_(statusListener_.add_callback(&Client::on_first_status, this)),
+    statusCallbackId_(statusListener_.add_callback(&SonarClient::on_first_status, this)),
     requestedFireConfig_(default_fire_config())
 {}
 
-bool Client::is_valid(const OculusMessageHeader& header)
+bool SonarClient::is_valid(const OculusMessageHeader& header)
 {
     return header.oculusId == OCULUS_CHECK_ID && header.srcDeviceId == sourceDevice_;
 }
 
-bool Client::connected() const
+bool SonarClient::connected() const
 {
     return socket_.is_open();
 }
 
-void Client::send_fire_config(const OculusSimpleFireMessage& fireConfig)
+void SonarClient::send_fire_config(const OculusSimpleFireMessage& fireConfig)
 {
     // This function changes the ping configuration of the oculus and make it
     // start firing pings.
@@ -38,17 +38,17 @@ void Client::send_fire_config(const OculusSimpleFireMessage& fireConfig)
     std::cout << "Fire message sent." << std::endl;
 }
 
-void Client::check_reception(const boost::system::error_code& err)
+void SonarClient::check_reception(const boost::system::error_code& err)
 {
     // no real handling for now
     if(err) {
         std::ostringstream oss;
-        oss << "oculue::Client, reception error : " << err;
+        oss << "oculue::SonarClient, reception error : " << err;
         throw oss.str();
     }
 }
 
-void Client::on_first_status(const OculusStatusMsg& msg)
+void SonarClient::on_first_status(const OculusStatusMsg& msg)
 {
     // got a status message. No need to keep listening.
     statusListener_.remove_callback(statusCallbackId_);
@@ -58,14 +58,14 @@ void Client::on_first_status(const OculusStatusMsg& msg)
     remote_ = remote_from_status<EndPoint>(msg);
 
     // attempting connection
-    socket_.async_connect(remote_, boost::bind(&Client::on_connect, this, _1));
+    socket_.async_connect(remote_, boost::bind(&SonarClient::on_connect, this, _1));
 }
 
-void Client::on_connect(const boost::system::error_code& err)
+void SonarClient::on_connect(const boost::system::error_code& err)
 {
     if(err) {
         std::ostringstream oss;
-        oss << "oculus::Client : connection failure. ( " << remote_ << ")";
+        oss << "oculus::SonarClient : connection failure. ( " << remote_ << ")";
         throw std::runtime_error(oss.str());
     }
     std::cout << "Connection successful (" << remote_ << ")" << std::endl;
@@ -77,7 +77,7 @@ void Client::on_connect(const boost::system::error_code& err)
     this->initiate_receive();
 }
 
-void Client::initiate_receive()
+void SonarClient::initiate_receive()
 {
     // asynchronously scan input until finding a valid header.
     // /!\ To be checked : This function and its callback handle the data
@@ -88,10 +88,10 @@ void Client::initiate_receive()
     socket_.async_receive(
         boost::asio::buffer(reinterpret_cast<uint8_t*>(&initialHeader_), 
                             sizeof(initialHeader_)),
-        boost::bind(&Client::initiate_callback, this, _1, _2));
+        boost::bind(&SonarClient::initiate_callback, this, _1, _2));
 }
 
-void Client::initiate_callback(const boost::system::error_code err,
+void SonarClient::initiate_callback(const boost::system::error_code err,
                                std::size_t receivedByteCount)
 {
     // This function receives only the first 4 bytes of a header and checks it.
@@ -135,7 +135,7 @@ void Client::initiate_callback(const boost::system::error_code err,
     }
 }
 
-void Client::simple_ping_receive_start()
+void SonarClient::simple_ping_receive_start()
 {
     // We got the message header in the initiate_receive state. We now know
     // that we will get an OculusSimplePingResult.
@@ -145,10 +145,10 @@ void Client::simple_ping_receive_start()
     boost::asio::async_read(socket_,
         boost::asio::buffer(reinterpret_cast<char*>((&pingResult_)) + sizeof(OculusMessageHeader), 
                             sizeof(OculusSimplePingResult) - sizeof(OculusMessageHeader)),
-        boost::bind(&Client::simple_ping_metadata_callback, this, _1, _2));
+        boost::bind(&SonarClient::simple_ping_metadata_callback, this, _1, _2));
 }
 
-void Client::simple_ping_metadata_callback(const boost::system::error_code err,
+void SonarClient::simple_ping_metadata_callback(const boost::system::error_code err,
                                            std::size_t receivedByteCount)
 {
     this->check_reception(err);
@@ -171,10 +171,10 @@ void Client::simple_ping_metadata_callback(const boost::system::error_code err,
     boost::asio::async_read(socket_,
         boost::asio::buffer(reinterpret_cast<uint8_t*>(pingData_.data()), 
                             pingData_.size()),
-        boost::bind(&Client::simple_ping_data_callback, this, _1, _2));
+        boost::bind(&SonarClient::simple_ping_data_callback, this, _1, _2));
 }
 
-void Client::simple_ping_data_callback(const boost::system::error_code err,
+void SonarClient::simple_ping_data_callback(const boost::system::error_code err,
                                        std::size_t receivedByteCount)
 {
     this->check_reception(err);
@@ -188,16 +188,16 @@ void Client::simple_ping_data_callback(const boost::system::error_code err,
     this->initiate_receive();
 }
 
-void Client::flush(std::size_t byteCount)
+void SonarClient::flush(std::size_t byteCount)
 {
     flushedData_.resize(byteCount);
     boost::asio::async_read(socket_,
         boost::asio::buffer(reinterpret_cast<uint8_t*>(flushedData_.data()), 
                             flushedData_.size()),
-        boost::bind(&Client::flush_callback, this, _1, _2));
+        boost::bind(&SonarClient::flush_callback, this, _1, _2));
 }
 
-void Client::flush_callback(const boost::system::error_code err,
+void SonarClient::flush_callback(const boost::system::error_code err,
                             std::size_t receivedByteCount)
 {
     this->check_reception(err);
@@ -209,19 +209,19 @@ void Client::flush_callback(const boost::system::error_code err,
     this->initiate_receive();
 }
 
-bool Client::flush_now(std::size_t byteCount)
+bool SonarClient::flush_now(std::size_t byteCount)
 {
     flushedData_.resize(byteCount);
     return byteCount == boost::asio::read(socket_,
         boost::asio::buffer(flushedData_.data(), flushedData_.size()));
 }
 
-unsigned int Client::add_ping_callback(const PingCallbacks::CallbackT& callback)
+unsigned int SonarClient::add_ping_callback(const PingCallbacks::CallbackT& callback)
 {
     return pingCallbacks_.add_callback(callback);
 }
 
-bool Client::remove_ping_callback(unsigned int callbackId)
+bool SonarClient::remove_ping_callback(unsigned int callbackId)
 {
     return pingCallbacks_.remove_callback(callbackId);
 }

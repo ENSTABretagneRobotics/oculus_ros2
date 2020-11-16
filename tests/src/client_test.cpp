@@ -2,7 +2,7 @@
 #include <sstream>
 using namespace std;
 
-#include <narval_oculus/Client.h>
+#include <narval_oculus/SonarClient.h>
 using namespace narval::oculus;
 
 void print_ping(const OculusSimplePingResult& pingMetadata,
@@ -14,7 +14,7 @@ void print_ping(const OculusSimplePingResult& pingMetadata,
 int main()
 {
     boost::asio::io_service ioService;
-    Client client(ioService);
+    SonarClient client(ioService);
     
     client.add_ping_callback(&print_ping);
 

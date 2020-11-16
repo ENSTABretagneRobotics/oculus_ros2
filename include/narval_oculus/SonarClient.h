@@ -1,5 +1,5 @@
-#ifndef _NARVAL_OCULUS_CLIENT_H_
-#define _NARVAL_OCULUS_CLIENT_H_
+#ifndef _NARVAL_OCULUS_SONAR_CLIENT_H_
+#define _NARVAL_OCULUS_SONAR_CLIENT_H_
 
 #include <iostream>
 #include <cstring>
@@ -16,7 +16,7 @@
 
 namespace narval { namespace oculus {
 
-class Client
+class SonarClient
 {
     public:
 
@@ -51,7 +51,7 @@ class Client
     
     public:
 
-    Client(boost::asio::io_service& service);
+    SonarClient(boost::asio::io_service& service);
 
     bool is_valid(const OculusMessageHeader& header);
     bool connected() const;
@@ -89,7 +89,7 @@ class Client
 };
 
 template <typename F, class... Args>
-unsigned int Client::add_ping_callback(F&& func, Args&&... args)
+unsigned int SonarClient::add_ping_callback(F&& func, Args&&... args)
 {
     // static_cast is to avoid infinite loop at type resolution at compile time
     return this->add_ping_callback(static_cast<const PingCallbacks::CallbackT&>(
@@ -99,4 +99,4 @@ unsigned int Client::add_ping_callback(F&& func, Args&&... args)
 }; //namespace oculus
 }; //namespace narval
 
-#endif //_NARVAL_OCULUS_CLIENT_H_
+#endif //_NARVAL_OCULUS_SONAR_CLIENT_H_

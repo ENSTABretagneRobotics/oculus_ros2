@@ -3,7 +3,7 @@
 #include <thread>
 using namespace std;
 
-#include <narval_oculus/Client.h>
+#include <narval_oculus/SonarClient.h>
 using namespace narval::oculus;
 
 #include <narval_display/Display.h>
@@ -35,7 +35,7 @@ int main()
 
     boost::asio::io_service ioService;
     service = &ioService;
-    Client client(ioService);
+    SonarClient client(ioService);
     
     client.add_ping_callback(&display_ping);
 
