@@ -12,6 +12,15 @@ list(APPEND test_deps
     narval_oculus
 )
 
+if(NOT TARGET narval_base)
+    find_package(narval_base QUIET)
+endif()
+if(TARGET narval_base)
+    list(APPEND test_names oculusfile_test)
+    list(APPEND test_deps narval_base)
+endif()
+
+
 foreach(name ${test_names})
     add_executable(${name} src/${name}.cpp)
     target_link_libraries(${name} ${test_deps})
