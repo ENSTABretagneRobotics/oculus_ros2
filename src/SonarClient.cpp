@@ -5,20 +5,20 @@ namespace narval { namespace oculus {
 SonarClient::SonarClient(boost::asio::io_service& service) :
     socket_(service),
     remote_(),
-    sourceDevice_(0),
+    sonarId_(0),
     statusListener_(service),
     statusCallbackId_(statusListener_.add_callback(&SonarClient::on_first_status, this)),
     requestedFireConfig_(default_fire_config())
 {}
 
-OculusSimpleFireMessage SonarClient::current_fire_config() const
+SonarClient::PingConfig SonarClient::current_fire_config() const
 {
     return currentFireConfig_;
 }
 
 bool SonarClient::is_valid(const OculusMessageHeader& header)
 {
-    return header.oculusId == OCULUS_CHECK_ID && header.srcDeviceId == sourceDevice_;
+    return header.oculusId == OCULUS_CHECK_ID && header.srcDeviceId == sonarId_;
 }
 
 bool SonarClient::connected() const
@@ -26,7 +26,7 @@ bool SonarClient::connected() const
     return socket_.is_open();
 }
 
-void SonarClient::send_fire_config(OculusSimpleFireMessage& fireConfig)
+void SonarClient::send_fire_config(PingConfig& fireConfig)
 {
     // This function changes the ping configuration of the oculus and make it
     // start firing pings.
@@ -34,9 +34,9 @@ void SonarClient::send_fire_config(OculusSimpleFireMessage& fireConfig)
     fireConfig.head.oculusId    = OCULUS_CHECK_ID;
     fireConfig.head.msgId       = messageSimpleFire;
     fireConfig.head.srcDeviceId = 0;
-    //fireConfig.head.dstDeviceId = sourceDevice_;
+    //fireConfig.head.dstDeviceId = sonarId_;
     fireConfig.head.dstDeviceId = 0;
-    fireConfig.head.payloadSize = sizeof(OculusSimpleFireMessage) - sizeof(OculusMessageHeader);
+    fireConfig.head.payloadSize = sizeof(PingConfig) - sizeof(OculusMessageHeader);
 
     boost::asio::streambuf buf;
     buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
@@ -68,7 +68,7 @@ void SonarClient::on_first_status(const OculusStatusMsg& msg)
     statusListener_.remove_callback(statusCallbackId_);
     
     // device id and ip fetched from status message
-    sourceDevice_ = msg.hdr.srcDeviceId;
+    sonarId_ = msg.hdr.srcDeviceId;
     remote_ = remote_from_status<EndPoint>(msg);
 
     // attempting connection

@@ -5,20 +5,20 @@ list(APPEND test_names
     statusraw_test
     status_display
     client_test
-    async_client_test
+    # async_client_test
 )
 
 list(APPEND test_deps
     narval_oculus
 )
 
-if(NOT TARGET narval_base)
-    find_package(narval_base QUIET)
-endif()
-if(TARGET narval_base)
-    list(APPEND test_names oculusfile_test)
-    list(APPEND test_deps narval_base)
-endif()
+# if(NOT TARGET narval_base)
+#     find_package(narval_base QUIET)
+# endif()
+# if(TARGET narval_base)
+#     list(APPEND test_names oculusfile_test)
+#     list(APPEND test_deps narval_base)
+# endif()
 
 
 foreach(name ${test_names})
