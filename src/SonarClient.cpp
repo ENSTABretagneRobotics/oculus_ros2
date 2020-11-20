@@ -102,17 +102,17 @@ void SonarClient::initiate_receive()
     socket_.async_receive(
         boost::asio::buffer(reinterpret_cast<uint8_t*>(&initialHeader_), 
                             sizeof(initialHeader_)),
-        boost::bind(&SonarClient::initiate_callback, this, _1, _2));
+        boost::bind(&SonarClient::receive_callback, this, _1, _2));
 }
 
-void SonarClient::initiate_callback(const boost::system::error_code err,
-                               std::size_t receivedByteCount)
+void SonarClient::receive_callback(const boost::system::error_code err,
+                                   std::size_t receivedByteCount)
 {
-    // This function receives only the first 4 bytes of a header and checks it.
-    // if the 4 bytes are valid, the remaining part of the header is read from
-    // the socket.  Then, the control is dispatched to the next state depending
-    // on the header content (message type). For now only simple ping is
-    // implemented, but it seems to be the only message sent by the Oculus.
+    // This function receives only enough bytes for an OculusMessageHeader.  If
+    // the header is valid, the control is dispatched to the next state
+    // depending on the header content (message type). For now only simple ping
+    // is implemented, but it seems to be the only message sent by the Oculus.
+    // (TODO : check this last statement).
     this->check_reception(err);
     if(receivedByteCount != sizeof(initialHeader_) || !this->is_valid(initialHeader_)) {
         // Either we got data in the middle of a ping or did not get enougth
@@ -121,116 +121,44 @@ void SonarClient::initiate_callback(const boost::system::error_code err,
         return;
     }
 
-    // Messsage header is valid. Now identifying the message type to continue
-    // reception.
+    // Messsage header is valid. Now getting the remaining part of the message.
+    // (header contains the payload size, we can receive all and parse
+    // afterwards).  This performs a synchonous read on the socket (block until
+    // all is received) (TODO check the timeout)
+    data_.resize(sizeof(initialHeader_) + initialHeader_.payloadSize);
+    auto byteCount = boost::asio::read(socket_,
+        boost::asio::buffer(data_.data() + sizeof(initialHeader_), initialHeader_.payloadSize));
+    if(byteCount != initialHeader_.payloadSize) {
+        // We did not get enough bytes. Reinitiating reads.
+        this->initiate_receive();
+        return;
+    }
+
+    // We did received everything. copying initial header in data_ to have a
+    // full message, then "parsing" for dispatch.
+    *(reinterpret_cast<OculusMessageHeader*>(data_.data())) = initialHeader_;
     switch(initialHeader_.msgId) {
-        case messageSimplePingResult: // only valid option
-            this->simple_ping_receive_start();
+        case messageSimplePingResult: // only valid option for now
+            pingCallbacks_.call(*(reinterpret_cast<const PingResult*>(data_.data())), data_);
             break;
         case messageSimpleFire:
             std::cerr << "messageSimpleFire parsing not implemented." << std::endl;
-            this->initiate_receive();
             break;
         case messagePingResult:
             std::cerr << "messagePingResult parsing not implemented." << std::endl;
-            this->initiate_receive();
             break;
         case messageUserConfig:
             std::cerr << "messageUserConfig parsing not implemented." << std::endl;
-            this->initiate_receive();
             break;
         case messageDummy:
             std::cerr << "messageDummy parsing not implemented." << std::endl;
-            this->initiate_receive();
             break;
         default:
-            this->initiate_receive();
             break;
     }
-}
 
-void SonarClient::simple_ping_receive_start()
-{
-    // We got the message header in the initiate_receive state. We now know
-    // that we will get an OculusSimplePingResult.
-    pingResult_.fireMessage.head = initialHeader_;
-
-
-    // Now fetching the rest of the metadata to deduce the size to the data to receive.
-    boost::asio::async_read(socket_,
-        boost::asio::buffer(reinterpret_cast<char*>((&pingResult_)) + sizeof(OculusMessageHeader), 
-                            sizeof(OculusSimplePingResult) - sizeof(OculusMessageHeader)),
-        boost::bind(&SonarClient::simple_ping_metadata_callback, this, _1, _2));
-}
-
-void SonarClient::simple_ping_metadata_callback(const boost::system::error_code err,
-                                           std::size_t receivedByteCount)
-{
-    this->check_reception(err);
-    if(receivedByteCount != sizeof(OculusSimplePingResult) - sizeof(OculusMessageHeader)) {
-        std::cerr << "git not receive enough bytes for simple ping metadata" << std::endl;
-        this->initiate_receive();
-    }
-    currentFireConfig_ = pingResult_.fireMessage;
-
-    
-    // We received the ping metadata. There are some unused bytes between the
-    // metadata and the data in the ping data stream. Discarding them.
-    if(!this->flush_now(pingResult_.imageOffset - sizeof(pingResult_))) {
-        std::cerr << "Did not flush enough offset bytes for ping" << std::endl;
-        this->initiate_receive();
-        return;
-    }
-
-    // unsued bytes successfully dicarded. Now fetching data
-    //this->simple_ping_data_receive();
-    pingData_.resize(pingResult_.imageSize);
-    boost::asio::async_read(socket_,
-        boost::asio::buffer(reinterpret_cast<uint8_t*>(pingData_.data()), 
-                            pingData_.size()),
-        boost::bind(&SonarClient::simple_ping_data_callback, this, _1, _2));
-}
-
-void SonarClient::simple_ping_data_callback(const boost::system::error_code err,
-                                       std::size_t receivedByteCount)
-{
-    this->check_reception(err);
-    if(receivedByteCount != pingData_.size()) {
-        std::cerr << "Did not receive enough byte for ping data." << std::endl;
-        this->initiate_receive();
-        return;
-    }
-    // we got a full ping
-    pingCallbacks_.call(pingResult_, pingData_);
+    // looping
     this->initiate_receive();
-}
-
-void SonarClient::flush(std::size_t byteCount)
-{
-    flushedData_.resize(byteCount);
-    boost::asio::async_read(socket_,
-        boost::asio::buffer(reinterpret_cast<uint8_t*>(flushedData_.data()), 
-                            flushedData_.size()),
-        boost::bind(&SonarClient::flush_callback, this, _1, _2));
-}
-
-void SonarClient::flush_callback(const boost::system::error_code err,
-                            std::size_t receivedByteCount)
-{
-    this->check_reception(err);
-    if(receivedByteCount != flushedData_.size()) {
-        std::cerr << "Some data were not flushed ("
-                  << receivedByteCount << "/" << flushedData_.size()
-                  << ")" << std::endl;
-    }
-    this->initiate_receive();
-}
-
-bool SonarClient::flush_now(std::size_t byteCount)
-{
-    flushedData_.resize(byteCount);
-    return byteCount == boost::asio::read(socket_,
-        boost::asio::buffer(flushedData_.data(), flushedData_.size()));
 }
 
 unsigned int SonarClient::add_ping_callback(const PingCallbacks::CallbackT& callback)

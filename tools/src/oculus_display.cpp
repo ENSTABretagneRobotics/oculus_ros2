@@ -19,7 +19,9 @@ void display_ping(const OculusSimplePingResult& pingMetadata,
                   const std::vector<uint8_t>& pingData)
 {
     cout << "\rGot ping " << pingMetadata.pingId << flush;
-    renderer->set_image({pingMetadata.nBeams, pingMetadata.nRanges}, pingData.data());
+    cout << endl << "Image offset : " << pingMetadata.imageOffset << endl;
+    renderer->set_image({pingMetadata.nBeams, pingMetadata.nRanges},
+                         pingData.data() + pingMetadata.imageOffset);
     display->draw();
 
     if(display->should_close())

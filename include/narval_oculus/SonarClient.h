@@ -22,9 +22,10 @@ class SonarClient
 
     using Socket        = boost::asio::ip::tcp::socket;
     using EndPoint      = boost::asio::ip::tcp::endpoint;
-    using PingCallbacks = CallbackQueue<const OculusSimplePingResult&,
-                                        const std::vector<uint8_t>&>; 
     using PingConfig    = OculusSimpleFireMessage;
+    using PingResult    = OculusSimplePingResult;
+    using PingCallbacks = CallbackQueue<const PingResult&,
+                                        const std::vector<uint8_t>&>; 
 
     protected:
 
@@ -40,13 +41,9 @@ class SonarClient
 
     OculusMessageHeader    initialHeader_;
     
-    OculusSimplePingResult pingResult_;
-    std::vector<uint8_t>   pingData_;
+    std::vector<uint8_t>   data_;
     // callbacks to be called when a full ping is received.
     PingCallbacks          pingCallbacks_;
-
-    // used of discarding bytes
-    std::vector<uint8_t> flushedData_;
 
     void check_reception(const boost::system::error_code& err);
     
@@ -60,30 +57,14 @@ class SonarClient
     bool connected() const;
     void send_fire_config(PingConfig& fireMsg);
 
-    // The client is actually a state machine
-    // These function represent the states
-
     // initialization states
     void on_first_status(const OculusStatusMsg& msg);
     void on_connect(const boost::system::error_code& err);
 
     // main loop begin
     void initiate_receive();
-    void initiate_callback(const boost::system::error_code err,
-                           std::size_t receivedByteCount);
-    
-    // OculusSimplePingResult related states.
-    void simple_ping_receive_start();
-    void simple_ping_metadata_callback(const boost::system::error_code err,
-                                       std::size_t receivedByteCount);
-    void simple_ping_data_callback(const boost::system::error_code err,
-                                   std::size_t receivedByteCount);
-    
-    // Not states. Utility function to discard bytes in the data stream.
-    void flush(std::size_t byteCount);
-    void flush_callback(const boost::system::error_code err,
-                        std::size_t receivedByteCount);
-    bool flush_now(std::size_t byteCount);
+    void receive_callback(const boost::system::error_code err,
+                          std::size_t receivedByteCount);
 
     template <typename F, class... Args>
     unsigned int add_ping_callback(F&& func, Args&&... args);
