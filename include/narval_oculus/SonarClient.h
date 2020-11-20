@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <cstring>
-#include <condition_variable>
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/asio.hpp>
@@ -72,12 +71,14 @@ class SonarClient
     unsigned int add_status_callback(F&& func, Args&&... args);
     unsigned int add_status_callback(const StatusListener::CallbackT& callback);
     bool remove_status_callback(unsigned int callbackId);
+    template <typename F, class... Args>
+    bool on_next_status(F&& func, Args&&... args);
+    bool on_next_status(const StatusListener::CallbackT& callback);
 
     template <typename F, class... Args>
     unsigned int add_ping_callback(F&& func, Args&&... args);
     unsigned int add_ping_callback(const PingCallbacks::CallbackT& callback);
     bool remove_ping_callback(unsigned int callbackId);
-
     // these are synchronous function which will wait for the next callback call.
     template <typename F, class... Args>
     bool on_next_ping(F&& func, Args&&... args);
@@ -87,7 +88,6 @@ class SonarClient
     unsigned int add_dummy_callback(F&& func, Args&&... args);
     unsigned int add_dummy_callback(const DummyCallbacks::CallbackT& callback);
     bool remove_dummy_callback(unsigned int callbackId);
-
     // these are synchronous function which will wait for the next callback call.
     template <typename F, class... Args>
     bool on_next_dummy(F&& func, Args&&... args);
@@ -98,6 +98,12 @@ template <typename F, class... Args>
 unsigned int SonarClient::add_status_callback(F&& func, Args&&... args)
 {
     return statusListener_.add_callback(func, args...);
+}
+
+template <typename F, class... Args>
+bool SonarClient::on_next_status(F&& func, Args&&... args)
+{
+    return statusListener_.on_next_status(func, args...);
 }
 
 template <typename F, class... Args>

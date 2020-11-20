@@ -50,9 +50,6 @@ void SonarClient::send_fire_config(PingConfig& fireConfig)
     requestedFireConfig_ = fireConfig;
     std::cout << "Fire message sent :"
               << fireConfig << std::endl;
-    //this->on_next_ping([](const PingResult& pingMetadata, const std::vector<uint8_t>& data){
-    //    std::cout << "Got awaited ping !" << std::endl;
-    //});
 }
 
 void SonarClient::check_reception(const boost::system::error_code& err)
@@ -174,6 +171,11 @@ bool SonarClient::remove_status_callback(unsigned int callbackId)
     return statusListener_.remove_callback(callbackId);
 }
 
+bool SonarClient::on_next_status(const StatusListener::CallbackT& callback)
+{
+    return statusListener_.on_next_status(callback);
+}
+
 unsigned int SonarClient::add_ping_callback(const PingCallbacks::CallbackT& callback)
 {
     return pingCallbacks_.add_callback(callback);
@@ -184,34 +186,9 @@ bool SonarClient::remove_ping_callback(unsigned int callbackId)
     return pingCallbacks_.remove_callback(callbackId);
 }
 
-void ping_notifier(std::condition_variable* cv, std::mutex* mtx, bool* called,
-                   const SonarClient::PingCallbacks::CallbackT& callback,
-                   const SonarClient::PingResult& pingMetadata,
-                   const std::vector<uint8_t>& data)
-{
-    {
-        std::unique_lock<std::mutex> lock(*mtx);
-        callback(pingMetadata, data);
-        *called = true;
-    }
-    cv->notify_all();
-}
-
 bool SonarClient::on_next_ping(const PingCallbacks::CallbackT& callback)
 {
-    std::condition_variable cv;
-    std::mutex mtx;
-    bool called = false; // this is to protect from spurious wake up.
-    PingCallbacks::CallbackId callbackId;
-
-    {
-        std::unique_lock<std::mutex> lock(mtx);
-        callbackId = this->add_ping_callback(&ping_notifier, &cv, &mtx, &called, callback);
-        cv.wait(lock, [&]{return called;});
-    }
-    this->remove_ping_callback(callbackId);
-
-    return called;
+    return pingCallbacks_.add_single_shot(callback);
 }
 
 unsigned int SonarClient::add_dummy_callback(const DummyCallbacks::CallbackT& callback)
@@ -224,33 +201,9 @@ bool SonarClient::remove_dummy_callback(unsigned int callbackId)
     return dummyCallbacks_.remove_callback(callbackId);
 }
 
-void dummy_notifier(std::condition_variable* cv, std::mutex* mtx, bool* called,
-                   const SonarClient::DummyCallbacks::CallbackT& callback,
-                   const OculusMessageHeader& header)
-{
-    {
-        std::unique_lock<std::mutex> lock(*mtx);
-        callback(header);
-        *called = true;
-    }
-    cv->notify_all();
-}
-
 bool SonarClient::on_next_dummy(const DummyCallbacks::CallbackT& callback)
 {
-    std::condition_variable cv;
-    std::mutex mtx;
-    bool called = false; // this is to protect from spurious wake up.
-    DummyCallbacks::CallbackId callbackId;
-
-    {
-        std::unique_lock<std::mutex> lock(mtx);
-        callbackId = this->add_dummy_callback(&dummy_notifier, &cv, &mtx, &called, callback);
-        cv.wait(lock, [&]{return called;});
-    }
-    this->remove_dummy_callback(callbackId);
-
-    return called;
+    return dummyCallbacks_.add_single_shot(callback);
 }
 
 }; //namespace oculus

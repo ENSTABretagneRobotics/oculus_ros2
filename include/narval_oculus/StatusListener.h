@@ -37,6 +37,9 @@ class StatusListener
     CallbackId add_callback(F&& func, Args&&... args);
     CallbackId add_callback(const CallbackT& callback);
     bool remove_callback(CallbackId index);
+    template <typename F, class... Args>
+    bool on_next_status(F&& func, Args&&... args);
+    bool on_next_status(const CallbackT& callback);
     
     private:
     
@@ -49,6 +52,13 @@ StatusListener::CallbackId StatusListener::add_callback(F&& func, Args&&... args
 {
     // static_cast is to avoid infinite loop at type resolution at compile time
     return this->add_callback(static_cast<const CallbackT&>(
+        std::bind(func, args..., std::placeholders::_1)));
+}
+
+template <typename F, class... Args>
+bool StatusListener::on_next_status(F&& func, Args&&... args)
+{
+    return this->on_next_status(static_cast<const CallbackT&>(
         std::bind(func, args..., std::placeholders::_1)));
 }
 

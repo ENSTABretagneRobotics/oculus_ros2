@@ -57,5 +57,10 @@ void StatusListener::message_callback(const boost::system::error_code& err,
     this->get_one_message();
 }
 
+bool StatusListener::on_next_status(const CallbackT& callback)
+{
+    return callbacks_.add_single_shot(callback);
+}
+
 }; //namespace oculus
 }; //namespace narval
