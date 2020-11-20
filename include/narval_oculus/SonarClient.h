@@ -52,11 +52,12 @@ class SonarClient
 
     SonarClient(boost::asio::io_service& service);
 
-    PingConfig current_fire_config() const;
-
     bool is_valid(const OculusMessageHeader& header);
     bool connected() const;
+
+    void request_fire_config(PingConfig fireMsg);
     void send_fire_config(PingConfig& fireMsg);
+    PingConfig current_fire_config() const;
 
     // initialization states
     void on_first_status(const OculusStatusMsg& msg);

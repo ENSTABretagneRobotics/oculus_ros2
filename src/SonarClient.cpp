@@ -11,11 +11,6 @@ SonarClient::SonarClient(boost::asio::io_service& service) :
     requestedFireConfig_(default_fire_config())
 {}
 
-SonarClient::PingConfig SonarClient::current_fire_config() const
-{
-    return currentFireConfig_;
-}
-
 bool SonarClient::is_valid(const OculusMessageHeader& header)
 {
     return header.oculusId == OCULUS_CHECK_ID && header.srcDeviceId == sonarId_;
@@ -24,6 +19,34 @@ bool SonarClient::is_valid(const OculusMessageHeader& header)
 bool SonarClient::connected() const
 {
     return socket_.is_open();
+}
+
+void SonarClient::request_fire_config(PingConfig fireConfig)
+{
+    // mandatory header filling
+    fireConfig.head.oculusId    = OCULUS_CHECK_ID;
+    fireConfig.head.msgId       = messageSimpleFire;
+    fireConfig.head.srcDeviceId = 0;
+    fireConfig.head.dstDeviceId = sonarId_;
+    fireConfig.head.payloadSize = sizeof(PingConfig) - sizeof(OculusMessageHeader);
+    fireConfig.head.spare2 = 42;
+
+    boost::asio::streambuf buf;
+    buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
+    
+    auto bytesSent = socket_.send(buf.data());
+    if(bytesSent != sizeof(fireConfig)) {
+        std::cerr << "Could not send whole fire message(" << bytesSent
+                  << "/" << sizeof(fireConfig) << ")" << std::endl;
+        return;
+    }
+    std::cout << "Sent config :\n" << fireConfig << std::endl;
+    
+    PingConfig actualSonarConfig;
+    this->on_next_ping([&](const PingResult& metadata, const std::vector<uint8_t>& data) {
+        actualSonarConfig = metadata.fireMessage;
+    });
+    std::cout << "Actual config :\n" << actualSonarConfig << std::endl;
 }
 
 void SonarClient::send_fire_config(PingConfig& fireConfig)
@@ -48,8 +71,11 @@ void SonarClient::send_fire_config(PingConfig& fireConfig)
         return;
     }
     requestedFireConfig_ = fireConfig;
-    std::cout << "Fire message sent :"
-              << fireConfig << std::endl;
+}
+
+SonarClient::PingConfig SonarClient::current_fire_config() const
+{
+    return currentFireConfig_;
 }
 
 void SonarClient::check_reception(const boost::system::error_code& err)

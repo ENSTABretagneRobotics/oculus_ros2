@@ -6,6 +6,7 @@ list(APPEND test_names
     status_display
     client_test
     async_client_test
+    config_test
 )
 
 list(APPEND test_deps
@@ -24,6 +25,7 @@ list(APPEND test_deps
 foreach(name ${test_names})
     add_executable(${name} src/${name}.cpp)
     target_link_libraries(${name} ${test_deps})
+    target_compile_features(${name} PRIVATE cxx_std_14)
 endforeach(name)
 
 
