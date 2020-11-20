@@ -28,10 +28,10 @@ std::vector<uint8_t>   pingData_;
 void update_display_data(const OculusSimplePingResult& pingMetadata,
                          const std::vector<uint8_t>& pingData)
 {
-    cout << "============= Got ping\n" << pingMetadata << endl;
-    displayable = true;
+    //cout << "============= Got ping\n" << pingMetadata << endl;
     pingMetadata_ = pingMetadata;
     pingData_ = pingData;
+    displayable = true;
 }
 
 
@@ -72,7 +72,7 @@ std::ostream& operator<<(std::ostream& os, const oculus_sonar::OculusSonarConfig
 
 void config_request(narval::oculus::SonarClient* sonarClient, oculus_sonar::OculusSonarConfig& config, uint32_t level)
 {
-    auto currentConfig = sonarClient->current_fire_config();
+    narval::oculus::SonarClient::PingConfig currentConfig;
 
     //cout << "============= current config :\n"
     //     << currentConfig << endl;

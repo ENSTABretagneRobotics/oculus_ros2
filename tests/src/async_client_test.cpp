@@ -35,7 +35,7 @@ int main()
     cout << "After awaited ping" << endl;
     
     // stopping sonar firing
-    auto config = sonar.current_fire_config();
+    auto config = default_fire_config();
     config.pingRate = pingRateStandby;
     sonar.send_fire_config(config);
     sonar.on_next_dummy([](const OculusMessageHeader& header) {

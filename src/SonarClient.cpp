@@ -7,8 +7,7 @@ SonarClient::SonarClient(boost::asio::io_service& service) :
     remote_(),
     sonarId_(0),
     statusListener_(service),
-    statusCallbackId_(statusListener_.add_callback(&SonarClient::on_first_status, this)),
-    requestedFireConfig_(default_fire_config())
+    statusCallbackId_(statusListener_.add_callback(&SonarClient::on_first_status, this))
 {}
 
 bool SonarClient::is_valid(const OculusMessageHeader& header)
@@ -21,7 +20,19 @@ bool SonarClient::connected() const
     return socket_.is_open();
 }
 
-void SonarClient::request_fire_config(PingConfig fireConfig)
+bool SonarClient::are_similar(const PingConfig& lhs, const PingConfig& rhs)
+{
+    // this function compare fields in fire messages which are supposed to be
+    // identical between a fire confgi send to the sonar and the fire config
+    // contained in the ping result (sadly, not all fields are equivalent).
+    return lhs.masterMode       == rhs.masterMode
+        && lhs.gammaCorrection  == rhs.gammaCorrection
+        && lhs.flags            == rhs.flags
+        && lhs.range            == rhs.range
+        && lhs.gainPercent      == rhs.gainPercent;
+}
+
+SonarClient::PingConfig SonarClient::request_fire_config(PingConfig fireConfig)
 {
     // mandatory header filling
     fireConfig.head.oculusId    = OCULUS_CHECK_ID;
@@ -37,27 +48,31 @@ void SonarClient::request_fire_config(PingConfig fireConfig)
     if(bytesSent != sizeof(fireConfig)) {
         std::cerr << "Could not send whole fire message(" << bytesSent
                   << "/" << sizeof(fireConfig) << ")" << std::endl;
-        return;
+        return fireConfig;
     }
     std::cout << "Sent config :\n" << fireConfig << std::endl;
+
     PingConfig actualSonarConfig;
-    this->on_next_ping([&](const PingResult& metadata, const std::vector<uint8_t>& data) {
-        actualSonarConfig = metadata.fireMessage;
-    });
+    std::memset(&actualSonarConfig, 0, sizeof(actualSonarConfig));
+    int count = 0;
+    do {
+        this->on_next_ping([&](const PingResult& metadata, const std::vector<uint8_t>& data) {
+            actualSonarConfig = metadata.fireMessage;
+        });
+        count++;
+    } while(count < 20 && !are_similar(actualSonarConfig, fireConfig));
     std::cout << "Actual config :\n" << actualSonarConfig << std::endl;
-    currentFireConfig_ = actualSonarConfig;
+    std::cout << "Count is : " << count << std::endl;
+
+    return actualSonarConfig;
 }
 
-void SonarClient::send_fire_config(PingConfig& fireConfig)
+void SonarClient::send_fire_config(PingConfig fireConfig)
 {
-    // This function changes the ping configuration of the oculus and make it
-    // start firing pings.
-
     fireConfig.head.oculusId    = OCULUS_CHECK_ID;
     fireConfig.head.msgId       = messageSimpleFire;
     fireConfig.head.srcDeviceId = 0;
-    //fireConfig.head.dstDeviceId = sonarId_;
-    fireConfig.head.dstDeviceId = 0;
+    fireConfig.head.dstDeviceId = sonarId_;
     fireConfig.head.payloadSize = sizeof(PingConfig) - sizeof(OculusMessageHeader);
 
     boost::asio::streambuf buf;
@@ -69,12 +84,6 @@ void SonarClient::send_fire_config(PingConfig& fireConfig)
                   << "/" << sizeof(fireConfig) << ")" << std::endl;
         return;
     }
-    requestedFireConfig_ = fireConfig;
-}
-
-SonarClient::PingConfig SonarClient::current_fire_config() const
-{
-    return currentFireConfig_;
 }
 
 void SonarClient::check_reception(const boost::system::error_code& err)
@@ -113,7 +122,7 @@ void SonarClient::on_connect(const boost::system::error_code& err)
     this->initiate_receive();
 
     // this makes the oculus fire pings right away.
-    this->send_fire_config(requestedFireConfig_);
+    this->send_fire_config(default_fire_config());
 }
 
 void SonarClient::initiate_receive()

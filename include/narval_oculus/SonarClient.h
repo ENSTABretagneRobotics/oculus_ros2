@@ -36,9 +36,6 @@ class SonarClient
     
     StatusListener             statusListener_;
     StatusListener::CallbackId statusCallbackId_;
-    
-    PingConfig requestedFireConfig_;
-    PingConfig currentFireConfig_;
 
     OculusMessageHeader    initialHeader_;
     std::vector<uint8_t>   data_;
@@ -47,6 +44,7 @@ class SonarClient
     DummyCallbacks dummyCallbacks_;
 
     void check_reception(const boost::system::error_code& err);
+    bool are_similar(const PingConfig& lhs, const PingConfig& rhs);
     
     public:
 
@@ -55,9 +53,8 @@ class SonarClient
     bool is_valid(const OculusMessageHeader& header);
     bool connected() const;
 
-    void request_fire_config(PingConfig fireMsg);
-    void send_fire_config(PingConfig& fireMsg);
-    PingConfig current_fire_config() const;
+    PingConfig request_fire_config(PingConfig fireMsg);
+    void send_fire_config(PingConfig fireMsg);
 
     // initialization states
     void on_first_status(const OculusStatusMsg& msg);
