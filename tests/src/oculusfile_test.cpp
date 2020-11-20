@@ -28,7 +28,7 @@ bool find_header(std::ifstream& f, OculusMessageHeader& header)
 
     f.read(reinterpret_cast<char*>(&header) + 4, sizeof(header) - 4);
 
-    //cout << "Found header at byte : " << counter << endl;
+    cout << "Found header at byte : " << counter << endl;
     //cout << header << endl;
 
     return true;
@@ -36,7 +36,7 @@ bool find_header(std::ifstream& f, OculusMessageHeader& header)
 
 void process(const OculusSimplePingResult* ping)
 {
-    cout << *ping << endl;
+    //cout << *ping << endl;
 }
 
 void parse(const std::vector<char>& buffer)

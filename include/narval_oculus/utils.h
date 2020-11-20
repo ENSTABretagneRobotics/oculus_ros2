@@ -35,9 +35,11 @@ inline OculusSimpleFireMessage default_fire_config()
     msg.networkSpeed    = 0xff;
     msg.gammaCorrection = 127;
     msg.pingRate        = pingRateNormal;
-    msg.range           = 2;
+    msg.range           = 2.54;
     msg.gainPercent     = 50;
-    msg.flags           = 0x19;
+    //msg.flags           = 0x19;
+    msg.flags           = 0x09; // seems to be no difference with 0x19
+    //msg.flags           = 0x11; // Ping result not implemented and not in SDK (investigate ?)
     msg.speedOfSound    = 0.0;
     msg.salinity        = 0.0;
     

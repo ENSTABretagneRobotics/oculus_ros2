@@ -6,7 +6,10 @@ find_package(catkin REQUIRED COMPONENTS
     rospy
     std_msgs
     message_generation
+    dynamic_reconfigure
 )
+
+generate_dynamic_reconfigure_options(${CMAKE_CURRENT_SOURCE_DIR}/cfg/OculusSonar.cfg)
 
 if(NOT TARGET narval_oculus)
     find_package(narval_oculus REQUIRED)
@@ -42,7 +45,7 @@ target_link_libraries(oculus_sonar_node PRIVATE
     ${catkin_LIBRARIES}
     narval_oculus
 )
-add_dependencies(oculus_sonar_node oculus_sonar_generate_messages_cpp)
+add_dependencies(oculus_sonar_node oculus_sonar_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 
 #############
 ## Install ##

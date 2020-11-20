@@ -35,6 +35,7 @@ class SonarClient
     StatusListener::CallbackId statusCallbackId_;
     
     OculusSimpleFireMessage requestedFireConfig_;
+    OculusSimpleFireMessage currentFireConfig_;
 
     OculusMessageHeader    initialHeader_;
 
@@ -53,9 +54,11 @@ class SonarClient
 
     SonarClient(boost::asio::io_service& service);
 
+    OculusSimpleFireMessage current_fire_config() const;
+
     bool is_valid(const OculusMessageHeader& header);
     bool connected() const;
-    void send_fire_config(const OculusSimpleFireMessage& fireMsg);
+    void send_fire_config(OculusSimpleFireMessage& fireMsg);
 
     // The client is actually a state machine
     // These function represent the states

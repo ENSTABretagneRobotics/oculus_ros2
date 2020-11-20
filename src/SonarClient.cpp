@@ -11,6 +11,11 @@ SonarClient::SonarClient(boost::asio::io_service& service) :
     requestedFireConfig_(default_fire_config())
 {}
 
+OculusSimpleFireMessage SonarClient::current_fire_config() const
+{
+    return currentFireConfig_;
+}
+
 bool SonarClient::is_valid(const OculusMessageHeader& header)
 {
     return header.oculusId == OCULUS_CHECK_ID && header.srcDeviceId == sourceDevice_;
@@ -21,10 +26,18 @@ bool SonarClient::connected() const
     return socket_.is_open();
 }
 
-void SonarClient::send_fire_config(const OculusSimpleFireMessage& fireConfig)
+void SonarClient::send_fire_config(OculusSimpleFireMessage& fireConfig)
 {
     // This function changes the ping configuration of the oculus and make it
     // start firing pings.
+
+    fireConfig.head.oculusId    = OCULUS_CHECK_ID;
+    fireConfig.head.msgId       = messageSimpleFire;
+    fireConfig.head.srcDeviceId = 0;
+    //fireConfig.head.dstDeviceId = sourceDevice_;
+    fireConfig.head.dstDeviceId = 0;
+    fireConfig.head.payloadSize = sizeof(OculusSimpleFireMessage) - sizeof(OculusMessageHeader);
+
     boost::asio::streambuf buf;
     buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
     
@@ -35,7 +48,8 @@ void SonarClient::send_fire_config(const OculusSimpleFireMessage& fireConfig)
         return;
     }
     requestedFireConfig_ = fireConfig;
-    std::cout << "Fire message sent." << std::endl;
+    std::cout << "Fire message sent :"
+              << fireConfig << std::endl;
 }
 
 void SonarClient::check_reception(const boost::system::error_code& err)
@@ -141,6 +155,7 @@ void SonarClient::simple_ping_receive_start()
     // that we will get an OculusSimplePingResult.
     pingResult_.fireMessage.head = initialHeader_;
 
+
     // Now fetching the rest of the metadata to deduce the size to the data to receive.
     boost::asio::async_read(socket_,
         boost::asio::buffer(reinterpret_cast<char*>((&pingResult_)) + sizeof(OculusMessageHeader), 
@@ -156,6 +171,8 @@ void SonarClient::simple_ping_metadata_callback(const boost::system::error_code 
         std::cerr << "git not receive enough bytes for simple ping metadata" << std::endl;
         this->initiate_receive();
     }
+    currentFireConfig_ = pingResult_.fireMessage;
+
     
     // We received the ping metadata. There are some unused bytes between the
     // metadata and the data in the ping data stream. Discarding them.
