@@ -5,7 +5,7 @@ list(APPEND test_names
     statusraw_test
     status_display
     client_test
-    # async_client_test
+    async_client_test
 )
 
 list(APPEND test_deps

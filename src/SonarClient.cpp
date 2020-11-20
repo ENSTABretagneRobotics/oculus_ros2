@@ -50,6 +50,9 @@ void SonarClient::send_fire_config(PingConfig& fireConfig)
     requestedFireConfig_ = fireConfig;
     std::cout << "Fire message sent :"
               << fireConfig << std::endl;
+    //this->on_next_ping([](const PingResult& pingMetadata, const std::vector<uint8_t>& data){
+    //    std::cout << "Got awaited ping !" << std::endl;
+    //});
 }
 
 void SonarClient::check_reception(const boost::system::error_code& err)
@@ -122,20 +125,20 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     }
 
     // Messsage header is valid. Now getting the remaining part of the message.
-    // (header contains the payload size, we can receive all and parse
-    // afterwards).  This performs a synchonous read on the socket (block until
-    // all is received) (TODO check the timeout)
+    // (The header contains the payload size, we can receive everything and
+    // parse afterwards).  This performs a synchonous read on the socket (block
+    // until all is received) (TODO check the timeout)
     data_.resize(sizeof(initialHeader_) + initialHeader_.payloadSize);
     auto byteCount = boost::asio::read(socket_,
         boost::asio::buffer(data_.data() + sizeof(initialHeader_), initialHeader_.payloadSize));
     if(byteCount != initialHeader_.payloadSize) {
-        // We did not get enough bytes. Reinitiating reads.
+        // We did not get enough bytes. Reinitiating reception.
         this->initiate_receive();
         return;
     }
 
     // We did received everything. copying initial header in data_ to have a
-    // full message, then "parsing" for dispatch.
+    // full message, then dispatching.
     *(reinterpret_cast<OculusMessageHeader*>(data_.data())) = initialHeader_;
     switch(initialHeader_.msgId) {
         case messageSimplePingResult:
@@ -181,6 +184,36 @@ bool SonarClient::remove_ping_callback(unsigned int callbackId)
     return pingCallbacks_.remove_callback(callbackId);
 }
 
+void ping_notifier(std::condition_variable* cv, std::mutex* mtx, bool* called,
+                   const SonarClient::PingCallbacks::CallbackT& callback,
+                   const SonarClient::PingResult& pingMetadata,
+                   const std::vector<uint8_t>& data)
+{
+    {
+        std::unique_lock<std::mutex> lock(*mtx);
+        callback(pingMetadata, data);
+        *called = true;
+    }
+    cv->notify_all();
+}
+
+bool SonarClient::on_next_ping(const PingCallbacks::CallbackT& callback)
+{
+    std::condition_variable cv;
+    std::mutex mtx;
+    bool called = false; // this is to protect from spurious wake up.
+    PingCallbacks::CallbackId callbackId;
+
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        callbackId = this->add_ping_callback(&ping_notifier, &cv, &mtx, &called, callback);
+        cv.wait(lock, [&]{return called;});
+    }
+    this->remove_ping_callback(callbackId);
+
+    return called;
+}
+
 unsigned int SonarClient::add_dummy_callback(const DummyCallbacks::CallbackT& callback)
 {
     return dummyCallbacks_.add_callback(callback);
@@ -189,6 +222,35 @@ unsigned int SonarClient::add_dummy_callback(const DummyCallbacks::CallbackT& ca
 bool SonarClient::remove_dummy_callback(unsigned int callbackId)
 {
     return dummyCallbacks_.remove_callback(callbackId);
+}
+
+void dummy_notifier(std::condition_variable* cv, std::mutex* mtx, bool* called,
+                   const SonarClient::DummyCallbacks::CallbackT& callback,
+                   const OculusMessageHeader& header)
+{
+    {
+        std::unique_lock<std::mutex> lock(*mtx);
+        callback(header);
+        *called = true;
+    }
+    cv->notify_all();
+}
+
+bool SonarClient::on_next_dummy(const DummyCallbacks::CallbackT& callback)
+{
+    std::condition_variable cv;
+    std::mutex mtx;
+    bool called = false; // this is to protect from spurious wake up.
+    DummyCallbacks::CallbackId callbackId;
+
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        callbackId = this->add_dummy_callback(&dummy_notifier, &cv, &mtx, &called, callback);
+        cv.wait(lock, [&]{return called;});
+    }
+    this->remove_dummy_callback(callbackId);
+
+    return called;
 }
 
 }; //namespace oculus

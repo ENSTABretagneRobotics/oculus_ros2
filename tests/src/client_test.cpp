@@ -9,13 +9,13 @@ void print_ping(const OculusSimplePingResult& pingMetadata,
                 const std::vector<uint8_t>& pingData)
 {
     cout << "=============== Got Ping :" << endl;
-    cout << pingMetadata << endl;
+    //cout << pingMetadata << endl;
 }
 
 void print_dummy(const OculusMessageHeader& msg)
 {
     cout << "=============== Got dummy :" << endl;
-    cout << msg << endl;
+    //cout << msg << endl;
 }
 
 int main()

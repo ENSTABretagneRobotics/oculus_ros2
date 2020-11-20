@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <condition_variable>
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/asio.hpp>
@@ -76,11 +77,21 @@ class SonarClient
     unsigned int add_ping_callback(F&& func, Args&&... args);
     unsigned int add_ping_callback(const PingCallbacks::CallbackT& callback);
     bool remove_ping_callback(unsigned int callbackId);
+
+    // these are synchronous function which will wait for the next callback call.
+    template <typename F, class... Args>
+    bool on_next_ping(F&& func, Args&&... args);
+    bool on_next_ping(const PingCallbacks::CallbackT& callback);
     
     template <typename F, class... Args>
     unsigned int add_dummy_callback(F&& func, Args&&... args);
     unsigned int add_dummy_callback(const DummyCallbacks::CallbackT& callback);
     bool remove_dummy_callback(unsigned int callbackId);
+
+    // these are synchronous function which will wait for the next callback call.
+    template <typename F, class... Args>
+    bool on_next_dummy(F&& func, Args&&... args);
+    bool on_next_dummy(const DummyCallbacks::CallbackT& callback);
 };
 
 template <typename F, class... Args>
@@ -98,10 +109,24 @@ unsigned int SonarClient::add_ping_callback(F&& func, Args&&... args)
 }
 
 template <typename F, class... Args>
+bool SonarClient::on_next_ping(F&& func, Args&&... args)
+{
+    return this->on_next_ping(static_cast<const PingCallbacks::CallbackT&>(
+        std::bind(func, args..., std::placeholders::_1, std::placeholders::_2)));
+}
+
+template <typename F, class... Args>
 unsigned int SonarClient::add_dummy_callback(F&& func, Args&&... args)
 {
     // static_cast is to avoid infinite loop at type resolution at compile time
     return this->add_dummy_callback(static_cast<const DummyCallbacks::CallbackT&>(
+        std::bind(func, args..., std::placeholders::_1)));
+}
+
+template <typename F, class... Args>
+bool SonarClient::on_next_dummy(F&& func, Args&&... args)
+{
+    return this->on_next_dummy(static_cast<const DummyCallbacks::CallbackT&>(
         std::bind(func, args..., std::placeholders::_1)));
 }
 
