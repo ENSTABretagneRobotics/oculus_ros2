@@ -47,6 +47,18 @@ target_link_libraries(oculus_sonar_node PRIVATE
 )
 add_dependencies(oculus_sonar_node oculus_sonar_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 
+find_package(narval_display REQUIRED)
+add_executable(oculus_sonar_display_node
+    src/oculus_sonar_display_node.cpp
+)
+target_include_directories(oculus_sonar_display_node PRIVATE src)
+target_link_libraries(oculus_sonar_display_node PRIVATE
+    ${catkin_LIBRARIES}
+    narval_oculus
+    narval_display
+)
+add_dependencies(oculus_sonar_display_node oculus_sonar_generate_messages_cpp ${PROJECT_NAME}_gencfg)
+
 #############
 ## Install ##
 #############

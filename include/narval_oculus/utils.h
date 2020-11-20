@@ -44,7 +44,7 @@ inline OculusSimpleFireMessage default_fire_config()
 
     msg.flags  = 0x1;  // always in meters
     //msg.flags |= 0x2;  // 16bits data
-    msg.flags |= 0x4;  // gain assist control enabled
+    msg.flags |= 0x4;  // Sends gain for each range in returned message
     msg.flags |= 0x8;  // simple ping 
     //msg.flags |= 0x40; // 512 beams ???! (found in sdk)
 

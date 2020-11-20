@@ -29,7 +29,6 @@ void SonarClient::request_fire_config(PingConfig fireConfig)
     fireConfig.head.srcDeviceId = 0;
     fireConfig.head.dstDeviceId = sonarId_;
     fireConfig.head.payloadSize = sizeof(PingConfig) - sizeof(OculusMessageHeader);
-    fireConfig.head.spare2 = 42;
 
     boost::asio::streambuf buf;
     buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
@@ -41,12 +40,12 @@ void SonarClient::request_fire_config(PingConfig fireConfig)
         return;
     }
     std::cout << "Sent config :\n" << fireConfig << std::endl;
-    
     PingConfig actualSonarConfig;
     this->on_next_ping([&](const PingResult& metadata, const std::vector<uint8_t>& data) {
         actualSonarConfig = metadata.fireMessage;
     });
     std::cout << "Actual config :\n" << actualSonarConfig << std::endl;
+    currentFireConfig_ = actualSonarConfig;
 }
 
 void SonarClient::send_fire_config(PingConfig& fireConfig)
