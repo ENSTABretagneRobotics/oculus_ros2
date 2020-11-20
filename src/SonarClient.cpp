@@ -83,12 +83,12 @@ void SonarClient::on_connect(const boost::system::error_code& err)
         throw std::runtime_error(oss.str());
     }
     std::cout << "Connection successful (" << remote_ << ")" << std::endl;
-
-    // this makes the oculus fire pings right away.
-    this->send_fire_config(requestedFireConfig_);
     
     // this enters the pind data reception loop
     this->initiate_receive();
+
+    // this makes the oculus fire pings right away.
+    this->send_fire_config(requestedFireConfig_);
 }
 
 void SonarClient::initiate_receive()
@@ -138,8 +138,11 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     // full message, then "parsing" for dispatch.
     *(reinterpret_cast<OculusMessageHeader*>(data_.data())) = initialHeader_;
     switch(initialHeader_.msgId) {
-        case messageSimplePingResult: // only valid option for now
+        case messageSimplePingResult:
             pingCallbacks_.call(*(reinterpret_cast<const PingResult*>(data_.data())), data_);
+            break;
+        case messageDummy:
+            dummyCallbacks_.call(*(reinterpret_cast<const OculusMessageHeader*>(data_.data())));
             break;
         case messageSimpleFire:
             std::cerr << "messageSimpleFire parsing not implemented." << std::endl;
@@ -150,15 +153,22 @@ void SonarClient::receive_callback(const boost::system::error_code err,
         case messageUserConfig:
             std::cerr << "messageUserConfig parsing not implemented." << std::endl;
             break;
-        case messageDummy:
-            std::cerr << "messageDummy parsing not implemented." << std::endl;
-            break;
         default:
             break;
     }
 
     // looping
     this->initiate_receive();
+}
+
+unsigned int SonarClient::add_status_callback(const StatusListener::CallbackT& callback)
+{
+    return statusListener_.add_callback(callback);
+}
+
+bool SonarClient::remove_status_callback(unsigned int callbackId)
+{
+    return statusListener_.remove_callback(callbackId);
 }
 
 unsigned int SonarClient::add_ping_callback(const PingCallbacks::CallbackT& callback)
@@ -171,14 +181,14 @@ bool SonarClient::remove_ping_callback(unsigned int callbackId)
     return pingCallbacks_.remove_callback(callbackId);
 }
 
-unsigned int SonarClient::add_status_callback(const StatusListener::CallbackT& callback)
+unsigned int SonarClient::add_dummy_callback(const DummyCallbacks::CallbackT& callback)
 {
-    return statusListener_.add_callback(callback);
+    return dummyCallbacks_.add_callback(callback);
 }
 
-bool SonarClient::remove_status_callback(unsigned int callbackId)
+bool SonarClient::remove_dummy_callback(unsigned int callbackId)
 {
-    return statusListener_.remove_callback(callbackId);
+    return dummyCallbacks_.remove_callback(callbackId);
 }
 
 }; //namespace oculus

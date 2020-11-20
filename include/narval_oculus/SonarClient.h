@@ -26,6 +26,7 @@ class SonarClient
     using PingResult    = OculusSimplePingResult;
     using PingCallbacks = CallbackQueue<const PingResult&,
                                         const std::vector<uint8_t>&>; 
+    using DummyCallbacks = CallbackQueue<const OculusMessageHeader&>;
 
     protected:
 
@@ -40,10 +41,10 @@ class SonarClient
     PingConfig currentFireConfig_;
 
     OculusMessageHeader    initialHeader_;
-    
     std::vector<uint8_t>   data_;
-    // callbacks to be called when a full ping is received.
-    PingCallbacks          pingCallbacks_;
+
+    PingCallbacks  pingCallbacks_;
+    DummyCallbacks dummyCallbacks_;
 
     void check_reception(const boost::system::error_code& err);
     
@@ -67,15 +68,26 @@ class SonarClient
                           std::size_t receivedByteCount);
 
     template <typename F, class... Args>
+    unsigned int add_status_callback(F&& func, Args&&... args);
+    unsigned int add_status_callback(const StatusListener::CallbackT& callback);
+    bool remove_status_callback(unsigned int callbackId);
+
+    template <typename F, class... Args>
     unsigned int add_ping_callback(F&& func, Args&&... args);
     unsigned int add_ping_callback(const PingCallbacks::CallbackT& callback);
     bool remove_ping_callback(unsigned int callbackId);
     
     template <typename F, class... Args>
-    unsigned int add_status_callback(F&& func, Args&&... args);
-    unsigned int add_status_callback(const StatusListener::CallbackT& callback);
-    bool remove_status_callback(unsigned int callbackId);
+    unsigned int add_dummy_callback(F&& func, Args&&... args);
+    unsigned int add_dummy_callback(const DummyCallbacks::CallbackT& callback);
+    bool remove_dummy_callback(unsigned int callbackId);
 };
+
+template <typename F, class... Args>
+unsigned int SonarClient::add_status_callback(F&& func, Args&&... args)
+{
+    return statusListener_.add_callback(func, args...);
+}
 
 template <typename F, class... Args>
 unsigned int SonarClient::add_ping_callback(F&& func, Args&&... args)
@@ -86,9 +98,11 @@ unsigned int SonarClient::add_ping_callback(F&& func, Args&&... args)
 }
 
 template <typename F, class... Args>
-unsigned int SonarClient::add_status_callback(F&& func, Args&&... args)
+unsigned int SonarClient::add_dummy_callback(F&& func, Args&&... args)
 {
-    return statusListener_.add_callback(func, args...);
+    // static_cast is to avoid infinite loop at type resolution at compile time
+    return this->add_dummy_callback(static_cast<const DummyCallbacks::CallbackT&>(
+        std::bind(func, args..., std::placeholders::_1)));
 }
 
 }; //namespace oculus
