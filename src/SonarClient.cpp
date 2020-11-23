@@ -31,6 +31,10 @@ bool SonarClient::send_fire_config(PingConfig fireConfig)
     fireConfig.head.dstDeviceId = sonarId_;
     fireConfig.head.payloadSize = sizeof(PingConfig) - sizeof(OculusMessageHeader);
 
+    // Other non runtime-configurable parameters (TODO : make then launch parameters)
+    fireConfig.networkSpeed = 0xff;
+
+
     boost::asio::streambuf buf;
     buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
     
@@ -45,40 +49,30 @@ bool SonarClient::send_fire_config(PingConfig fireConfig)
 
 SonarClient::PingConfig SonarClient::request_fire_config(const PingConfig& requested)
 {
-    if(!this->send_fire_config(requested)) return requested;
-    std::cout << "Sent config :\n" << requested << std::endl;
+    //if(!this->send_fire_config(requested)) return requested;
+    std::cout << "Sending config :\n" << requested << std::endl;
    
     // Waiting for a ping or a dummy message to have a feedback on the config changes.
     PingConfig feedback;
     int count = 0;
+    const int maxCount = 100; // TODO make a parameter out of this
     do {
-        feedback = this->current_fire_config();
-        if(requested.pingRate == pingRateStandby) {
-            // if in standby, expecting a dummy message
-            if(feedback.head.msgId == messageDummy)
+        if(this->send_fire_config(requested)) {
+            feedback = this->current_fire_config();
+            if(check_config_feedback(requested, feedback))
                 break;
         }
-        else {
-            // If got a simple ping result, heking relevant parameters
-            if(feedback.head.msgId == messageSimplePingResult
-               && requested.masterMode       == feedback.masterMode
-               // feedback is broken on pingRate field
-               //&& requested.pingRate         == feedback.pingRate 
-               && requested.gammaCorrection  == feedback.gammaCorrection
-               && requested.flags            == feedback.flags
-               && requested.range            == feedback.range
-               && std::abs(requested.gainPercent - feedback.gainPercent) < 1.0e-1) break;
-        }
         count++;
-    } while(count < 20);
+    } while(count < maxCount);
+    std::cout << "Config feedback :\n" << feedback << std::endl;
+    std::cout << "Count is : " << count << std::endl;
 
-    if(count >= 20) {
+    if(count >= maxCount) {
         std::cerr << "Could not get a proper feedback from the sonar."
                   << "Assuming the configuration is ok (fix this)" << std::endl;
-        //feedback = requested;
+        feedback = requested;
+        feedback.head.msgId = 0; // invalid, will be checkable.
     }
-    std::cout << "Actual config :\n" << feedback << std::endl;
-    std::cout << "Count is : " << count << std::endl;
     
     return feedback;
 }

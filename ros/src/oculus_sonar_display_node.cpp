@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include <sstream>
 using namespace std;
 
@@ -62,22 +63,23 @@ std::ostream& operator<<(std::ostream& os, const oculus_sonar::OculusSonarConfig
     cout << "Got new config :"
          << "\n  - frequency_mode    : " << config.frequency_mode
          << "\n  - ping_rate         : " << config.ping_rate
-         << "\n  - network speed     : " << config.network_speed
-         << "\n  - gamma correction  : " << config.gamma_correction
          << "\n  - data depth        : " << config.data_depth
          << "\n  - send gain         : " << config.send_gain
-         << "\n  - hf_range          : " << config.hf_range;
+         << "\n  - range             : " << config.range
+         << "\n  - gamma correction  : " << config.gamma_correction
+         << "\n  - gain percent      : " << config.gain_percent
+         << "\n  - sound speed       : " << config.sound_speed
+         << "\n  - use salinity      : " << config.use_salinity
+         << "\n  - salinity          : " << config.salinity;
     return os;
 }
 
-void config_request(narval::oculus::SonarClient* sonarClient, oculus_sonar::OculusSonarConfig& config, uint32_t level)
+void config_request(narval::oculus::SonarClient* sonarClient, 
+                    oculus_sonar::OculusSonarConfig& config,
+                    uint32_t level)
 {
     narval::oculus::SonarClient::PingConfig currentConfig;
-
-    //cout << "============= current config :\n"
-    //     << currentConfig << endl;
-    //cout << config << endl
-    //     << "Level : " << level << endl;
+    std::memset(&currentConfig, 0, sizeof(currentConfig));
 
     currentConfig.masterMode = config.frequency_mode;
     switch(config.ping_rate)
@@ -90,7 +92,7 @@ void config_request(narval::oculus::SonarClient* sonarClient, oculus_sonar::Ocul
         case 5: currentConfig.pingRate = pingRateStandby; break;
         default:break;
     }
-    currentConfig.networkSpeed    = config.network_speed;
+    currentConfig.networkSpeed    = 0xff;
     currentConfig.gammaCorrection = config.gamma_correction;
 
     // flags
@@ -100,19 +102,22 @@ void config_request(narval::oculus::SonarClient* sonarClient, oculus_sonar::Ocul
         case oculus_sonar::OculusSonar_8bits:
             break;
         case oculus_sonar::OculusSonar_16bits:
-            currentConfig.flags = currentConfig.flags | 0x2;
+            currentConfig.flags |= 0x2;
             break;
         default:break;
     }
     if(config.send_gain)
-        currentConfig.flags = currentConfig.flags | 0x4;
+        currentConfig.flags |= 0x4;
 
-    currentConfig.range        = config.hf_range;
+    currentConfig.range        = config.range;
     currentConfig.gainPercent  = config.gain_percent;
-    currentConfig.speedOfSound = 0.0;
-    currentConfig.salinity     = 0.0;
 
-    //sonarClient->send_fire_config(currentConfig);
+    if(config.use_salinity)
+        currentConfig.speedOfSound = 0.0;
+    else
+        currentConfig.speedOfSound = config.sound_speed;
+    currentConfig.salinity     = config.salinity;
+
     sonarClient->request_fire_config(currentConfig);
 }
 

@@ -54,6 +54,45 @@ inline OculusSimpleFireMessage default_fire_config()
     return msg;
 }
 
+
+inline bool check_config_feedback(const OculusSimpleFireMessage& requested,
+                                  const OculusSimpleFireMessage& feedback)
+{
+    // returns true if feedback coherent with requested config.
+    if(requested.pingRate == pingRateStandby) {
+        // If in standby, expecting a dummy message
+        if(feedback.head.msgId == messageDummy)
+            return true;
+    }
+    else {
+        // If got a simple ping result, cheking relevant parameters
+        if(feedback.head.msgId == messageSimplePingResult
+           && requested.masterMode       == feedback.masterMode
+           // feedback is broken on pingRate field
+           //&& requested.pingRate         == feedback.pingRate 
+           && requested.gammaCorrection  == feedback.gammaCorrection
+           && requested.flags            == feedback.flags
+           && requested.range            == feedback.range
+           && std::abs(requested.gainPercent  - feedback.gainPercent)  < 1.0e-1)
+        {
+            //return true; // bypassing checks on sound speed
+            // changing soundspeed is very slow (up to 6 seconds, maybe more)
+
+            // For now simple ping is ok. Checking sound speed / salinity
+            // parameters If speed of sound is 0.0, the sonar is using salinity
+            // to calculate speed of sound.
+            if(requested.speedOfSound != 0.0) {
+                if(std::abs(requested.speedOfSound - feedback.speedOfSound) < 1.0e-1)
+                    return true;
+            }
+            else {
+                if(std::abs(requested.salinity - feedback.salinity) < 1.0e-1)
+                    return true;
+            }
+        }
+    }
+    return false;
+}
 }; //namespace oculus
 }; //namespace narval
 
