@@ -146,11 +146,11 @@ void SonarClient::on_connect(const boost::system::error_code& err)
     }
     std::cout << "Connection successful (" << remote_ << ")" << std::endl;
     
-    // this enters the pind data reception loop
+    // this enters the ping data reception loop
     this->initiate_receive();
 
     // this makes the oculus fire pings right away.
-    this->send_fire_config(default_fire_config());
+    // this->send_fire_config(default_fire_config());
 }
 
 void SonarClient::initiate_receive()

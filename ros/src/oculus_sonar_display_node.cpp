@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <sstream>
+#include <limits>
 using namespace std;
 
 #include <narval_display/Display.h>
@@ -78,6 +79,23 @@ void config_request(narval::oculus::SonarClient* sonarClient,
                     oculus_sonar::OculusSonarConfig& config,
                     uint32_t level)
 {
+    std::cout << "Received config : " << level << std::endl;
+    // on node launch, the configuration server asks for current configuration
+    // by setting level to the maximum possible value.
+    if(level == std::numeric_limits<uint32_t>::max()) {
+        auto feedback = sonarClient->current_fire_config();
+        config.frequency_mode   = feedback.masterMode;
+        config.ping_rate        = 0;
+        config.data_depth       = feedback.flags & 0x2;
+        config.send_gain        = feedback.flags & 0x4;
+        config.range            = feedback.range;
+        config.gamma_correction = feedback.gammaCorrection;
+        config.gain_percent     = feedback.gainPercent;
+        config.sound_speed      = feedback.speedOfSound;
+        config.salinity         = feedback.salinity;
+        return;
+    }
+
     narval::oculus::SonarClient::PingConfig currentConfig;
     std::memset(&currentConfig, 0, sizeof(currentConfig));
 
@@ -92,8 +110,6 @@ void config_request(narval::oculus::SonarClient* sonarClient,
         case 5: currentConfig.pingRate = pingRateStandby; break;
         default:break;
     }
-    currentConfig.networkSpeed    = 0xff;
-    currentConfig.gammaCorrection = config.gamma_correction;
 
     // flags
     currentConfig.flags = 0x9; // always in meters, simple ping
@@ -109,8 +125,9 @@ void config_request(narval::oculus::SonarClient* sonarClient,
     if(config.send_gain)
         currentConfig.flags |= 0x4;
 
-    currentConfig.range        = config.range;
-    currentConfig.gainPercent  = config.gain_percent;
+    currentConfig.range           = config.range;
+    currentConfig.gammaCorrection = config.gamma_correction;
+    currentConfig.gainPercent     = config.gain_percent;
 
     if(config.use_salinity)
         currentConfig.speedOfSound = 0.0;
@@ -118,7 +135,16 @@ void config_request(narval::oculus::SonarClient* sonarClient,
         currentConfig.speedOfSound = config.sound_speed;
     currentConfig.salinity     = config.salinity;
 
-    sonarClient->request_fire_config(currentConfig);
+    auto feedback = sonarClient->request_fire_config(currentConfig);
+    config.frequency_mode   = feedback.masterMode;
+    //config.ping_rate      = feedback.pingRate // is broken (?) sonar side
+    config.data_depth       = feedback.flags & 0x2;
+    config.send_gain        = feedback.flags & 0x4;
+    config.range            = feedback.range;
+    config.gamma_correction = feedback.gammaCorrection;
+    config.gain_percent     = feedback.gainPercent;
+    config.sound_speed      = feedback.speedOfSound;
+    config.salinity         = feedback.salinity;
 }
 
 int main(int argc, char **argv)
@@ -131,6 +157,8 @@ int main(int argc, char **argv)
     ros::NodeHandle node;
 
     narval::oculus::Sonar sonarClient;
+    sonarClient.start(); // better to start it here.
+    while(!sonarClient.connected());
     
     // sonar status publisher
     ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>("status", 100);
@@ -143,9 +171,6 @@ int main(int argc, char **argv)
     // config server
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer;
     configServer.setCallback(boost::bind(&config_request, &sonarClient, _1, _2));
-
-    sonarClient.start();
-    while(!sonarClient.connected());
 
     sonarClient.request_fire_config(narval::oculus::default_fire_config());
 
