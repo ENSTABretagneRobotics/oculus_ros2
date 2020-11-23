@@ -49,7 +49,6 @@ class SonarClient
 
     // helper stubs
     void check_reception(const boost::system::error_code& err);
-    bool are_similar(const PingConfig& lhs, const PingConfig& rhs);
     
     public:
 
@@ -58,8 +57,9 @@ class SonarClient
     bool is_valid(const OculusMessageHeader& header);
     bool connected() const;
 
-    PingConfig request_fire_config(PingConfig fireMsg);
-    void send_fire_config(PingConfig fireMsg);
+    bool send_fire_config(PingConfig fireMsg);
+    PingConfig request_fire_config(const PingConfig& fireMsg);
+    PingConfig current_fire_config();
 
     // initialization states
     void on_first_status(const OculusStatusMsg& msg);

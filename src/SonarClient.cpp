@@ -7,8 +7,11 @@ SonarClient::SonarClient(boost::asio::io_service& service) :
     remote_(),
     sonarId_(0),
     statusListener_(service),
-    statusCallbackId_(statusListener_.add_callback(&SonarClient::on_first_status, this))
-{}
+    statusCallbackId_(statusListener_.add_callback(&SonarClient::on_first_status, this)),
+    data_(0)
+{
+    std::memset(&initialHeader_, 0, sizeof(initialHeader_));
+}
 
 bool SonarClient::is_valid(const OculusMessageHeader& header)
 {
@@ -20,21 +23,8 @@ bool SonarClient::connected() const
     return socket_.is_open();
 }
 
-bool SonarClient::are_similar(const PingConfig& lhs, const PingConfig& rhs)
+bool SonarClient::send_fire_config(PingConfig fireConfig)
 {
-    // this function compare fields in fire messages which are supposed to be
-    // identical between a fire confgi send to the sonar and the fire config
-    // contained in the ping result (sadly, not all fields are equivalent).
-    return lhs.masterMode       == rhs.masterMode
-        && lhs.gammaCorrection  == rhs.gammaCorrection
-        && lhs.flags            == rhs.flags
-        && lhs.range            == rhs.range
-        && std::abs(lhs.gainPercent - rhs.gainPercent) < 1.0e-1;
-}
-
-SonarClient::PingConfig SonarClient::request_fire_config(PingConfig fireConfig)
-{
-    // mandatory header filling
     fireConfig.head.oculusId    = OCULUS_CHECK_ID;
     fireConfig.head.msgId       = messageSimpleFire;
     fireConfig.head.srcDeviceId = 0;
@@ -48,50 +38,86 @@ SonarClient::PingConfig SonarClient::request_fire_config(PingConfig fireConfig)
     if(bytesSent != sizeof(fireConfig)) {
         std::cerr << "Could not send whole fire message(" << bytesSent
                   << "/" << sizeof(fireConfig) << ")" << std::endl;
-        return fireConfig;
+        return false;
     }
-    std::cout << "Sent config :\n" << fireConfig << std::endl;
-    
-    // Waiting for a ping message to have a feedback on the config changes.
-    PingConfig configFeedback;
-    std::memset(&configFeedback, 0, sizeof(configFeedback));
+    return true;
+}
+
+SonarClient::PingConfig SonarClient::request_fire_config(const PingConfig& requested)
+{
+    if(!this->send_fire_config(requested)) return requested;
+    std::cout << "Sent config :\n" << requested << std::endl;
+   
+    // Waiting for a ping or a dummy message to have a feedback on the config changes.
+    PingConfig feedback;
     int count = 0;
     do {
-        this->on_next_ping([&](const PingResult& metadata, const std::vector<uint8_t>& data) {
-            configFeedback = metadata.fireMessage;
-            // When masterMode = 2, the sonar force gainPercent between 40& and
-            // 100%, BUT still needs resquested gainPercent to be between 0%
-            // and 100%, so a rescaling must be made on receive to keep the
-            // requested config and the feedback config to be coherent.
-            if(configFeedback.masterMode == 2) {
-                configFeedback.gainPercent = (configFeedback.gainPercent - 40.0) * 100.0 / 60.0;
-            }
-        });
+        feedback = this->current_fire_config();
+        if(requested.pingRate == pingRateStandby) {
+            // if in standby, expecting a dummy message
+            if(feedback.head.msgId == messageDummy)
+                break;
+        }
+        else {
+            // If got a simple ping result, heking relevant parameters
+            if(feedback.head.msgId == messageSimplePingResult
+               && requested.masterMode       == feedback.masterMode
+               // feedback is broken on pingRate field
+               //&& requested.pingRate         == feedback.pingRate 
+               && requested.gammaCorrection  == feedback.gammaCorrection
+               && requested.flags            == feedback.flags
+               && requested.range            == feedback.range
+               && std::abs(requested.gainPercent - feedback.gainPercent) < 1.0e-1) break;
+        }
         count++;
-    } while(count < 20 && !are_similar(configFeedback, fireConfig));
-    std::cout << "Actual config :\n" << configFeedback << std::endl;
-    std::cout << "Count is : " << count << std::endl;
+    } while(count < 20);
 
-    return configFeedback;
+    if(count >= 20) {
+        std::cerr << "Could not get a proper feedback from the sonar."
+                  << "Assuming the configuration is ok (fix this)" << std::endl;
+        //feedback = requested;
+    }
+    std::cout << "Actual config :\n" << feedback << std::endl;
+    std::cout << "Count is : " << count << std::endl;
+    
+    return feedback;
 }
 
-void SonarClient::send_fire_config(PingConfig fireConfig)
+SonarClient::PingConfig SonarClient::current_fire_config()
 {
-    fireConfig.head.oculusId    = OCULUS_CHECK_ID;
-    fireConfig.head.msgId       = messageSimpleFire;
-    fireConfig.head.srcDeviceId = 0;
-    fireConfig.head.dstDeviceId = sonarId_;
-    fireConfig.head.payloadSize = sizeof(PingConfig) - sizeof(OculusMessageHeader);
-
-    boost::asio::streambuf buf;
-    buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
-    
-    auto bytesSent = socket_.send(buf.data());
-    if(bytesSent != sizeof(fireConfig)) {
-        std::cerr << "Could not send whole fire message(" << bytesSent
-                  << "/" << sizeof(fireConfig) << ")" << std::endl;
-        return;
+    // /!\ The header of the returned config will be the header of the carrying
+    // message, not the one of a PingConfig.
+    PingConfig config;
+    this->on_next_message([&](const OculusMessageHeader& header,
+                              const std::vector<uint8_t>& data) {
+        switch(header.msgId) {
+            case messageSimplePingResult:
+                config = *(reinterpret_cast<const OculusSimpleFireMessage*>(&header));
+                break;
+            // messageDummy and all other messages are treated in the same way
+            // because only a simple ping result is a valid message to get a
+            // configuration.
+            case messageDummy:
+                config = default_fire_config();
+                config.head = header;
+                config.pingRate = pingRateStandby;
+                break;
+            default:
+                config = default_fire_config();
+                config.head = header;
+                config.pingRate = pingRateStandby;
+                break;
+        }
+    });
+    // When masterMode = 2, the sonar force gainPercent between 40& and 100%,
+    // BUT still needs resquested gainPercent to be between 0% and 100%. (If
+    // you request a gainPercent=0 in masterMode=2, the fireMessage in the ping
+    // results will be 40%)The gainPercent is rescaled here to ensure
+    // consistent parameter handling on client side).
+    if(config.masterMode == 2) {
+        config.gainPercent = (config.gainPercent - 40.0) * 100.0 / 60.0;
     }
+    return config;
 }
 
 void SonarClient::check_reception(const boost::system::error_code& err)
