@@ -150,7 +150,7 @@ void SonarClient::on_connect(const boost::system::error_code& err)
     this->initiate_receive();
 
     // this makes the oculus fire pings right away.
-    // this->send_fire_config(default_fire_config());
+    this->send_fire_config(default_fire_config());
 }
 
 void SonarClient::initiate_receive()
