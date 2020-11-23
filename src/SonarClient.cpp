@@ -29,7 +29,7 @@ bool SonarClient::are_similar(const PingConfig& lhs, const PingConfig& rhs)
         && lhs.gammaCorrection  == rhs.gammaCorrection
         && lhs.flags            == rhs.flags
         && lhs.range            == rhs.range
-        && lhs.gainPercent      == rhs.gainPercent;
+        && std::abs(lhs.gainPercent - rhs.gainPercent) < 1.0e-1;
 }
 
 SonarClient::PingConfig SonarClient::request_fire_config(PingConfig fireConfig)
@@ -51,20 +51,28 @@ SonarClient::PingConfig SonarClient::request_fire_config(PingConfig fireConfig)
         return fireConfig;
     }
     std::cout << "Sent config :\n" << fireConfig << std::endl;
-
-    PingConfig actualSonarConfig;
-    std::memset(&actualSonarConfig, 0, sizeof(actualSonarConfig));
+    
+    // Waiting for a ping message to have a feedback on the config changes.
+    PingConfig configFeedback;
+    std::memset(&configFeedback, 0, sizeof(configFeedback));
     int count = 0;
     do {
         this->on_next_ping([&](const PingResult& metadata, const std::vector<uint8_t>& data) {
-            actualSonarConfig = metadata.fireMessage;
+            configFeedback = metadata.fireMessage;
+            // When masterMode = 2, the sonar force gainPercent between 40& and
+            // 100%, BUT still needs resquested gainPercent to be between 0%
+            // and 100%, so a rescaling must be made on receive to keep the
+            // requested config and the feedback config to be coherent.
+            if(configFeedback.masterMode == 2) {
+                configFeedback.gainPercent = (configFeedback.gainPercent - 40.0) * 100.0 / 60.0;
+            }
         });
         count++;
-    } while(count < 20 && !are_similar(actualSonarConfig, fireConfig));
-    std::cout << "Actual config :\n" << actualSonarConfig << std::endl;
+    } while(count < 20 && !are_similar(configFeedback, fireConfig));
+    std::cout << "Actual config :\n" << configFeedback << std::endl;
     std::cout << "Count is : " << count << std::endl;
 
-    return actualSonarConfig;
+    return configFeedback;
 }
 
 void SonarClient::send_fire_config(PingConfig fireConfig)

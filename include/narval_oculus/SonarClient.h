@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <cmath>
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/asio.hpp>
