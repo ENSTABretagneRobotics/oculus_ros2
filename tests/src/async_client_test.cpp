@@ -18,6 +18,31 @@ void print_dummy(const OculusMessageHeader& msg)
     //cout << msg << endl;
 }
 
+void print_all(const OculusMessageHeader& header,
+               const std::vector<uint8_t>& data)
+{
+    switch(header.msgId) {
+        case messageSimplePingResult:
+            std::cout << "Got messageSimplePingResult" << endl;
+            break;
+        case messageDummy:
+            std::cout << "Got messageDummy" << endl;
+            break;
+        case messageSimpleFire:
+            std::cout << "Got messageSimpleFire" << endl;
+            break;
+        case messagePingResult:
+            std::cout << "Got messagePingResult" << endl;
+            break;
+        case messageUserConfig:
+            std::cout << "Got messageUserConfig" << endl;
+            break;
+        default:
+            break;
+    }
+
+}
+
 
 int main()
 {
@@ -25,6 +50,7 @@ int main()
     
     //sonar.add_ping_callback(&print_ping);
     //sonar.add_dummy_callback(&print_dummy);
+    sonar.add_message_callback(&print_all);
 
     sonar.start();
 

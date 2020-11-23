@@ -179,6 +179,10 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     // We did received everything. copying initial header in data_ to have a
     // full message, then dispatching.
     *(reinterpret_cast<OculusMessageHeader*>(data_.data())) = initialHeader_;
+
+    // Calling generic message callbacks first (in case we want to do something
+    // before calling the specialized callbacks).
+    messageCallbacks_.call(*(reinterpret_cast<const OculusMessageHeader*>(data_.data())), data_);
     switch(initialHeader_.msgId) {
         case messageSimplePingResult:
             pingCallbacks_.call(*(reinterpret_cast<const PingResult*>(data_.data())), data_);
@@ -203,6 +207,7 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     this->initiate_receive();
 }
 
+// status callbacks
 unsigned int SonarClient::add_status_callback(const StatusListener::CallbackT& callback)
 {
     return statusListener_.add_callback(callback);
@@ -218,6 +223,7 @@ bool SonarClient::on_next_status(const StatusListener::CallbackT& callback)
     return statusListener_.on_next_status(callback);
 }
 
+// ping callbacks
 unsigned int SonarClient::add_ping_callback(const PingCallbacks::CallbackT& callback)
 {
     return pingCallbacks_.add_callback(callback);
@@ -233,6 +239,7 @@ bool SonarClient::on_next_ping(const PingCallbacks::CallbackT& callback)
     return pingCallbacks_.add_single_shot(callback);
 }
 
+// dummy callbacks
 unsigned int SonarClient::add_dummy_callback(const DummyCallbacks::CallbackT& callback)
 {
     return dummyCallbacks_.add_callback(callback);
@@ -246,6 +253,22 @@ bool SonarClient::remove_dummy_callback(unsigned int callbackId)
 bool SonarClient::on_next_dummy(const DummyCallbacks::CallbackT& callback)
 {
     return dummyCallbacks_.add_single_shot(callback);
+}
+
+// message callbacks
+unsigned int SonarClient::add_message_callback(const MessageCallbacks::CallbackT& callback)
+{
+    return messageCallbacks_.add_callback(callback);
+}
+
+bool SonarClient::remove_message_callback(unsigned int callbackId)
+{
+    return messageCallbacks_.remove_callback(callbackId);
+}
+
+bool SonarClient::on_next_message(const MessageCallbacks::CallbackT& callback)
+{
+    return messageCallbacks_.add_single_shot(callback);
 }
 
 }; //namespace oculus
