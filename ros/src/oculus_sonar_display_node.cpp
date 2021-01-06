@@ -153,7 +153,8 @@ int main(int argc, char **argv)
     auto renderer = ImageRenderer::New();
     display.add_renderer(renderer);
 
-    ros::init(argc, argv, "oculus_sonar");
+    //ros::init(argc, argv, "oculus_sonar");
+    ros::init(argc, argv, "oculus_sonar", ros::init_options::NoSigintHandler);
     ros::NodeHandle node;
 
     narval::oculus::Sonar sonarClient;
