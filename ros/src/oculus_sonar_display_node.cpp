@@ -23,6 +23,13 @@ using Shape = ImageRenderer::Shape;
 
 #include <conversions.h>
 
+#include <signal.h>
+bool sigintReceived = false;
+void sigint_handler(int sig)
+{
+    sigintReceived = true;
+}
+
 // Have to copy because opengl doesnot play well outside of main thread
 bool displayable = false;
 OculusSimplePingResult pingMetadata_;
@@ -175,8 +182,11 @@ int main(int argc, char **argv)
 
     sonarClient.request_fire_config(narval::oculus::default_fire_config());
 
+    // setup custom signal handler to cleanly exit
+    signal(SIGINT, sigint_handler);
+
     sonarClient.add_ping_callback(&update_display_data);
-    while(!display.should_close()) {
+    while(!display.should_close() && !sigintReceived) {
         if(displayable) {
             Shape imageShape;
             if(pingMetadata_.fireMessage.flags & 0x4) {
@@ -194,6 +204,6 @@ int main(int argc, char **argv)
     //ros::spin();
 
     sonarClient.stop();
-
+    cout << "oculus_sonar node cleanly stopped" << endl << flush;
     return 0;
 }
