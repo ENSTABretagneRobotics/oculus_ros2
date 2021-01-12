@@ -47,9 +47,14 @@ class SonarClient
     DummyCallbacks   dummyCallbacks_;
     MessageCallbacks messageCallbacks_; // will be called on every received message.
 
+    PingConfig currentConfig_;
+
+    bool         isStandingBy_;
+    PingRateType lastPingRate_;
+
     // helper stubs
     void check_reception(const boost::system::error_code& err);
-    
+
     public:
 
     SonarClient(boost::asio::io_service& service);
@@ -60,6 +65,10 @@ class SonarClient
     bool send_fire_config(PingConfig fireMsg);
     PingConfig request_fire_config(const PingConfig& fireMsg);
     PingConfig current_fire_config();
+
+    // Stanby mode (saves current ping rate and set it to 0 on the sonar
+    void standby();
+    void resume();
 
     // initialization states
     void on_first_status(const OculusStatusMsg& msg);

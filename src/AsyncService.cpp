@@ -18,8 +18,8 @@ bool AsyncService::is_running() const
 
 void AsyncService::start()
 {
-    std::cout << "starting" << std::endl;
     if(this->is_running()) return;
+    std::cout << "starting" << std::endl;
 
     if(ioService_.stopped())
         ioService_.reset();

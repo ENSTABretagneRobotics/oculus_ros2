@@ -6,6 +6,8 @@
 #include <mutex>
 #include <condition_variable>
 
+#include <thread>
+
 namespace narval { namespace oculus {
 
 template <class ...ArgTypes>
@@ -114,6 +116,7 @@ void CallbackQueue<ArgTypes...>::call(ArgTypes... args)
         singleShots_.clear();
         sShotsCalled_ = true;
     }
+
     sShotsCv_.notify_all();
 }
 

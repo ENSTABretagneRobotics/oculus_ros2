@@ -8,9 +8,11 @@ SonarClient::SonarClient(boost::asio::io_service& service) :
     sonarId_(0),
     statusListener_(service),
     statusCallbackId_(statusListener_.add_callback(&SonarClient::on_first_status, this)),
-    data_(0)
+    data_(0),
+    isStandingBy_(false)
 {
     std::memset(&initialHeader_, 0, sizeof(initialHeader_));
+    std::memset(&currentConfig_, 0, sizeof(currentConfig_));
 }
 
 bool SonarClient::is_valid(const OculusMessageHeader& header)
@@ -50,7 +52,7 @@ bool SonarClient::send_fire_config(PingConfig fireConfig)
 SonarClient::PingConfig SonarClient::request_fire_config(const PingConfig& requested)
 {
     //if(!this->send_fire_config(requested)) return requested;
-    std::cout << "Sending config :\n" << requested << std::endl;
+    //std::cout << "Sending config :\n" << requested << std::endl << std::flush;
    
     // Waiting for a ping or a dummy message to have a feedback on the config changes.
     PingConfig feedback;
@@ -64,8 +66,8 @@ SonarClient::PingConfig SonarClient::request_fire_config(const PingConfig& reque
         }
         count++;
     } while(count < maxCount);
-    std::cout << "Config feedback :\n" << feedback << std::endl;
-    std::cout << "Count is : " << count << std::endl;
+    //std::cout << "Config feedback :\n" << feedback << std::endl << std::flush;
+    //std::cout << "Count is : " << count << std::endl << std::flush;
 
     if(count >= maxCount) {
         std::cerr << "Could not get a proper feedback from the sonar."
@@ -82,11 +84,13 @@ SonarClient::PingConfig SonarClient::current_fire_config()
     // /!\ The header of the returned config will be the header of the carrying
     // message, not the one of a PingConfig.
     PingConfig config;
+    bool gotMessage = false;
     this->on_next_message([&](const OculusMessageHeader& header,
                               const std::vector<uint8_t>& data) {
         switch(header.msgId) {
             case messageSimplePingResult:
                 config = *(reinterpret_cast<const OculusSimpleFireMessage*>(&header));
+                gotMessage = true;
                 break;
             // messageDummy and all other messages are treated in the same way
             // because only a simple ping result is a valid message to get a
@@ -95,6 +99,7 @@ SonarClient::PingConfig SonarClient::current_fire_config()
                 config = default_fire_config();
                 config.head = header;
                 config.pingRate = pingRateStandby;
+                gotMessage = true;
                 break;
             default:
                 config = default_fire_config();
@@ -112,6 +117,31 @@ SonarClient::PingConfig SonarClient::current_fire_config()
         config.gainPercent = (config.gainPercent - 40.0) * 100.0 / 60.0;
     }
     return config;
+}
+
+void SonarClient::standby()
+{
+    if(isStandingBy_)
+        return;
+    
+    auto request = currentConfig_;
+
+    lastPingRate_ = request.pingRate;
+    request.pingRate = pingRateStandby;
+    
+    this->send_fire_config(request);
+}
+
+void SonarClient::resume()
+{
+    if(!isStandingBy_)
+        return;
+
+    auto request = currentConfig_;
+
+    request.pingRate = lastPingRate_;
+
+    this->send_fire_config(request);
 }
 
 void SonarClient::check_reception(const boost::system::error_code& err)
@@ -144,7 +174,7 @@ void SonarClient::on_connect(const boost::system::error_code& err)
         oss << "oculus::SonarClient : connection failure. ( " << remote_ << ")";
         throw std::runtime_error(oss.str());
     }
-    std::cout << "Connection successful (" << remote_ << ")" << std::endl;
+    std::cout << "Connection successful (" << remote_ << ")" << std::endl << std::flush;
     
     // this enters the ping data reception loop
     this->initiate_receive();
@@ -199,15 +229,28 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     // We did received everything. copying initial header in data_ to have a
     // full message, then dispatching.
     *(reinterpret_cast<OculusMessageHeader*>(data_.data())) = initialHeader_;
-
+    
     // Calling generic message callbacks first (in case we want to do something
     // before calling the specialized callbacks).
     messageCallbacks_.call(*(reinterpret_cast<const OculusMessageHeader*>(data_.data())), data_);
     switch(initialHeader_.msgId) {
         case messageSimplePingResult:
+            currentConfig_ = reinterpret_cast<const PingResult*>(data_.data())->fireMessage;
+            // When masterMode = 2, the sonar force gainPercent between 40& and
+            // 100%, BUT still needs resquested gainPercent to be between 0%
+            // and 100%. (If you request a gainPercent=0 in masterMode=2, the
+            // fireMessage in the ping results will be 40%)The gainPercent is
+            // rescaled here to ensure consistent parameter handling on client
+            // side).
+            if(currentConfig_.masterMode == 2) {
+                currentConfig_.gainPercent = (currentConfig_.gainPercent - 40.0) * 100.0 / 60.0;
+            }
+            isStandingBy_ = false;
             pingCallbacks_.call(*(reinterpret_cast<const PingResult*>(data_.data())), data_);
             break;
         case messageDummy:
+            currentConfig_.pingRate = pingRateStandby;
+            isStandingBy_ = true;
             dummyCallbacks_.call(*(reinterpret_cast<const OculusMessageHeader*>(data_.data())));
             break;
         case messageSimpleFire:
