@@ -23,10 +23,18 @@ void publish_status(ros::Publisher& publisher, const OculusStatusMsg& status)
     publisher.publish(msg);
 }
 
-void publish_ping(ros::Publisher& publisher, const OculusSimplePingResult& pingMetadata,
-                                             const std::vector<uint8_t>& pingData)
+void publish_ping(narval::oculus::SonarClient* sonarClient,
+                  ros::Publisher& publisher, 
+                  const OculusSimplePingResult& pingMetadata,
+                  const std::vector<uint8_t>& pingData)
 {
     static oculus_sonar::OculusPing msg;
+
+    if(publisher.getNumSubscribers() == 0) {
+        cout << "Going to standby mode" << endl;
+        sonarClient->standby();
+        return;
+    }
     
     narval::oculus::copy_to_ros(msg, pingMetadata);
     msg.data.resize(pingData.size());
@@ -34,6 +42,16 @@ void publish_ping(ros::Publisher& publisher, const OculusSimplePingResult& pingM
         msg.data[i] = pingData[i];
 
     publisher.publish(msg);
+}
+
+void handle_dummy(narval::oculus::SonarClient* sonarClient, 
+                  ros::Publisher& pingPublisher,
+                  const OculusMessageHeader& header)
+{
+    if(pingPublisher.getNumSubscribers() > 0) {
+        cout << "Exiting standby mode" << endl;
+        sonarClient->resume();
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, const oculus_sonar::OculusSonarConfig& config)
@@ -139,7 +157,10 @@ int main(int argc, char **argv)
 
     // ping publisher
     ros::Publisher pingPublisher = node.advertise<oculus_sonar::OculusPing>("ping", 100);
-    sonarClient.add_ping_callback(&publish_ping, pingPublisher);
+    sonarClient.add_ping_callback(&publish_ping, &sonarClient, pingPublisher);
+
+    // callback on dummy messages to reactivate the pings as needed
+    sonarClient.add_dummy_callback(&handle_dummy, &sonarClient, pingPublisher);
 
     // config server
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer;

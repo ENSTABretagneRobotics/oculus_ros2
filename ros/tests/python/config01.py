@@ -11,8 +11,9 @@ def callback(cfg):
 
 rospy.init_node("sonar_ctrl1")
 client = dynamic_reconfigure.client.Client("oculus_sonar", timeout=20, config_callback=callback)
+desc = client.get_parameter_descriptions()
 
-client.update_configuration({'frequency_mode':2})
-print(config)
+# client.update_configuration({'frequency_mode':2})
+# print(config)
 
 
