@@ -43,11 +43,13 @@ void StatusListener::message_callback(const boost::system::error_code& err,
 {
     if(err) {
         std::cerr << "oculus::StatusListener::read_callback : Status reception error.\n";
+        this->get_one_message();
         return;
     }
 
     if(bytesReceived != sizeof(OculusStatusMsg)) {
         std::cerr << "oculus::StatusListener::read_callback : not enough bytes.\n";
+        this->get_one_message();
         return;
     }
     
