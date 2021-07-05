@@ -29,11 +29,9 @@ int main()
     sonar.add_dummy_callback(&print_dummy);
 
     sonar.start();
-    while(!sonar.connected())
-        this_thread::sleep_for(100ms);
 
-    sonar.request_fire_config(default_fire_config());
-    sonar.request_fire_config(default_fire_config());
+    //sonar.request_fire_config(default_fire_config());
+    //sonar.request_fire_config(default_fire_config());
 
     getchar();
 

@@ -11,11 +11,9 @@ SonarClient::SonarClient(boost::asio::io_service& service,
     checkerTimer_(service, checkerPeriod_),
     statusListener_(service),
     statusCallbackId_(0),
-    data_(0),
-    isStandingBy_(false)
+    data_(0)
 {
     std::memset(&initialHeader_, 0, sizeof(initialHeader_));
-    std::memset(&currentConfig_, 0, sizeof(currentConfig_));
 
     this->initiate_connection();
 
@@ -28,131 +26,6 @@ bool SonarClient::is_valid(const OculusMessageHeader& header)
     return header.oculusId == OCULUS_CHECK_ID && header.srcDeviceId == sonarId_;
 }
 
-bool SonarClient::connected() const
-{
-    // Not reliable
-    return socket_.is_open();
-}
-
-bool SonarClient::send_fire_config(PingConfig fireConfig)
-{
-    fireConfig.head.oculusId    = OCULUS_CHECK_ID;
-    fireConfig.head.msgId       = messageSimpleFire;
-    fireConfig.head.srcDeviceId = 0;
-    fireConfig.head.dstDeviceId = sonarId_;
-    fireConfig.head.payloadSize = sizeof(PingConfig) - sizeof(OculusMessageHeader);
-
-    // Other non runtime-configurable parameters (TODO : make then launch parameters)
-    fireConfig.networkSpeed = 0xff;
-
-
-    boost::asio::streambuf buf;
-    buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
-    
-    auto bytesSent = socket_.send(buf.data());
-    if(bytesSent != sizeof(fireConfig)) {
-        std::cerr << "Could not send whole fire message(" << bytesSent
-                  << "/" << sizeof(fireConfig) << ")" << std::endl;
-        return false;
-    }
-    return true;
-}
-
-SonarClient::PingConfig SonarClient::request_fire_config(const PingConfig& requested)
-{
-    //if(!this->send_fire_config(requested)) return requested;
-    //std::cout << "Sending config :\n" << requested << std::endl << std::flush;
-   
-    // Waiting for a ping or a dummy message to have a feedback on the config changes.
-    PingConfig feedback;
-    int count = 0;
-    const int maxCount = 100; // TODO make a parameter out of this
-    do {
-        if(this->send_fire_config(requested)) {
-            feedback = this->current_fire_config();
-            if(check_config_feedback(requested, feedback))
-                break;
-        }
-        count++;
-    } while(count < maxCount);
-    //std::cout << "Config feedback :\n" << feedback << std::endl << std::flush;
-    //std::cout << "Count is : " << count << std::endl << std::flush;
-
-    if(count >= maxCount) {
-        std::cerr << "Could not get a proper feedback from the sonar."
-                  << "Assuming the configuration is ok (fix this)" << std::endl;
-        feedback = requested;
-        feedback.head.msgId = 0; // invalid, will be checkable.
-    }
-    
-    return feedback;
-}
-
-SonarClient::PingConfig SonarClient::current_fire_config()
-{
-    // /!\ The header of the returned config will be the header of the carrying
-    // message, not the one of a PingConfig.
-    PingConfig config;
-    bool gotMessage = false;
-    this->on_next_message([&](const OculusMessageHeader& header,
-                              const std::vector<uint8_t>& data) {
-        switch(header.msgId) {
-            case messageSimplePingResult:
-                config = *(reinterpret_cast<const OculusSimpleFireMessage*>(&header));
-                gotMessage = true;
-                break;
-            // messageDummy and all other messages are treated in the same way
-            // because only a simple ping result is a valid message to get a
-            // configuration.
-            case messageDummy:
-                config = default_fire_config();
-                config.head = header;
-                config.pingRate = pingRateStandby;
-                gotMessage = true;
-                break;
-            default:
-                config = default_fire_config();
-                config.head = header;
-                config.pingRate = pingRateStandby;
-                break;
-        }
-    });
-    // When masterMode = 2, the sonar force gainPercent between 40& and 100%,
-    // BUT still needs resquested gainPercent to be between 0% and 100%. (If
-    // you request a gainPercent=0 in masterMode=2, the fireMessage in the ping
-    // results will be 40%)The gainPercent is rescaled here to ensure
-    // consistent parameter handling on client side).
-    if(config.masterMode == 2) {
-        config.gainPercent = (config.gainPercent - 40.0) * 100.0 / 60.0;
-    }
-    return config;
-}
-
-void SonarClient::standby()
-{
-    if(isStandingBy_)
-        return;
-    
-    auto request = currentConfig_;
-
-    lastPingRate_ = request.pingRate;
-    request.pingRate = pingRateStandby;
-    
-    this->send_fire_config(request);
-}
-
-void SonarClient::resume()
-{
-    if(!isStandingBy_)
-        return;
-
-    auto request = currentConfig_;
-
-    request.pingRate = lastPingRate_;
-
-    this->send_fire_config(request);
-}
-
 /**
  * Connection Watchdog.
  *
@@ -162,7 +35,8 @@ void SonarClient::resume()
  */
 void SonarClient::checker_callback(const boost::system::error_code& err)
 {
-    if(!this->connected()) {
+    std::cout << "Checking" << std::endl;
+    if(!socket_.is_open()) {
         std::cout << "Not connected" << std::endl << std::flush;
     }
     this->checkerTimer_.expires_from_now(checkerPeriod_);
@@ -210,9 +84,11 @@ void SonarClient::on_connect(const boost::system::error_code& err)
     // this enters the ping data reception loop
     this->initiate_receive();
 
-    // this makes the oculus fire pings right away.
-    this->send_fire_config(default_fire_config());
+    this->on_connect();
 }
+
+void SonarClient::on_connect()
+{}
 
 void SonarClient::initiate_receive()
 {
@@ -221,7 +97,7 @@ void SonarClient::initiate_receive()
     // synchronization with the start of the ping message. It is relying on the
     // assumption that if the data left in the socket is less than the size of
     // the header, a short read will happen, so that the next read will be
-    // exacly aligned on the next header.
+    // exactly aligned on the next header.
     static unsigned int count = 0;
     //std::cout << "Initiate receive : " << count << std::endl << std::flush;
     count++;
@@ -271,110 +147,18 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     // full message, then dispatching.
     *(reinterpret_cast<OculusMessageHeader*>(data_.data())) = initialHeader_;
     
-    // Calling generic message callbacks first (in case we want to do something
-    // before calling the specialized callbacks).
-    messageCallbacks_.call(*(reinterpret_cast<const OculusMessageHeader*>(data_.data())), data_);
-    switch(initialHeader_.msgId) {
-        case messageSimplePingResult:
-            currentConfig_ = reinterpret_cast<const PingResult*>(data_.data())->fireMessage;
-            // When masterMode = 2, the sonar force gainPercent between 40& and
-            // 100%, BUT still needs resquested gainPercent to be between 0%
-            // and 100%. (If you request a gainPercent=0 in masterMode=2, the
-            // fireMessage in the ping results will be 40%)The gainPercent is
-            // rescaled here to ensure consistent parameter handling on client
-            // side).
-            if(currentConfig_.masterMode == 2) {
-                currentConfig_.gainPercent = (currentConfig_.gainPercent - 40.0) * 100.0 / 60.0;
-            }
-            isStandingBy_ = false;
-            pingCallbacks_.call(*(reinterpret_cast<const PingResult*>(data_.data())), data_);
-            break;
-        case messageDummy:
-            currentConfig_.pingRate = pingRateStandby;
-            isStandingBy_ = true;
-            dummyCallbacks_.call(*(reinterpret_cast<const OculusMessageHeader*>(data_.data())));
-            break;
-        case messageSimpleFire:
-            std::cerr << "messageSimpleFire parsing not implemented." << std::endl;
-            break;
-        case messagePingResult:
-            std::cerr << "messagePingResult parsing not implemented." << std::endl;
-            break;
-        case messageUserConfig:
-            std::cerr << "messageUserConfig parsing not implemented." << std::endl;
-            break;
-        default:
-            break;
-    }
+    // handle message is to be reimplemented in a subclass
+    this->handle_message(initialHeader_, data_);
 
-    // looping
+    // Continuing the reception loop.
     //std::cout << "Looping" << std::endl << std::flush;
     this->initiate_receive();
+   
 }
 
-// status callbacks
-unsigned int SonarClient::add_status_callback(const StatusListener::CallbackT& callback)
-{
-    return statusListener_.add_callback(callback);
-}
-
-bool SonarClient::remove_status_callback(unsigned int callbackId)
-{
-    return statusListener_.remove_callback(callbackId);
-}
-
-bool SonarClient::on_next_status(const StatusListener::CallbackT& callback)
-{
-    return statusListener_.on_next_status(callback);
-}
-
-// ping callbacks
-unsigned int SonarClient::add_ping_callback(const PingCallbacks::CallbackT& callback)
-{
-    return pingCallbacks_.add_callback(callback);
-}
-
-bool SonarClient::remove_ping_callback(unsigned int callbackId)
-{
-    return pingCallbacks_.remove_callback(callbackId);
-}
-
-bool SonarClient::on_next_ping(const PingCallbacks::CallbackT& callback)
-{
-    return pingCallbacks_.add_single_shot(callback);
-}
-
-// dummy callbacks
-unsigned int SonarClient::add_dummy_callback(const DummyCallbacks::CallbackT& callback)
-{
-    return dummyCallbacks_.add_callback(callback);
-}
-
-bool SonarClient::remove_dummy_callback(unsigned int callbackId)
-{
-    return dummyCallbacks_.remove_callback(callbackId);
-}
-
-bool SonarClient::on_next_dummy(const DummyCallbacks::CallbackT& callback)
-{
-    return dummyCallbacks_.add_single_shot(callback);
-}
-
-// message callbacks
-unsigned int SonarClient::add_message_callback(const MessageCallbacks::CallbackT& callback)
-{
-    return messageCallbacks_.add_callback(callback);
-}
-
-bool SonarClient::remove_message_callback(unsigned int callbackId)
-{
-    return messageCallbacks_.remove_callback(callbackId);
-}
-
-bool SonarClient::on_next_message(const MessageCallbacks::CallbackT& callback)
-{
-    return messageCallbacks_.add_single_shot(callback);
-}
+void SonarClient::handle_message(const OculusMessageHeader& header,
+                                 const std::vector<uint8_t>& data)
+{}
 
 }; //namespace oculus
 }; //namespace narval

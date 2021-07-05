@@ -4,18 +4,18 @@
 #include <iostream>
 
 #include <narval_oculus/AsyncService.h>
-#include <narval_oculus/SonarClient.h>
+#include <narval_oculus/SonarDriver.h>
 
 namespace narval { namespace oculus {
 
 // this is a convenience class 
-class Sonar : public AsyncService, public SonarClient
+class Sonar : public AsyncService, public SonarDriver
 {
     public:
 
     Sonar() :
         AsyncService(),
-        SonarClient(this->ioService_)
+        SonarDriver(this->ioService_)
     {}
 };
 

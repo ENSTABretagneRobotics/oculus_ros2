@@ -2,7 +2,7 @@
 #include <sstream>
 using namespace std;
 
-#include <narval_oculus/SonarClient.h>
+#include <narval_oculus/SonarDriver.h>
 using namespace narval::oculus;
 
 void print_ping(const OculusSimplePingResult& pingMetadata,
@@ -23,10 +23,10 @@ void print_dummy(const OculusMessageHeader& msg)
 int main()
 {
     boost::asio::io_service ioService;
-    SonarClient client(ioService);
+    SonarDriver driver(ioService);
     
-    client.add_ping_callback(&print_ping);
-    client.add_dummy_callback(&print_dummy);
+    driver.add_ping_callback(&print_ping);
+    driver.add_dummy_callback(&print_dummy);
 
     ioService.run(); // is blocking
 

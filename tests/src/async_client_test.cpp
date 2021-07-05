@@ -54,7 +54,7 @@ int main()
 
     sonar.start();
 
-    sonar.on_next_ping([](const SonarClient::PingResult& pingMetadata,
+    sonar.on_next_ping([](const SonarDriver::PingResult& pingMetadata,
                           const std::vector<uint8_t>& data){
         std::cout << "Got awaited ping !" << std::endl;
     });
