@@ -9,6 +9,7 @@
 
 #include <narval_oculus/Oculus.h>
 #include <narval_oculus/CallbackQueue.h>
+#include <narval_oculus/Clock.h>
 
 namespace narval { namespace oculus {
 
@@ -28,6 +29,7 @@ class StatusListener
     EndPoint        remote_;
     OculusStatusMsg msg_;
     Callbacks       callbacks_;
+    Clock           clock_;
 
     public:
 
@@ -40,6 +42,9 @@ class StatusListener
     template <typename F, class... Args>
     bool on_next_status(F&& func, Args&&... args);
     bool on_next_status(const CallbackT& callback);
+
+    template <typename T = float>
+    T time_since_last_status() const { return clock_.now<T>(); }
     
     private:
     

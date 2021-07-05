@@ -36,12 +36,20 @@ bool SonarClient::is_valid(const OculusMessageHeader& header)
 void SonarClient::checker_callback(const boost::system::error_code& err)
 {
     std::cout << "Checking" << std::endl;
-    if(!socket_.is_open()) {
-        std::cout << "Not connected" << std::endl << std::flush;
-    }
+    //if(!socket_.is_open()) {
+    //    std::cout << "Not connected" << std::endl << std::flush;
+    //}
+
+    std::cout << "Time since last status : "
+              << statusListener_.time_since_last_status() << std::endl;
+    std::cout << "Time since last message : "
+              << this->time_since_last_message() << std::endl;
+    
+    // Looping
     this->checkerTimer_.expires_from_now(checkerPeriod_);
     this->checkerTimer_.async_wait(
         std::bind(&SonarClient::checker_callback, this, std::placeholders::_1));
+    std::cout << std::flush;
 }
 
 void SonarClient::check_reception(const boost::system::error_code& err)
@@ -88,7 +96,9 @@ void SonarClient::on_connect(const boost::system::error_code& err)
 }
 
 void SonarClient::on_connect()
-{}
+{
+    // To be reimplemented in a subclass
+}
 
 void SonarClient::initiate_receive()
 {
@@ -101,14 +111,14 @@ void SonarClient::initiate_receive()
     static unsigned int count = 0;
     //std::cout << "Initiate receive : " << count << std::endl << std::flush;
     count++;
-    socket_.async_receive(
+    boost::asio::async_read(socket_,
         boost::asio::buffer(reinterpret_cast<uint8_t*>(&initialHeader_), 
                             sizeof(initialHeader_)),
-        boost::bind(&SonarClient::receive_callback, this, _1, _2));
+        boost::bind(&SonarClient::header_received_callback, this, _1, _2));
 }
 
-void SonarClient::receive_callback(const boost::system::error_code err,
-                                   std::size_t receivedByteCount)
+void SonarClient::header_received_callback(const boost::system::error_code err,
+                                           std::size_t receivedByteCount)
 {
 
     static unsigned int count = 0;
@@ -134,9 +144,15 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     // parse afterwards).  This performs a synchonous read on the socket (block
     // until all is received) (TODO check the timeout)
     data_.resize(sizeof(initialHeader_) + initialHeader_.payloadSize);
-    auto byteCount = boost::asio::read(socket_,
-        boost::asio::buffer(data_.data() + sizeof(initialHeader_), initialHeader_.payloadSize));
-    if(byteCount != initialHeader_.payloadSize) {
+    boost::asio::async_read(socket_,
+        boost::asio::buffer(data_.data() + sizeof(initialHeader_), initialHeader_.payloadSize),
+        boost::bind(&SonarClient::data_received_callback, this, _1, _2));
+}
+
+void SonarClient::data_received_callback(const boost::system::error_code err,
+                                         std::size_t receivedByteCount)
+{
+    if(receivedByteCount != initialHeader_.payloadSize) {
         // We did not get enough bytes. Reinitiating reception.
         std::cout << "Data reception error" << std::endl << std::flush;
         this->initiate_receive();
@@ -147,18 +163,20 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     // full message, then dispatching.
     *(reinterpret_cast<OculusMessageHeader*>(data_.data())) = initialHeader_;
     
+    clock_.reset();
     // handle message is to be reimplemented in a subclass
     this->handle_message(initialHeader_, data_);
 
     // Continuing the reception loop.
     //std::cout << "Looping" << std::endl << std::flush;
     this->initiate_receive();
-   
 }
 
 void SonarClient::handle_message(const OculusMessageHeader& header,
                                  const std::vector<uint8_t>& data)
-{}
+{
+    // To be reimplemented in a subclass
+}
 
 }; //namespace oculus
 }; //namespace narval

@@ -38,6 +38,7 @@ class SonarClient
 
     Duration                     checkerPeriod_;
     boost::asio::deadline_timer  checkerTimer_;
+    Clock                        clock_;
     
     StatusListener             statusListener_;
     StatusListener::CallbackId statusCallbackId_;
@@ -64,13 +65,18 @@ class SonarClient
 
     // main loop begin
     void initiate_receive();
-    void receive_callback(const boost::system::error_code err,
-                          std::size_t receivedByteCount);
+    void header_received_callback(const boost::system::error_code err,
+                                  std::size_t receivedByteCount);
+    void data_received_callback(const boost::system::error_code err,
+                                std::size_t receivedByteCount);
     
     // This is called regardless of the content of the message.
     // To be reimplemented in a subclass (does nothing by default).
     virtual void handle_message(const OculusMessageHeader& header,
                                 const std::vector<uint8_t>& data);
+
+    template <typename T = float>
+    T time_since_last_message() const { return clock_.now(); }
 };
 
 }; //namespace oculus

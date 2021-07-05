@@ -54,6 +54,7 @@ void StatusListener::message_callback(const boost::system::error_code& err,
     }
     
     // we are clean here
+    clock_.reset();
     //std::cout << msg_ << std::endl;
     callbacks_.call(msg_);
     this->get_one_message();
