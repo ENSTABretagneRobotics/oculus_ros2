@@ -2,10 +2,13 @@
 
 namespace narval { namespace oculus {
 
-SonarClient::SonarClient(boost::asio::io_service& service) :
+SonarClient::SonarClient(boost::asio::io_service& service,
+                         const Duration& checkerPeriod) :
     socket_(service),
     remote_(),
     sonarId_(0),
+    checkerPeriod_(checkerPeriod),
+    checkerTimer_(service, checkerPeriod_),
     statusListener_(service),
     statusCallbackId_(0),
     data_(0),
@@ -150,6 +153,23 @@ void SonarClient::resume()
     this->send_fire_config(request);
 }
 
+/**
+ * Connection Watchdog.
+ *
+ * This is an asynchronous loop independent from the connection status (it is
+ * looping even if there is no connection). It checks the status of the
+ * connection with the sonar and restarts it if necessary.
+ */
+void SonarClient::checker_callback(const boost::system::error_code& err)
+{
+    if(!this->connected()) {
+        std::cout << "Not connected" << std::endl << std::flush;
+    }
+    this->checkerTimer_.expires_from_now(checkerPeriod_);
+    this->checkerTimer_.async_wait(
+        std::bind(&SonarClient::checker_callback, this, std::placeholders::_1));
+}
+
 void SonarClient::check_reception(const boost::system::error_code& err)
 {
     // no real handling for now
@@ -202,6 +222,9 @@ void SonarClient::initiate_receive()
     // assumption that if the data left in the socket is less than the size of
     // the header, a short read will happen, so that the next read will be
     // exacly aligned on the next header.
+    static unsigned int count = 0;
+    //std::cout << "Initiate receive : " << count << std::endl << std::flush;
+    count++;
     socket_.async_receive(
         boost::asio::buffer(reinterpret_cast<uint8_t*>(&initialHeader_), 
                             sizeof(initialHeader_)),
@@ -211,7 +234,11 @@ void SonarClient::initiate_receive()
 void SonarClient::receive_callback(const boost::system::error_code err,
                                    std::size_t receivedByteCount)
 {
-    // This function receives only enough bytes for an OculusMessageHeader.  If
+
+    static unsigned int count = 0;
+    //std::cout << "Receive callback : " << count << std::endl << std::flush;
+    count++;
+    // This function received only enough bytes for an OculusMessageHeader.  If
     // the header is valid, the control is dispatched to the next state
     // depending on the header content (message type). For now only simple ping
     // is implemented, but it seems to be the only message sent by the Oculus.
@@ -221,6 +248,7 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     if(receivedByteCount != sizeof(initialHeader_) || !this->is_valid(initialHeader_)) {
         // Either we got data in the middle of a ping or did not get enougth
         // bytes (end of message). Continue listening to get a valid header.
+        //std::cout << "Header reception error" << std::endl << std::flush;
         this->initiate_receive();
         return;
     }
@@ -234,6 +262,7 @@ void SonarClient::receive_callback(const boost::system::error_code err,
         boost::asio::buffer(data_.data() + sizeof(initialHeader_), initialHeader_.payloadSize));
     if(byteCount != initialHeader_.payloadSize) {
         // We did not get enough bytes. Reinitiating reception.
+        std::cout << "Data reception error" << std::endl << std::flush;
         this->initiate_receive();
         return;
     }
@@ -279,6 +308,7 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     }
 
     // looping
+    //std::cout << "Looping" << std::endl << std::flush;
     this->initiate_receive();
 }
 

@@ -23,6 +23,7 @@ class SonarClient
 
     using Socket        = boost::asio::ip::tcp::socket;
     using EndPoint      = boost::asio::ip::tcp::endpoint;
+    using Duration      = boost::posix_time::time_duration;
     using PingConfig    = OculusSimpleFireMessage;
     using PingResult    = OculusSimplePingResult;
     using PingCallbacks = CallbackQueue<const PingResult&,
@@ -36,6 +37,9 @@ class SonarClient
     Socket   socket_;
     EndPoint remote_;
     uint16_t sonarId_;
+
+    Duration                     checkerPeriod_;
+    boost::asio::deadline_timer  checkerTimer_;
     
     StatusListener             statusListener_;
     StatusListener::CallbackId statusCallbackId_;
@@ -53,11 +57,13 @@ class SonarClient
     PingRateType lastPingRate_;
 
     // helper stubs
+    void checker_callback(const boost::system::error_code& err);
     void check_reception(const boost::system::error_code& err);
 
     public:
 
-    SonarClient(boost::asio::io_service& service);
+    SonarClient(boost::asio::io_service& service,
+                const Duration& checkerPeriod = boost::posix_time::seconds(1));
 
     bool is_valid(const OculusMessageHeader& header);
     bool connected() const;
