@@ -1,5 +1,7 @@
 #include <iostream>
 #include <sstream>
+#include <thread>
+#include <future>
 using namespace std;
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
@@ -129,7 +131,8 @@ void config_request(narval::oculus::SonarClient* sonarClient,
     else
         currentConfig.speedOfSound = config.sound_speed;
     currentConfig.salinity     = config.salinity;
-
+    
+    // a timeout would be nice
     auto feedback = sonarClient->request_fire_config(currentConfig);
     config.frequency_mode   = feedback.masterMode;
     //config.ping_rate      = feedback.pingRate // is broken (?) sonar side
@@ -142,6 +145,12 @@ void config_request(narval::oculus::SonarClient* sonarClient,
     config.salinity         = feedback.salinity;
 }
 
+void set_config_callback(dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig>* configServer,
+                         narval::oculus::Sonar* sonarClient)
+{
+    configServer->setCallback(boost::bind(&config_request, sonarClient, _1, _2));
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "oculus_sonar");
@@ -149,7 +158,6 @@ int main(int argc, char **argv)
 
     narval::oculus::Sonar sonarClient;
     sonarClient.start(); // better to start it here.
-    while(!sonarClient.connected());
     
     // sonar status publisher
     ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>("status", 100);
@@ -159,16 +167,31 @@ int main(int argc, char **argv)
     ros::Publisher pingPublisher = node.advertise<oculus_sonar::OculusPing>("ping", 100);
     sonarClient.add_ping_callback(&publish_ping, &sonarClient, pingPublisher);
 
+    //configServer.setCallback(boost::bind(&config_request, &sonarClient, _1, _2));
     // callback on dummy messages to reactivate the pings as needed
     sonarClient.add_dummy_callback(&handle_dummy, &sonarClient, pingPublisher);
 
     // config server
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer;
-    configServer.setCallback(boost::bind(&config_request, &sonarClient, _1, _2));
+
+    // Using a thread to set the callback in dynamic reconfigure
+    // (dynamic_reconfigure will wait for a feedback from the sonar and will
+    // block until the sonar is connected. This in turn will prevent the SIGINT
+    // to be treated by the ROS API and the node can't be terminated cleanly.).
+    std::thread setConfigThread(set_config_callback, &configServer, &sonarClient);
 
     ros::spin();
 
     sonarClient.stop();
+    
+    // This allows to join the setConfigThread safely with a timeout. (It might
+    // be locked if the sonar was never connected).
+    auto future = std::async(std::launch::async, &std::thread::join, &setConfigThread);
+    if(future.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) {
+        std::cout << "Thread was locked" << std::endl;
+        setConfigThread.detach();
+        std::terminate();
+    }
 
     return 0;
 }
