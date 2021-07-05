@@ -25,7 +25,7 @@ void publish_status(ros::Publisher& publisher, const OculusStatusMsg& status)
     publisher.publish(msg);
 }
 
-void publish_ping(narval::oculus::SonarClient* sonarClient,
+void publish_ping(narval::oculus::SonarDriver* sonarDriver,
                   ros::Publisher& publisher, 
                   const OculusSimplePingResult& pingMetadata,
                   const std::vector<uint8_t>& pingData)
@@ -34,7 +34,7 @@ void publish_ping(narval::oculus::SonarClient* sonarClient,
 
     if(publisher.getNumSubscribers() == 0) {
         cout << "Going to standby mode" << endl;
-        sonarClient->standby();
+        sonarDriver->standby();
         return;
     }
     
@@ -46,13 +46,13 @@ void publish_ping(narval::oculus::SonarClient* sonarClient,
     publisher.publish(msg);
 }
 
-void handle_dummy(narval::oculus::SonarClient* sonarClient, 
+void handle_dummy(narval::oculus::SonarDriver* sonarDriver, 
                   ros::Publisher& pingPublisher,
                   const OculusMessageHeader& header)
 {
     if(pingPublisher.getNumSubscribers() > 0) {
         cout << "Exiting standby mode" << endl;
-        sonarClient->resume();
+        sonarDriver->resume();
     }
 }
 
@@ -72,7 +72,7 @@ std::ostream& operator<<(std::ostream& os, const oculus_sonar::OculusSonarConfig
     return os;
 }
 
-void config_request(narval::oculus::SonarClient* sonarClient, 
+void config_request(narval::oculus::SonarDriver* sonarDriver, 
                     oculus_sonar::OculusSonarConfig& config,
                     uint32_t level)
 {
@@ -80,7 +80,7 @@ void config_request(narval::oculus::SonarClient* sonarClient,
     // on node launch, the configuration server asks for current configuration
     // by setting level to the maximum possible value.
     if(level == std::numeric_limits<uint32_t>::max()) {
-        auto feedback = sonarClient->current_fire_config();
+        auto feedback = sonarDriver->current_fire_config();
         config.frequency_mode   = feedback.masterMode;
         config.ping_rate        = 0;
         config.data_depth       = feedback.flags & 0x2;
@@ -93,7 +93,7 @@ void config_request(narval::oculus::SonarClient* sonarClient,
         return;
     }
 
-    narval::oculus::SonarClient::PingConfig currentConfig;
+    narval::oculus::SonarDriver::PingConfig currentConfig;
     std::memset(&currentConfig, 0, sizeof(currentConfig));
 
     currentConfig.masterMode = config.frequency_mode;
@@ -133,7 +133,7 @@ void config_request(narval::oculus::SonarClient* sonarClient,
     currentConfig.salinity     = config.salinity;
     
     // a timeout would be nice
-    auto feedback = sonarClient->request_fire_config(currentConfig);
+    auto feedback = sonarDriver->request_fire_config(currentConfig);
     config.frequency_mode   = feedback.masterMode;
     //config.ping_rate      = feedback.pingRate // is broken (?) sonar side
     config.data_depth       = feedback.flags & 0x2;
@@ -146,9 +146,9 @@ void config_request(narval::oculus::SonarClient* sonarClient,
 }
 
 void set_config_callback(dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig>* configServer,
-                         narval::oculus::Sonar* sonarClient)
+                         narval::oculus::Sonar* sonarDriver)
 {
-    configServer->setCallback(boost::bind(&config_request, sonarClient, _1, _2));
+    configServer->setCallback(boost::bind(&config_request, sonarDriver, _1, _2));
 }
 
 int main(int argc, char **argv)
@@ -156,20 +156,20 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "oculus_sonar");
     ros::NodeHandle node;
 
-    narval::oculus::Sonar sonarClient;
-    sonarClient.start(); // better to start it here.
+    narval::oculus::Sonar sonarDriver;
+    sonarDriver.start(); // better to start it here.
     
     // sonar status publisher
     ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>("status", 100);
-    sonarClient.add_status_callback(&publish_status, statusPublisher);
+    sonarDriver.add_status_callback(&publish_status, statusPublisher);
 
     // ping publisher
     ros::Publisher pingPublisher = node.advertise<oculus_sonar::OculusPing>("ping", 100);
-    sonarClient.add_ping_callback(&publish_ping, &sonarClient, pingPublisher);
+    sonarDriver.add_ping_callback(&publish_ping, &sonarDriver, pingPublisher);
 
-    //configServer.setCallback(boost::bind(&config_request, &sonarClient, _1, _2));
+    //configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
     // callback on dummy messages to reactivate the pings as needed
-    sonarClient.add_dummy_callback(&handle_dummy, &sonarClient, pingPublisher);
+    sonarDriver.add_dummy_callback(&handle_dummy, &sonarDriver, pingPublisher);
 
     // config server
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer;
@@ -178,11 +178,11 @@ int main(int argc, char **argv)
     // (dynamic_reconfigure will wait for a feedback from the sonar and will
     // block until the sonar is connected. This in turn will prevent the SIGINT
     // to be treated by the ROS API and the node can't be terminated cleanly.).
-    std::thread setConfigThread(set_config_callback, &configServer, &sonarClient);
+    std::thread setConfigThread(set_config_callback, &configServer, &sonarDriver);
 
     ros::spin();
 
-    sonarClient.stop();
+    sonarDriver.stop();
     
     // This allows to join the setConfigThread safely with a timeout. (It might
     // be locked if the sonar was never connected).
