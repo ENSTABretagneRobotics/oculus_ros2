@@ -17,11 +17,13 @@ class StatusListener
 {
     public:
 
-    using Socket     = boost::asio::ip::udp::socket;
-    using EndPoint   = boost::asio::ip::udp::endpoint;
-    using Callbacks  = CallbackQueue<const OculusStatusMsg&>;
-    using CallbackT  = Callbacks::CallbackT;
-    using CallbackId = Callbacks::CallbackId;
+    using IoService    = boost::asio::io_service;
+    using IoServicePtr = std::shared_ptr<IoService>;
+    using Socket       = boost::asio::ip::udp::socket;
+    using EndPoint     = boost::asio::ip::udp::endpoint;
+    using Callbacks    = CallbackQueue<const OculusStatusMsg&>;
+    using CallbackT    = Callbacks::CallbackT;
+    using CallbackId   = Callbacks::CallbackId;
 
     protected:
 
@@ -33,7 +35,7 @@ class StatusListener
 
     public:
 
-    StatusListener(boost::asio::io_service& service, unsigned short listeningPort = 52102);
+    StatusListener(const IoServicePtr& service, unsigned short listeningPort = 52102);
     
     template <typename F, class... Args>
     CallbackId add_callback(F&& func, Args&&... args);

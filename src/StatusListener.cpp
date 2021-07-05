@@ -2,9 +2,9 @@
 
 namespace narval { namespace oculus {
 
-StatusListener::StatusListener(boost::asio::io_service& service,
+StatusListener::StatusListener(const IoServicePtr& service,
                                unsigned short listeningPort) :
-    socket_(service),
+    socket_(*service),
     remote_(boost::asio::ip::address_v4::any(), listeningPort)
 {
     boost::system::error_code err;

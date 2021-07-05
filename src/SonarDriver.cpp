@@ -2,7 +2,7 @@
 
 namespace narval { namespace oculus {
 
-SonarDriver::SonarDriver(boost::asio::io_service& service,
+SonarDriver::SonarDriver(const IoServicePtr& service,
                          const Duration& checkerPeriod) :
     SonarClient(service, checkerPeriod),
     isStandingBy_(false),
@@ -13,6 +13,10 @@ SonarDriver::SonarDriver(boost::asio::io_service& service,
 
 bool SonarDriver::send_fire_config(PingConfig fireConfig)
 {
+    // do better -> mutex might be necessary
+    if(!this->connected() || !socket_)
+        return false;
+
     fireConfig.head.oculusId    = OCULUS_CHECK_ID;
     fireConfig.head.msgId       = messageSimpleFire;
     fireConfig.head.srcDeviceId = 0;
@@ -22,11 +26,10 @@ bool SonarDriver::send_fire_config(PingConfig fireConfig)
     // Other non runtime-configurable parameters (TODO : make then launch parameters)
     fireConfig.networkSpeed = 0xff;
 
-
     boost::asio::streambuf buf;
     buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
     
-    auto bytesSent = socket_.send(buf.data());
+    auto bytesSent = socket_->send(buf.data());
     if(bytesSent != sizeof(fireConfig)) {
         std::cerr << "Could not send whole fire message(" << bytesSent
                   << "/" << sizeof(fireConfig) << ")" << std::endl;

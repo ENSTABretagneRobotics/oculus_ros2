@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <cstring>
 #include <cmath>
+#include <memory>
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/asio.hpp>
@@ -27,15 +28,19 @@ class SonarClient
 {
     public:
 
-    using Socket   = boost::asio::ip::tcp::socket;
-    using EndPoint = boost::asio::ip::tcp::endpoint;
-    using Duration = boost::posix_time::time_duration;
+    using IoService    = boost::asio::io_service;
+    using IoServicePtr = std::shared_ptr<IoService>;
+    using Socket       = boost::asio::ip::tcp::socket;
+    using SocketPtr    = std::unique_ptr<Socket>;
+    using EndPoint     = boost::asio::ip::tcp::endpoint;
+    using Duration     = boost::posix_time::time_duration;
 
     enum ConnectionState { Initializing, Attempt, Connected, Lost };
 
     protected:
-
-    Socket          socket_;
+    
+    IoServicePtr    ioService_;
+    SocketPtr       socket_;
     EndPoint        remote_;
     uint16_t        sonarId_;
     ConnectionState connectionState_;
@@ -56,13 +61,15 @@ class SonarClient
 
     public:
 
-    SonarClient(boost::asio::io_service& service,
+    SonarClient(const IoServicePtr& ioService,
                 const Duration& checkerPeriod = boost::posix_time::seconds(1));
 
     bool is_valid(const OculusMessageHeader& header);
+    bool connected() const;
 
     // initialization states
-    void initiate_connection();
+    void reset_connection();
+    void close_connection();
     void on_first_status(const OculusStatusMsg& msg);
     void on_connect(const boost::system::error_code& err);
     virtual void on_connect();

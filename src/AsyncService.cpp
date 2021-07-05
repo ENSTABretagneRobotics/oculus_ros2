@@ -3,6 +3,7 @@
 namespace narval { namespace oculus {
 
 AsyncService::AsyncService() :
+    service_(std::make_unique<IoService>()),
     isRunning_(false)
 {}
 
@@ -21,10 +22,10 @@ void AsyncService::start()
     if(this->is_running()) return;
     std::cout << "starting" << std::endl;
 
-    if(ioService_.stopped())
-        ioService_.reset();
+    if(service_->stopped())
+        service_->reset();
 
-    thread_ = std::thread(boost::bind(&boost::asio::io_service::run, &ioService_));
+    thread_ = std::thread(boost::bind(&boost::asio::io_service::run, service_));
     if(!thread_.joinable())
         throw std::runtime_error("Failed to start AsyncService");
 
@@ -37,7 +38,7 @@ void AsyncService::stop()
 
     std::cout << "stopping" << std::endl;
     
-    ioService_.stop();
+    service_->stop();
     thread_.join();
     if(thread_.joinable())
         throw std::runtime_error("Failed to stop AsyncService");

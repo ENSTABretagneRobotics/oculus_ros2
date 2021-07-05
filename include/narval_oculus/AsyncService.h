@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <thread>
+#include <memory>
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/asio.hpp>
@@ -12,11 +13,16 @@ namespace narval { namespace oculus {
 
 class AsyncService
 {
+    public:
+
+    using IoService    = boost::asio::io_service;
+    using IoServicePtr = std::shared_ptr<IoService>;
+
     protected:
     
-    boost::asio::io_service ioService_;
-    std::thread             thread_;
-    bool                    isRunning_;
+    IoServicePtr service_;
+    std::thread  thread_;
+    bool         isRunning_;
 
     public:
 

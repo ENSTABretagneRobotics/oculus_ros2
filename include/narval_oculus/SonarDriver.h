@@ -13,6 +13,9 @@ class SonarDriver : public SonarClient
 {
     public:
 
+    using IoService    = boost::asio::io_service;
+    using IoServicePtr = std::shared_ptr<IoService>;
+
     using PingConfig    = OculusSimpleFireMessage;
     using PingResult    = OculusSimplePingResult;
     using PingCallbacks = CallbackQueue<const PingResult&,
@@ -33,7 +36,7 @@ class SonarDriver : public SonarClient
 
     public:
 
-    SonarDriver(boost::asio::io_service& service,
+    SonarDriver(const IoServicePtr& service,
                 const Duration& checkerPeriod = boost::posix_time::seconds(1));
 
     bool send_fire_config(PingConfig fireMsg);

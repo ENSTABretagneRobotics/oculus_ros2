@@ -15,7 +15,7 @@ class Sonar : public AsyncService, public SonarDriver
 
     Sonar() :
         AsyncService(),
-        SonarDriver(this->ioService_)
+        SonarDriver(this->service_)
     {}
 };
 

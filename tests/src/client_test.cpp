@@ -22,13 +22,13 @@ void print_dummy(const OculusMessageHeader& msg)
 
 int main()
 {
-    boost::asio::io_service ioService;
+    auto ioService = std::make_shared<SonarDriver::IoService>();
     SonarDriver driver(ioService);
     
     driver.add_ping_callback(&print_ping);
     driver.add_dummy_callback(&print_dummy);
 
-    ioService.run(); // is blocking
+    ioService->run(); // is blocking
 
     return 0;
 }

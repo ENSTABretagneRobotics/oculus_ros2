@@ -14,12 +14,12 @@ void print_callback(const OculusStatusMsg& msg)
 
 int main()
 {
-    boost::asio::io_service ioService;
+    auto ioService = std::make_shared<StatusListener::IoService>();
     StatusListener listener(ioService);
 
     listener.add_callback(&print_callback);
     
-    ioService.run(); // is blocking
+    ioService->run(); // is blocking
 
     return 0;
 }

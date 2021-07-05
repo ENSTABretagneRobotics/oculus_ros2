@@ -39,7 +39,7 @@ struct CallbackTest
 
 int main()
 {
-    boost::asio::io_service ioService;
+    auto ioService = std::make_shared<StatusListener::IoService>();
     StatusListener listener(ioService);
 
     listener.add_callback(&print_callback);
@@ -53,7 +53,7 @@ int main()
     // this fail at compile time
     //listener.add_callback(&CallbackTest::callback4, &test0, 14);
     
-    ioService.run(); // is blocking
+    ioService->run(); // is blocking
 
     return 0;
 }
