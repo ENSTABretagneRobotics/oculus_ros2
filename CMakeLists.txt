@@ -9,6 +9,7 @@ list(APPEND narval_oculus_headers
     include/narval_oculus/Oculus.h
     include/narval_oculus/utils.h
     include/narval_oculus/print_utils.h
+    include/narval_oculus/Clock.h
     include/narval_oculus/CallbackQueue.h
     include/narval_oculus/StatusListener.h
     include/narval_oculus/SonarClient.h
