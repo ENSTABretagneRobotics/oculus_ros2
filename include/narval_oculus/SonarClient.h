@@ -71,6 +71,7 @@ class SonarClient
     void resume();
 
     // initialization states
+    void initiate_connection();
     void on_first_status(const OculusStatusMsg& msg);
     void on_connect(const boost::system::error_code& err);
 

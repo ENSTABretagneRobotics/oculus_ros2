@@ -7,12 +7,17 @@ SonarClient::SonarClient(boost::asio::io_service& service) :
     remote_(),
     sonarId_(0),
     statusListener_(service),
-    statusCallbackId_(statusListener_.add_callback(&SonarClient::on_first_status, this)),
+    statusCallbackId_(0),
     data_(0),
     isStandingBy_(false)
 {
     std::memset(&initialHeader_, 0, sizeof(initialHeader_));
     std::memset(&currentConfig_, 0, sizeof(currentConfig_));
+
+    this->initiate_connection();
+
+    this->checkerTimer_.async_wait(
+        std::bind(&SonarClient::checker_callback, this, std::placeholders::_1));
 }
 
 bool SonarClient::is_valid(const OculusMessageHeader& header)
@@ -22,6 +27,7 @@ bool SonarClient::is_valid(const OculusMessageHeader& header)
 
 bool SonarClient::connected() const
 {
+    // Not reliable
     return socket_.is_open();
 }
 
@@ -154,6 +160,11 @@ void SonarClient::check_reception(const boost::system::error_code& err)
     }
 }
 
+void SonarClient::initiate_connection()
+{
+    statusCallbackId_ = statusListener_.add_callback(&SonarClient::on_first_status, this);
+}
+
 void SonarClient::on_first_status(const OculusStatusMsg& msg)
 {
     // got a status message. No need to keep listening.
@@ -204,7 +215,8 @@ void SonarClient::receive_callback(const boost::system::error_code err,
     // the header is valid, the control is dispatched to the next state
     // depending on the header content (message type). For now only simple ping
     // is implemented, but it seems to be the only message sent by the Oculus.
-    // (TODO : check this last statement).
+    // (TODO : check this last statement. Checked : wrong. Other messages seems
+    // to be sent but are not documented).
     this->check_reception(err);
     if(receivedByteCount != sizeof(initialHeader_) || !this->is_valid(initialHeader_)) {
         // Either we got data in the middle of a ping or did not get enougth

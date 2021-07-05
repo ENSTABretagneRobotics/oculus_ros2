@@ -8,13 +8,15 @@ using namespace narval::oculus;
 void print_ping(const OculusSimplePingResult& pingMetadata,
                 const std::vector<uint8_t>& pingData)
 {
-    cout << "=============== Got Ping :" << endl;
+    static unsigned int count = 0;
+    cout << "=============== Got Ping : " << count++ << endl;
     //cout << pingMetadata << endl;
 }
 
 void print_dummy(const OculusMessageHeader& msg)
 {
-    cout << "=============== Got dummy :" << endl;
+    static unsigned int count = 0;
+    cout << "=============== Got dummy : " << count++ << endl;
     //cout << msg << endl;
 }
 
