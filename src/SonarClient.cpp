@@ -7,6 +7,7 @@ SonarClient::SonarClient(boost::asio::io_service& service,
     socket_(service),
     remote_(),
     sonarId_(0),
+    connectionState_(Initializing),
     checkerPeriod_(checkerPeriod),
     checkerTimer_(service, checkerPeriod_),
     statusListener_(service),
@@ -15,10 +16,9 @@ SonarClient::SonarClient(boost::asio::io_service& service,
 {
     std::memset(&initialHeader_, 0, sizeof(initialHeader_));
 
-    this->initiate_connection();
-
     this->checkerTimer_.async_wait(
         std::bind(&SonarClient::checker_callback, this, std::placeholders::_1));
+    this->initiate_connection();
 }
 
 bool SonarClient::is_valid(const OculusMessageHeader& header)
@@ -35,21 +35,40 @@ bool SonarClient::is_valid(const OculusMessageHeader& header)
  */
 void SonarClient::checker_callback(const boost::system::error_code& err)
 {
-    std::cout << "Checking" << std::endl;
-    //if(!socket_.is_open()) {
-    //    std::cout << "Not connected" << std::endl << std::flush;
-    //}
-
-    std::cout << "Time since last status : "
-              << statusListener_.time_since_last_status() << std::endl;
-    std::cout << "Time since last message : "
-              << this->time_since_last_message() << std::endl;
-    
-    // Looping
+    // Programming now the next check 
     this->checkerTimer_.expires_from_now(checkerPeriod_);
     this->checkerTimer_.async_wait(
         std::bind(&SonarClient::checker_callback, this, std::placeholders::_1));
-    std::cout << std::flush;
+
+    std::cout << "Checking" << std::endl;
+    std::cout << "Time since last status : "
+              << statusListener_.time_since_last_status() << std::endl
+              << "Time since last message : "
+              << this->time_since_last_message() << std::endl << std::flush;
+    if(connectionState_ == Initializing || connectionState_ == Attempt) {
+        // Nothing more to be done. Waiting.
+        return;
+    }
+    
+    auto lastStatusTime = statusListener_.time_since_last_status();
+    if(lastStatusTime > 5) {
+        // The status is retrieved through broadcasted UDP packets. No status
+        // means no sonar on the network -> no chance to connect.
+        // Still doing nothing because it might be a recoverable connection
+        // loss.
+        connectionState_ = Lost;
+        std::cerr << std::setprecision(3) << "Connection lost for "
+                  << lastStatusTime << "s\n";
+        return;
+    }
+
+    if(this->time_since_last_message() > 10) {
+        // Here last status was received less than 5 seconds ago but the last
+        // message is more than 10s old. The connection is probably broken and
+        // needs a reset.
+        std::cerr << "Broken connection. Resetting.\n";
+        return;
+    }
 }
 
 void SonarClient::check_reception(const boost::system::error_code& err)
@@ -64,6 +83,7 @@ void SonarClient::check_reception(const boost::system::error_code& err)
 
 void SonarClient::initiate_connection()
 {
+    connectionState_ = Attempt;
     statusCallbackId_ = statusListener_.add_callback(&SonarClient::on_first_status, this);
 }
 
@@ -141,8 +161,7 @@ void SonarClient::header_received_callback(const boost::system::error_code err,
 
     // Messsage header is valid. Now getting the remaining part of the message.
     // (The header contains the payload size, we can receive everything and
-    // parse afterwards).  This performs a synchonous read on the socket (block
-    // until all is received) (TODO check the timeout)
+    // parse afterwards).
     data_.resize(sizeof(initialHeader_) + initialHeader_.payloadSize);
     boost::asio::async_read(socket_,
         boost::asio::buffer(data_.data() + sizeof(initialHeader_), initialHeader_.payloadSize),
@@ -163,6 +182,7 @@ void SonarClient::data_received_callback(const boost::system::error_code err,
     // full message, then dispatching.
     *(reinterpret_cast<OculusMessageHeader*>(data_.data())) = initialHeader_;
     
+    connectionState_ = Connected;
     clock_.reset();
     // handle message is to be reimplemented in a subclass
     this->handle_message(initialHeader_, data_);

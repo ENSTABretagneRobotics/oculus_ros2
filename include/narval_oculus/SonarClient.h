@@ -2,6 +2,7 @@
 #define _NARVAL_OCULUS_SONAR_CLIENT_H_
 
 #include <iostream>
+#include <iomanip>
 #include <cstring>
 #include <cmath>
 
@@ -30,11 +31,14 @@ class SonarClient
     using EndPoint = boost::asio::ip::tcp::endpoint;
     using Duration = boost::posix_time::time_duration;
 
+    enum ConnectionState { Initializing, Attempt, Connected, Lost };
+
     protected:
 
-    Socket   socket_;
-    EndPoint remote_;
-    uint16_t sonarId_;
+    Socket          socket_;
+    EndPoint        remote_;
+    uint16_t        sonarId_;
+    ConnectionState connectionState_;
 
     Duration                     checkerPeriod_;
     boost::asio::deadline_timer  checkerTimer_;
