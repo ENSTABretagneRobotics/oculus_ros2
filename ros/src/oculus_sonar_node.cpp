@@ -72,6 +72,32 @@ std::ostream& operator<<(std::ostream& os, const oculus_sonar::OculusSonarConfig
     return os;
 }
 
+void publish_config(narval::oculus::SonarDriver* sonarDriver,
+    dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig>* configServer,
+    const OculusMessageHeader& header, const std::vector<uint8_t>& data)
+{
+    oculus_sonar::OculusSonarConfig config;
+
+    // Publishing config only if we have a dummy or simple ping
+    switch(header.msgId) {
+        case messageSimplePingResult: break;
+        case messageDummy:            break;
+        default:                      return;
+    };
+
+    auto feedback = sonarDriver->last_config();
+
+    config.frequency_mode   = feedback.masterMode;
+    config.ping_rate        = feedback.pingRate; // is broken (?) sonar side
+    config.data_depth       = feedback.flags & 0x2;
+    config.send_gain        = feedback.flags & 0x4;
+    config.range            = feedback.range;
+    config.gamma_correction = feedback.gammaCorrection;
+    config.gain_percent     = feedback.gainPercent;
+    config.sound_speed      = feedback.speedOfSound;
+    config.salinity         = feedback.salinity;
+}
+
 void config_request(narval::oculus::SonarDriver* sonarDriver, 
                     oculus_sonar::OculusSonarConfig& config,
                     uint32_t level)
@@ -80,7 +106,7 @@ void config_request(narval::oculus::SonarDriver* sonarDriver,
     // on node launch, the configuration server asks for current configuration
     // by setting level to the maximum possible value.
     if(level == std::numeric_limits<uint32_t>::max()) {
-        auto feedback = sonarDriver->current_fire_config();
+        auto feedback = sonarDriver->current_ping_config();
         config.frequency_mode   = feedback.masterMode;
         config.ping_rate        = 0;
         config.data_depth       = feedback.flags & 0x2;
@@ -133,7 +159,7 @@ void config_request(narval::oculus::SonarDriver* sonarDriver,
     currentConfig.salinity     = config.salinity;
     
     // a timeout would be nice
-    auto feedback = sonarDriver->request_fire_config(currentConfig);
+    auto feedback = sonarDriver->request_ping_config(currentConfig);
     config.frequency_mode   = feedback.masterMode;
     //config.ping_rate      = feedback.pingRate // is broken (?) sonar side
     config.data_depth       = feedback.flags & 0x2;
@@ -174,6 +200,7 @@ int main(int argc, char **argv)
     // config server
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer;
     //configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
+    sonarDriver.add_message_callback(&publish_config, &sonarDriver, &configServer);
 
     // Using a thread to set the callback in dynamic reconfigure
     // (dynamic_reconfigure will wait for a feedback from the sonar and will
