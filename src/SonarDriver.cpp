@@ -29,7 +29,8 @@ bool SonarDriver::send_fire_config(PingConfig fireConfig)
     boost::asio::streambuf buf;
     buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
     
-    auto bytesSent = socket_->send(buf.data());
+    // auto bytesSent = socket_->send(buf.data());
+    auto bytesSent = this->send(buf);
     if(bytesSent != sizeof(fireConfig)) {
         std::cerr << "Could not send whole fire message(" << bytesSent
                   << "/" << sizeof(fireConfig) << ")" << std::endl;
@@ -56,7 +57,7 @@ SonarDriver::PingConfig SonarDriver::request_fire_config(const PingConfig& reque
         count++;
     } while(count < maxCount);
     //std::cout << "Config feedback :\n" << feedback << std::endl << std::flush;
-    //std::cout << "Count is : " << count << std::endl << std::flush;
+    std::cout << "Count is : " << count << std::endl << std::flush;
 
     if(count >= maxCount) {
         std::cerr << "Could not get a proper feedback from the sonar."
@@ -78,7 +79,8 @@ SonarDriver::PingConfig SonarDriver::current_fire_config()
                               const std::vector<uint8_t>& data) {
         switch(header.msgId) {
             case messageSimplePingResult:
-                config = *(reinterpret_cast<const OculusSimpleFireMessage*>(&header));
+                //config = *(reinterpret_cast<const OculusSimpleFireMessage*>(&header));
+                config = *(reinterpret_cast<const OculusSimpleFireMessage*>(data.data()));
                 gotMessage = true;
                 break;
             // messageDummy and all other messages are treated in the same way

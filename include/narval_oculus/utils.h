@@ -65,7 +65,7 @@ inline bool check_config_feedback(const OculusSimpleFireMessage& requested,
             return true;
     }
     else {
-        // If got a simple ping result, cheking relevant parameters
+        // If got a simple ping result, checking relevant parameters
         if(feedback.head.msgId == messageSimplePingResult
            && requested.masterMode       == feedback.masterMode
            // feedback is broken on pingRate field

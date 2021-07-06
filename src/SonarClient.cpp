@@ -32,6 +32,15 @@ bool SonarClient::connected() const
     return connectionState_ == Connected;
 }
 
+size_t SonarClient::send(const boost::asio::streambuf& buffer) const
+{
+    std::unique_lock<std::mutex> lock(socketMutex_); // auto lock
+
+    if(!socket_ || !this->connected())
+        return 0;
+    return socket_->send(buffer.data());
+}
+
 /**
  * Connection Watchdog.
  *
@@ -94,6 +103,7 @@ void SonarClient::reset_connection()
 void SonarClient::close_connection()
 {
     if(socket_) {
+        std::unique_lock<std::mutex> lock(socketMutex_);
         std::cout << "Closing connection" << std::endl;
         try {
             boost::system::error_code err;
@@ -135,6 +145,8 @@ void SonarClient::on_connect(const boost::system::error_code& err)
     std::cout << "Connection successful (" << remote_ << ")" << std::endl << std::flush;
     
     clock_.reset();
+
+    connectionState_ = Connected;
     // this enters the ping data reception loop
     this->initiate_receive();
 
@@ -174,8 +186,8 @@ void SonarClient::header_received_callback(const boost::system::error_code err,
     // the header is valid, the control is dispatched to the next state
     // depending on the header content (message type). For now only simple ping
     // is implemented, but it seems to be the only message sent by the Oculus.
-    // (TODO : check this last statement. Checked : wrong. Other messages seems
-    // to be sent but are not documented).
+    // (TODO : check this last statement. Checked : wrong. Other message types
+    // seem to be sent but are not documented by Oculus).
     this->check_reception(err);
     if(receivedByteCount != sizeof(initialHeader_) || !this->is_valid(initialHeader_)) {
         // Either we got data in the middle of a ping or did not get enougth
@@ -208,7 +220,6 @@ void SonarClient::data_received_callback(const boost::system::error_code err,
     // full message, then dispatching.
     *(reinterpret_cast<OculusMessageHeader*>(data_.data())) = initialHeader_;
     
-    connectionState_ = Connected;
     clock_.reset();
     // handle message is to be reimplemented in a subclass
     this->handle_message(initialHeader_, data_);

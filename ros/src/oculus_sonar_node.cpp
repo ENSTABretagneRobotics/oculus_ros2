@@ -173,6 +173,7 @@ int main(int argc, char **argv)
 
     // config server
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer;
+    //configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
 
     // Using a thread to set the callback in dynamic reconfigure
     // (dynamic_reconfigure will wait for a feedback from the sonar and will

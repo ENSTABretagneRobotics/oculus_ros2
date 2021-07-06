@@ -6,6 +6,8 @@
 #include <cstring>
 #include <cmath>
 #include <memory>
+#include <mutex>
+#include <thread>
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/asio.hpp>
@@ -23,6 +25,14 @@ namespace narval { namespace oculus {
  *
  * It solely handle the network connection to the sonar. Use a subclass such as
  * SonarDriver to control the sonar or receive data.
+ *
+ * About concurrency on the socket : socket creation, destruction and read all
+ * append in the same thread. There is no need to protect the socket for
+ * concurrency between these operations. Also, boost sockets allows to be
+ * concurrently read and written to at the same time. The situation where a
+ * protection is needed is concurrent write and creation/destruction on the
+ * socket. Hence, the socket is only locked in the send(), close_connection()
+ * and ???. 
  */
 class SonarClient
 {
@@ -39,11 +49,12 @@ class SonarClient
 
     protected:
     
-    IoServicePtr    ioService_;
-    SocketPtr       socket_;
-    EndPoint        remote_;
-    uint16_t        sonarId_;
-    ConnectionState connectionState_;
+    IoServicePtr       ioService_;
+    SocketPtr          socket_;
+    EndPoint           remote_;
+    uint16_t           sonarId_;
+    ConnectionState    connectionState_;
+    mutable std::mutex socketMutex_;
 
     Duration                     checkerPeriod_;
     boost::asio::deadline_timer  checkerTimer_;
@@ -66,6 +77,8 @@ class SonarClient
 
     bool is_valid(const OculusMessageHeader& header);
     bool connected() const;
+
+    size_t send(const boost::asio::streambuf& buffer) const;
 
     // initialization states
     void reset_connection();
