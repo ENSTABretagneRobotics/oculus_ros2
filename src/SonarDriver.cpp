@@ -6,108 +6,109 @@ SonarDriver::SonarDriver(const IoServicePtr& service,
                          const Duration& checkerPeriod) :
     SonarClient(service, checkerPeriod),
     isStandingBy_(false),
-    currentConfig_(default_fire_config())
+    lastConfig_(default_ping_config())
 {
-    //std::memset(&currentConfig_, 0, sizeof(currentConfig_));
+    //std::memset(&lastConfig_, 0, sizeof(lastConfig_));
 }
 
-bool SonarDriver::send_fire_config(PingConfig fireConfig)
+SonarDriver::PingConfig SonarDriver::last_config() const
 {
-    // do better -> mutex might be necessary
-    if(!this->connected() || !socket_)
-        return false;
+    return lastConfig_;
+}
 
-    fireConfig.head.oculusId    = OCULUS_CHECK_ID;
-    fireConfig.head.msgId       = messageSimpleFire;
-    fireConfig.head.srcDeviceId = 0;
-    fireConfig.head.dstDeviceId = sonarId_;
-    fireConfig.head.payloadSize = sizeof(PingConfig) - sizeof(OculusMessageHeader);
+bool SonarDriver::send_ping_config(PingConfig config)
+{
+    config.head.oculusId    = OCULUS_CHECK_ID;
+    config.head.msgId       = messageSimpleFire;
+    config.head.srcDeviceId = 0;
+    config.head.dstDeviceId = sonarId_;
+    config.head.payloadSize = sizeof(PingConfig) - sizeof(OculusMessageHeader);
 
     // Other non runtime-configurable parameters (TODO : make then launch parameters)
-    fireConfig.networkSpeed = 0xff;
+    config.networkSpeed = 0xff;
 
     boost::asio::streambuf buf;
-    buf.sputn(reinterpret_cast<const char*>(&fireConfig), sizeof(fireConfig));
+    buf.sputn(reinterpret_cast<const char*>(&config), sizeof(config));
     
-    // auto bytesSent = socket_->send(buf.data());
     auto bytesSent = this->send(buf);
-    if(bytesSent != sizeof(fireConfig)) {
+    if(bytesSent != sizeof(config)) {
         std::cerr << "Could not send whole fire message(" << bytesSent
-                  << "/" << sizeof(fireConfig) << ")" << std::endl;
+                  << "/" << sizeof(config) << ")" << std::endl;
         return false;
     }
+
+    // BUG IN THE SONAR FIRMWARE : the sonar never sets the
+    // config.pingRate field in the SimplePing message -> there is no
+    // feedback saying if this parameter is effectively set by the sonar. The
+    // line below allows to keep a trace of the requested ping rate but there
+    // is no clean way to check.
+    lastConfig_.pingRate = config.pingRate;
     return true;
 }
 
-SonarDriver::PingConfig SonarDriver::request_fire_config(const PingConfig& requested)
+SonarDriver::PingConfig SonarDriver::current_ping_config()
 {
-    //if(!this->send_fire_config(requested)) return requested;
-    //std::cout << "Sending config :\n" << requested << std::endl << std::flush;
-   
+    PingConfig config;
+    this->on_next_message([&](const OculusMessageHeader& header,
+                              const std::vector<uint8_t>& data) {
+        // lastConfig_ is ALWAYS updated before the callbacks are called.
+        config = lastConfig_;
+        //switch(header.msgId) {
+        //    case messageSimplePingResult:
+        //        config = *(reinterpret_cast<const OculusSimpleFireMessage*>(data.data()));
+        //        gotMessage = true;
+        //        break;
+        //    // messageDummy and all other messages are treated in the same way
+        //    // because only a simple ping result is a valid message to get a
+        //    // configuration.
+        //    case messageDummy:
+        //        config = default_ping_config();
+        //        config.head = header;
+        //        config.pingRate = pingRateStandby;
+        //        gotMessage = true;
+        //        break;
+        //    default:
+        //        config = default_ping_config();
+        //        config.head = header;
+        //        config.pingRate = pingRateStandby;
+        //        break;
+        //}
+    });
+    //// When masterMode = 2, the sonar force gainPercent between 40& and 100%,
+    //// BUT still needs resquested gainPercent to be between 0% and 100%. (If
+    //// you request a gainPercent=0 in masterMode=2, the fireMessage in the ping
+    //// results will be 40%)The gainPercent is rescaled here to ensure
+    //// consistent parameter handling on client side).
+    //if(config.masterMode == 2) {
+    //    config.gainPercent = (config.gainPercent - 40.0) * 100.0 / 60.0;
+    //}
+    return config;
+}
+
+SonarDriver::PingConfig SonarDriver::request_ping_config(const PingConfig& request)
+{
     // Waiting for a ping or a dummy message to have a feedback on the config changes.
     PingConfig feedback;
     int count = 0;
     const int maxCount = 100; // TODO make a parameter out of this
     do {
-        if(this->send_fire_config(requested)) {
-            feedback = this->current_fire_config();
-            if(check_config_feedback(requested, feedback))
+        if(this->send_ping_config(request)) {
+            feedback = this->current_ping_config();
+            if(check_config_feedback(request, feedback))
                 break;
         }
         count++;
     } while(count < maxCount);
-    //std::cout << "Config feedback :\n" << feedback << std::endl << std::flush;
     std::cout << "Count is : " << count << std::endl << std::flush;
 
     if(count >= maxCount) {
         std::cerr << "Could not get a proper feedback from the sonar."
                   << "Assuming the configuration is ok (fix this)" << std::endl;
-        feedback = requested;
+        feedback = request;
         feedback.head.msgId = 0; // invalid, will be checkable.
     }
     
     return feedback;
-}
-
-SonarDriver::PingConfig SonarDriver::current_fire_config()
-{
-    // /!\ The header of the returned config will be the header of the carrying
-    // message, not the one of a PingConfig.
-    PingConfig config;
-    bool gotMessage = false;
-    this->on_next_message([&](const OculusMessageHeader& header,
-                              const std::vector<uint8_t>& data) {
-        switch(header.msgId) {
-            case messageSimplePingResult:
-                //config = *(reinterpret_cast<const OculusSimpleFireMessage*>(&header));
-                config = *(reinterpret_cast<const OculusSimpleFireMessage*>(data.data()));
-                gotMessage = true;
-                break;
-            // messageDummy and all other messages are treated in the same way
-            // because only a simple ping result is a valid message to get a
-            // configuration.
-            case messageDummy:
-                config = default_fire_config();
-                config.head = header;
-                config.pingRate = pingRateStandby;
-                gotMessage = true;
-                break;
-            default:
-                config = default_fire_config();
-                config.head = header;
-                config.pingRate = pingRateStandby;
-                break;
-        }
-    });
-    // When masterMode = 2, the sonar force gainPercent between 40& and 100%,
-    // BUT still needs resquested gainPercent to be between 0% and 100%. (If
-    // you request a gainPercent=0 in masterMode=2, the fireMessage in the ping
-    // results will be 40%)The gainPercent is rescaled here to ensure
-    // consistent parameter handling on client side).
-    if(config.masterMode == 2) {
-        config.gainPercent = (config.gainPercent - 40.0) * 100.0 / 60.0;
-    }
-    return config;
 }
 
 void SonarDriver::standby()
@@ -115,12 +116,12 @@ void SonarDriver::standby()
     if(isStandingBy_)
         return;
     
-    auto request = currentConfig_;
+    auto request = lastConfig_;
 
     lastPingRate_ = request.pingRate;
     request.pingRate = pingRateStandby;
     
-    this->send_fire_config(request);
+    this->send_ping_config(request);
 }
 
 void SonarDriver::resume()
@@ -128,11 +129,11 @@ void SonarDriver::resume()
     if(!isStandingBy_)
         return;
 
-    auto request = currentConfig_;
+    auto request = lastConfig_;
 
     request.pingRate = lastPingRate_;
 
-    this->send_fire_config(request);
+    this->send_ping_config(request);
 }
 
 /**
@@ -143,37 +144,59 @@ void SonarDriver::resume()
 void SonarDriver::on_connect()
 {
     // This makes the oculus fire right away.
-    // On first connection currentConfig is equal to default_fire_config().
-    this->send_fire_config(currentConfig_);
+    // On first connection lastConfig_ is equal to default_ping_config().
+    this->send_ping_config(lastConfig_);
 }
 
 /**
- * Called when a new complete message is received.
+ * Called when a new complete message is received (any type).
  */
 void SonarDriver::handle_message(const OculusMessageHeader& header,
                                  const std::vector<uint8_t>& data)
 {
+    // Setting lastConfig_ BEFORE calling any callback.
+    switch(header.msgId) {
+        case messageSimplePingResult:
+            {
+                // Overwritting pingRate. The feedback of the sonar on this
+                // parameter is broken.  lastConfig_.pingRate have been set in
+                // send_ping_config().
+                // (Bracket block is to keep lastPingRate local to this case.)
+                auto lastPingRate = lastConfig_.pingRate;
+                lastConfig_ = reinterpret_cast<const PingResult*>(data.data())->fireMessage;
+                lastConfig_.pingRate = lastPingRate;
+            }
+            // When masterMode = 2, the sonar force gainPercent between 40& and
+            // 100%, BUT still needs resquested gainPercent to be between 0%
+            // and 100%. (If you request a gainPercent=0 in masterMode=2, the
+            // fireMessage in the ping results will be 40%). The gainPercent is
+            // rescaled here to ensure consistent parameter handling on client
+            // side).
+            if(lastConfig_.masterMode == 2) {
+                lastConfig_.gainPercent = (lastConfig_.gainPercent - 40.0) * 100.0 / 60.0;
+            }
+            isStandingBy_ = false;
+            break;
+        // Make all other messages handle like dummy ?
+        //case messageDummy:
+        //    lastConfig_.pingRate = pingRateStandby;
+        //    isStandingBy_ = true;
+        //    break;
+        //default:break;
+        default:
+            lastConfig_.pingRate = pingRateStandby;
+            isStandingBy_ = true;
+            break;
+    };
+
     // Calling generic message callbacks first (in case we want to do something
     // before calling the specialized callbacks).
     messageCallbacks_.call(header, data);
     switch(header.msgId) {
         case messageSimplePingResult:
-            currentConfig_ = reinterpret_cast<const PingResult*>(data.data())->fireMessage;
-            // When masterMode = 2, the sonar force gainPercent between 40& and
-            // 100%, BUT still needs resquested gainPercent to be between 0%
-            // and 100%. (If you request a gainPercent=0 in masterMode=2, the
-            // fireMessage in the ping results will be 40%)The gainPercent is
-            // rescaled here to ensure consistent parameter handling on client
-            // side).
-            if(currentConfig_.masterMode == 2) {
-                currentConfig_.gainPercent = (currentConfig_.gainPercent - 40.0) * 100.0 / 60.0;
-            }
-            isStandingBy_ = false;
             pingCallbacks_.call(*(reinterpret_cast<const PingResult*>(data.data())), data);
             break;
         case messageDummy:
-            currentConfig_.pingRate = pingRateStandby;
-            isStandingBy_ = true;
             dummyCallbacks_.call(header);
             break;
         case messageSimpleFire:

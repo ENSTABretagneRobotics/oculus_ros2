@@ -27,7 +27,7 @@ class SonarDriver : public SonarClient
     protected:
 
     bool         isStandingBy_;
-    PingConfig   currentConfig_;
+    PingConfig   lastConfig_;
     PingRateType lastPingRate_;
 
     PingCallbacks    pingCallbacks_;
@@ -39,9 +39,10 @@ class SonarDriver : public SonarClient
     SonarDriver(const IoServicePtr& service,
                 const Duration& checkerPeriod = boost::posix_time::seconds(1));
 
-    bool send_fire_config(PingConfig fireMsg);
-    PingConfig request_fire_config(const PingConfig& fireMsg);
-    PingConfig current_fire_config();
+    PingConfig last_config() const;
+    bool send_ping_config(PingConfig config);
+    PingConfig current_ping_config();
+    PingConfig request_ping_config(const PingConfig& request);
 
     // Stanby mode (saves current ping rate and set it to 0 on the sonar
     void standby();

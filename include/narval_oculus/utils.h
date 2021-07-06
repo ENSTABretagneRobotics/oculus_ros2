@@ -20,7 +20,7 @@ inline EndPointT remote_from_status(const OculusStatusMsg& status)
         ip_to_string(status.ipAddr)), 52100);
 }
 
-inline OculusSimpleFireMessage default_fire_config()
+inline OculusSimpleFireMessage default_ping_config()
 {
     OculusSimpleFireMessage msg;
     std::memset(&msg, 0, sizeof(msg));
