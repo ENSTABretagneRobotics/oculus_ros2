@@ -180,17 +180,27 @@ void set_config_callback(dynamic_reconfigure::Server<oculus_sonar::OculusSonarCo
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "oculus_sonar");
-    ros::NodeHandle node;
+
+    // Setting up namespace to node name (why not by default ??)
+    std::string nodeName = ros::this_node::getName();
+    if(nodeName[0] == '/') {
+        nodeName = nodeName.substr(1, nodeName.size() - 1);
+    }
+    ros::NodeHandle node(nodeName);
+    
+    std::string pingTopic, statusTopic;
+    node.param<std::string>("ping_topic",   pingTopic,   "ping");
+    node.param<std::string>("status_topic", statusTopic, "status");
 
     narval::oculus::Sonar sonarDriver;
     sonarDriver.start(); // better to start it here.
     
     // sonar status publisher
-    ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>("status", 100);
+    ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>(statusTopic, 100);
     sonarDriver.add_status_callback(&publish_status, statusPublisher);
 
     // ping publisher
-    ros::Publisher pingPublisher = node.advertise<oculus_sonar::OculusPing>("ping", 100);
+    ros::Publisher pingPublisher = node.advertise<oculus_sonar::OculusPing>(pingTopic, 100);
     sonarDriver.add_ping_callback(&publish_ping, &sonarDriver, pingPublisher);
 
     //configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
@@ -200,7 +210,7 @@ int main(int argc, char **argv)
     // config server
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer;
     //configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
-    sonarDriver.add_message_callback(&publish_config, &sonarDriver, &configServer);
+    //sonarDriver.add_message_callback(&publish_config, &sonarDriver, &configServer);
 
     // Using a thread to set the callback in dynamic reconfigure
     // (dynamic_reconfigure will wait for a feedback from the sonar and will

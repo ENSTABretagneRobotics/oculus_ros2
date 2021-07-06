@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- these are local variables for the launch file -->
+    <arg name="port" default="this_is_a_port"/>
+
+    <!-- respawn : will restart if killed
+        required : will kill every thing if this node is killed -->
+    <node name="oculus_sonar" pkg="oculus_sonar" type="oculus_sonar_node"
+          respawn="true" output="screen">
+        <param name="port" value="$(arg port)"/>
+        <rosparam>
+            ping_topic:   "ping"
+            status_topic: "status"
+        </rosparam>
+    </node>
+</launch>
