@@ -85,17 +85,17 @@ void publish_config(narval::oculus::SonarDriver* sonarDriver,
         default:                      return;
     };
 
-    auto feedback = sonarDriver->last_config();
+    auto lastConfig = sonarDriver->last_ping_config();
 
-    config.frequency_mode   = feedback.masterMode;
-    config.ping_rate        = feedback.pingRate; // is broken (?) sonar side
-    config.data_depth       = feedback.flags & 0x2;
-    config.send_gain        = feedback.flags & 0x4;
-    config.range            = feedback.range;
-    config.gamma_correction = feedback.gammaCorrection;
-    config.gain_percent     = feedback.gainPercent;
-    config.sound_speed      = feedback.speedOfSound;
-    config.salinity         = feedback.salinity;
+    config.frequency_mode   = lastConfig.masterMode;
+    config.ping_rate        = lastConfig.pingRate; // is broken (?) sonar side
+    config.data_depth       = lastConfig.flags & 0x2;
+    config.send_gain        = lastConfig.flags & 0x4;
+    config.range            = lastConfig.range;
+    config.gamma_correction = lastConfig.gammaCorrection;
+    config.gain_percent     = lastConfig.gainPercent;
+    config.sound_speed      = lastConfig.speedOfSound;
+    config.salinity         = lastConfig.salinity;
 }
 
 void config_request(narval::oculus::SonarDriver* sonarDriver, 
@@ -106,16 +106,16 @@ void config_request(narval::oculus::SonarDriver* sonarDriver,
     // on node launch, the configuration server asks for current configuration
     // by setting level to the maximum possible value.
     if(level == std::numeric_limits<uint32_t>::max()) {
-        auto feedback = sonarDriver->current_ping_config();
-        config.frequency_mode   = feedback.masterMode;
+        auto lastConfig = sonarDriver->last_ping_config();
+        config.frequency_mode   = lastConfig.masterMode;
         config.ping_rate        = 0;
-        config.data_depth       = feedback.flags & 0x2;
-        config.send_gain        = feedback.flags & 0x4;
-        config.range            = feedback.range;
-        config.gamma_correction = feedback.gammaCorrection;
-        config.gain_percent     = feedback.gainPercent;
-        config.sound_speed      = feedback.speedOfSound;
-        config.salinity         = feedback.salinity;
+        config.data_depth       = lastConfig.flags & 0x2;
+        config.send_gain        = lastConfig.flags & 0x4;
+        config.range            = lastConfig.range;
+        config.gamma_correction = lastConfig.gammaCorrection;
+        config.gain_percent     = lastConfig.gainPercent;
+        config.sound_speed      = lastConfig.speedOfSound;
+        config.salinity         = lastConfig.salinity;
         return;
     }
 
@@ -209,27 +209,27 @@ int main(int argc, char **argv)
 
     // config server
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer;
-    //configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
+    configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
     //sonarDriver.add_message_callback(&publish_config, &sonarDriver, &configServer);
 
-    // Using a thread to set the callback in dynamic reconfigure
-    // (dynamic_reconfigure will wait for a feedback from the sonar and will
-    // block until the sonar is connected. This in turn will prevent the SIGINT
-    // to be treated by the ROS API and the node can't be terminated cleanly.).
-    std::thread setConfigThread(set_config_callback, &configServer, &sonarDriver);
+    // // Using a thread to set the callback in dynamic reconfigure
+    // // (dynamic_reconfigure will wait for a feedback from the sonar and will
+    // // block until the sonar is connected. This in turn will prevent the SIGINT
+    // // to be treated by the ROS API and the node can't be terminated cleanly.).
+    // std::thread setConfigThread(set_config_callback, &configServer, &sonarDriver);
 
     ros::spin();
 
     sonarDriver.stop();
     
-    // This allows to join the setConfigThread safely with a timeout. (It might
-    // be locked if the sonar was never connected).
-    auto future = std::async(std::launch::async, &std::thread::join, &setConfigThread);
-    if(future.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) {
-        std::cout << "Thread was locked" << std::endl;
-        setConfigThread.detach();
-        std::terminate();
-    }
+    // // This allows to join the setConfigThread safely with a timeout. (It might
+    // // be locked if the sonar was never connected).
+    // auto future = std::async(std::launch::async, &std::thread::join, &setConfigThread);
+    // if(future.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) {
+    //     std::cout << "Thread was locked" << std::endl;
+    //     setConfigThread.detach();
+    //     std::terminate();
+    // }
 
     return 0;
 }
