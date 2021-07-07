@@ -37,7 +37,7 @@ void publish_ping(narval::oculus::SonarDriver* sonarDriver,
     if(publisher.getNumSubscribers() == 0) {
         cout << "Going to standby mode" << endl;
         sonarDriver->standby();
-        return;
+        //return;
     }
     
     narval::oculus::copy_to_ros(msg, pingMetadata);

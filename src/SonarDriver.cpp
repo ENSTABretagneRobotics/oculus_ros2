@@ -59,6 +59,7 @@ SonarDriver::PingConfig SonarDriver::current_ping_config()
         // We only need to wait for the next message to get the current ping
         // configuration.
         config = lastConfig_;
+        config.head = header;
     }))
     {
         throw MessageCallbacks::TimeoutReached();
@@ -74,18 +75,15 @@ SonarDriver::PingConfig SonarDriver::request_ping_config(const PingConfig& reque
     const int maxCount = 100; // TODO make a parameter out of this
     do {
         if(this->send_ping_config(request)) {
-            feedback = this->current_ping_config();
-            if(check_config_feedback(request, feedback))
-                break;
-            //try {
-            //    feedback = this->current_ping_config();
-            //    if(check_config_feedback(request, feedback))
-            //        break;
-            //}
-            //catch(const MessageCallbacks::TimeoutReached& e) {
-            //    std::cerr << "Timeout reached while requesting config" << std::endl;
-            //    continue;
-            //}
+            try {
+                feedback = this->current_ping_config();
+                if(check_config_feedback(request, feedback))
+                    break;
+            }
+            catch(const MessageCallbacks::TimeoutReached& e) {
+                std::cerr << "Timeout reached while requesting config" << std::endl;
+                continue;
+            }
         }
         count++;
     } while(count < maxCount);
