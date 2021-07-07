@@ -77,6 +77,15 @@ SonarDriver::PingConfig SonarDriver::request_ping_config(const PingConfig& reque
             feedback = this->current_ping_config();
             if(check_config_feedback(request, feedback))
                 break;
+            //try {
+            //    feedback = this->current_ping_config();
+            //    if(check_config_feedback(request, feedback))
+            //        break;
+            //}
+            //catch(const MessageCallbacks::TimeoutReached& e) {
+            //    std::cerr << "Timeout reached while requesting config" << std::endl;
+            //    continue;
+            //}
         }
         count++;
     } while(count < maxCount);

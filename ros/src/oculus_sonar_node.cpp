@@ -4,7 +4,9 @@
 #include <future>
 using namespace std;
 
+
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#include <boost/thread/recursive_mutex.hpp>
 #include "ros/ros.h"
 
 #include <narval_oculus/Sonar.h>
@@ -74,9 +76,11 @@ std::ostream& operator<<(std::ostream& os, const oculus_sonar::OculusSonarConfig
 
 void publish_config(narval::oculus::SonarDriver* sonarDriver,
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig>* configServer,
+    boost::recursive_mutex* configMutex,
     const OculusMessageHeader& header, const std::vector<uint8_t>& data)
 {
     oculus_sonar::OculusSonarConfig config;
+    boost::recursive_mutex::scoped_lock lock(*configMutex);
 
     // Publishing config only if we have a dummy or simple ping
     switch(header.msgId) {
@@ -96,13 +100,15 @@ void publish_config(narval::oculus::SonarDriver* sonarDriver,
     config.gain_percent     = lastConfig.gainPercent;
     config.sound_speed      = lastConfig.speedOfSound;
     config.salinity         = lastConfig.salinity;
+
+    configServer->updateConfig(config);
 }
 
 void config_request(narval::oculus::SonarDriver* sonarDriver, 
                     oculus_sonar::OculusSonarConfig& config,
                     uint32_t level)
 {
-    std::cout << "Received config : " << level << std::endl;
+    // std::cout << "Received config : " << level << std::endl;
     // on node launch, the configuration server asks for current configuration
     // by setting level to the maximum possible value.
     if(level == std::numeric_limits<uint32_t>::max()) {
@@ -158,7 +164,8 @@ void config_request(narval::oculus::SonarDriver* sonarDriver,
         currentConfig.speedOfSound = config.sound_speed;
     currentConfig.salinity     = config.salinity;
     
-    // a timeout would be nice
+    //sonarDriver->send_ping_config(currentConfig);
+    // // a timeout would be nice
     auto feedback = sonarDriver->request_ping_config(currentConfig);
     config.frequency_mode   = feedback.masterMode;
     //config.ping_rate      = feedback.pingRate // is broken (?) sonar side
@@ -193,7 +200,6 @@ int main(int argc, char **argv)
     node.param<std::string>("status_topic", statusTopic, "status");
 
     narval::oculus::Sonar sonarDriver;
-    sonarDriver.start(); // better to start it here.
     
     // sonar status publisher
     ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>(statusTopic, 100);
@@ -203,33 +209,20 @@ int main(int argc, char **argv)
     ros::Publisher pingPublisher = node.advertise<oculus_sonar::OculusPing>(pingTopic, 100);
     sonarDriver.add_ping_callback(&publish_ping, &sonarDriver, pingPublisher);
 
-    //configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
     // callback on dummy messages to reactivate the pings as needed
     sonarDriver.add_dummy_callback(&handle_dummy, &sonarDriver, pingPublisher);
 
     // config server
-    dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer;
+    //boost::recursive_mutex configMutex;
+    //dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer(configMutex, node);
+    //sonarDriver.add_message_callback(&publish_config, &sonarDriver, &configServer, &configMutex);
+
+    dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer(node);
     configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
-    //sonarDriver.add_message_callback(&publish_config, &sonarDriver, &configServer);
 
-    // // Using a thread to set the callback in dynamic reconfigure
-    // // (dynamic_reconfigure will wait for a feedback from the sonar and will
-    // // block until the sonar is connected. This in turn will prevent the SIGINT
-    // // to be treated by the ROS API and the node can't be terminated cleanly.).
-    // std::thread setConfigThread(set_config_callback, &configServer, &sonarDriver);
-
+    sonarDriver.start();
     ros::spin();
-
     sonarDriver.stop();
-    
-    // // This allows to join the setConfigThread safely with a timeout. (It might
-    // // be locked if the sonar was never connected).
-    // auto future = std::async(std::launch::async, &std::thread::join, &setConfigThread);
-    // if(future.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) {
-    //     std::cout << "Thread was locked" << std::endl;
-    //     setConfigThread.detach();
-    //     std::terminate();
-    // }
 
     return 0;
 }
