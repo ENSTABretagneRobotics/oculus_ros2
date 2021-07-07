@@ -5,16 +5,9 @@ namespace narval { namespace oculus {
 SonarDriver::SonarDriver(const IoServicePtr& service,
                          const Duration& checkerPeriod) :
     SonarClient(service, checkerPeriod),
-    isStandingBy_(false),
-    lastConfig_(default_ping_config())
-{
-    //std::memset(&lastConfig_, 0, sizeof(lastConfig_));
-}
-
-SonarDriver::PingConfig SonarDriver::last_config() const
-{
-    return lastConfig_;
-}
+    lastConfig_(default_ping_config()),
+    lastPingRate_(pingRateNormal)
+{}
 
 bool SonarDriver::send_ping_config(PingConfig config)
 {
@@ -43,7 +36,18 @@ bool SonarDriver::send_ping_config(PingConfig config)
     // line below allows to keep a trace of the requested ping rate but there
     // is no clean way to check.
     lastConfig_.pingRate = config.pingRate;
+    
+    // Also saving the last pingRate which is not standby to be able to resume
+    // the sonar to the last ping rate in the resume() method.
+    if(lastConfig_.pingRate != pingRateStandby) {
+        lastPingRate_ = lastConfig_.pingRate;
+    }
     return true;
+}
+
+SonarDriver::PingConfig SonarDriver::last_ping_config() const
+{
+    return lastConfig_;
 }
 
 SonarDriver::PingConfig SonarDriver::current_ping_config()
@@ -52,36 +56,10 @@ SonarDriver::PingConfig SonarDriver::current_ping_config()
     this->on_next_message([&](const OculusMessageHeader& header,
                               const std::vector<uint8_t>& data) {
         // lastConfig_ is ALWAYS updated before the callbacks are called.
+        // We only need to wait for the next message to get the current ping
+        // configuration.
         config = lastConfig_;
-        //switch(header.msgId) {
-        //    case messageSimplePingResult:
-        //        config = *(reinterpret_cast<const OculusSimpleFireMessage*>(data.data()));
-        //        gotMessage = true;
-        //        break;
-        //    // messageDummy and all other messages are treated in the same way
-        //    // because only a simple ping result is a valid message to get a
-        //    // configuration.
-        //    case messageDummy:
-        //        config = default_ping_config();
-        //        config.head = header;
-        //        config.pingRate = pingRateStandby;
-        //        gotMessage = true;
-        //        break;
-        //    default:
-        //        config = default_ping_config();
-        //        config.head = header;
-        //        config.pingRate = pingRateStandby;
-        //        break;
-        //}
     });
-    //// When masterMode = 2, the sonar force gainPercent between 40& and 100%,
-    //// BUT still needs resquested gainPercent to be between 0% and 100%. (If
-    //// you request a gainPercent=0 in masterMode=2, the fireMessage in the ping
-    //// results will be 40%)The gainPercent is rescaled here to ensure
-    //// consistent parameter handling on client side).
-    //if(config.masterMode == 2) {
-    //    config.gainPercent = (config.gainPercent - 40.0) * 100.0 / 60.0;
-    //}
     return config;
 }
 
@@ -113,12 +91,8 @@ SonarDriver::PingConfig SonarDriver::request_ping_config(const PingConfig& reque
 
 void SonarDriver::standby()
 {
-    if(isStandingBy_)
-        return;
-    
     auto request = lastConfig_;
 
-    lastPingRate_ = request.pingRate;
     request.pingRate = pingRateStandby;
     
     this->send_ping_config(request);
@@ -126,13 +100,10 @@ void SonarDriver::standby()
 
 void SonarDriver::resume()
 {
-    if(!isStandingBy_)
-        return;
-
     auto request = lastConfig_;
 
     request.pingRate = lastPingRate_;
-
+    
     this->send_ping_config(request);
 }
 
@@ -160,8 +131,8 @@ void SonarDriver::handle_message(const OculusMessageHeader& header,
             {
                 // Overwritting pingRate. The feedback of the sonar on this
                 // parameter is broken.  lastConfig_.pingRate have been set in
-                // send_ping_config().
-                // (Bracket block is to keep lastPingRate local to this case.)
+                // send_ping_config().  (Bracket block is to keep the temporary
+                // lastPingRate variable local to this block.)
                 auto lastPingRate = lastConfig_.pingRate;
                 lastConfig_ = reinterpret_cast<const PingResult*>(data.data())->fireMessage;
                 lastConfig_.pingRate = lastPingRate;
@@ -175,17 +146,9 @@ void SonarDriver::handle_message(const OculusMessageHeader& header,
             if(lastConfig_.masterMode == 2) {
                 lastConfig_.gainPercent = (lastConfig_.gainPercent - 40.0) * 100.0 / 60.0;
             }
-            isStandingBy_ = false;
             break;
-        // Make all other messages handle like dummy ?
-        //case messageDummy:
-        //    lastConfig_.pingRate = pingRateStandby;
-        //    isStandingBy_ = true;
-        //    break;
-        //default:break;
         default:
             lastConfig_.pingRate = pingRateStandby;
-            isStandingBy_ = true;
             break;
     };
 
