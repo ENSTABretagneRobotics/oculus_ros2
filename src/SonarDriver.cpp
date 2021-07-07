@@ -53,13 +53,16 @@ SonarDriver::PingConfig SonarDriver::last_ping_config() const
 SonarDriver::PingConfig SonarDriver::current_ping_config()
 {
     PingConfig config;
-    this->on_next_message([&](const OculusMessageHeader& header,
-                              const std::vector<uint8_t>& data) {
+    if(!this->on_next_message([&](const OculusMessageHeader& header,
+                                  const std::vector<uint8_t>& data) {
         // lastConfig_ is ALWAYS updated before the callbacks are called.
         // We only need to wait for the next message to get the current ping
         // configuration.
         config = lastConfig_;
-    });
+    }))
+    {
+        throw MessageCallbacks::TimeoutReached();
+    }
     return config;
 }
 
@@ -77,7 +80,7 @@ SonarDriver::PingConfig SonarDriver::request_ping_config(const PingConfig& reque
         }
         count++;
     } while(count < maxCount);
-    std::cout << "Count is : " << count << std::endl << std::flush;
+    //std::cout << "Count is : " << count << std::endl << std::flush;
 
     if(count >= maxCount) {
         std::cerr << "Could not get a proper feedback from the sonar."

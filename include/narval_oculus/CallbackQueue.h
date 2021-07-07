@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 #include <thread>
 
@@ -17,6 +18,12 @@ class CallbackQueue
     // /!\ call order not guarantied !
 
     public:
+
+    struct TimeoutReached : public std::exception {
+        const char* what() const throw() {
+            return "Timeout reached before callback call.";
+        }
+    };
 
     using CallbackId    = unsigned int;
     using CallbackT     = std::function<void(ArgTypes...)>;
@@ -43,7 +50,7 @@ class CallbackQueue
     CallbackId add_callback(const CallbackT& callback);
     bool remove_callback(CallbackId index);
     
-    bool add_single_shot(const CallbackT& callback);
+    bool add_single_shot(const CallbackT& callback, int64_t timeoutMillis = 5000);
 
     void call(ArgTypes... args);
 };
@@ -70,7 +77,8 @@ bool CallbackQueue<ArgTypes...>::remove_callback(CallbackId index)
 }
 
 template <class ...ArgTypes>
-bool CallbackQueue<ArgTypes...>::add_single_shot(const CallbackT& callback)
+bool CallbackQueue<ArgTypes...>::add_single_shot(const CallbackT& callback,
+                                                 int64_t timeoutMillis)
 {
     std::unique_lock<std::mutex> lock(sShotsMutex_);
     // Using a single boolean to check for spurious wake up for all threads
@@ -83,8 +91,16 @@ bool CallbackQueue<ArgTypes...>::add_single_shot(const CallbackT& callback)
     CallbackId callbackId = singleShots_.size();
     for(; singleShots_.find(callbackId) != singleShots_.end(); callbackId++);
     singleShots_[callbackId] = callback;
-
-    sShotsCv_.wait(lock, [&]{return sShotsCalled_; });
+    
+    if(timeoutMillis < 0) {
+        // infinite wait
+        sShotsCv_.wait(lock, [&]{return sShotsCalled_; });
+    }
+    else {
+        // Waiting with a timeout (returns false if timeout reached).
+        return sShotsCv_.wait_for(lock, std::chrono::milliseconds(timeoutMillis),
+                                  [&]{return sShotsCalled_; });
+    }
     
     return sShotsCalled_;
 }
