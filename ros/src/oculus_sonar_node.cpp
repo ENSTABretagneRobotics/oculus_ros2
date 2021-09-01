@@ -9,7 +9,8 @@ using namespace std;
 #include <boost/thread/recursive_mutex.hpp>
 #include "ros/ros.h"
 
-#include <narval_oculus/Sonar.h>
+#include <narval_oculus/AsyncService.h>
+#include <narval_oculus/SonarDriver.h>
 
 #include <oculus_sonar/OculusStatus.h>
 
@@ -179,7 +180,7 @@ void config_request(narval::oculus::SonarDriver* sonarDriver,
 }
 
 void set_config_callback(dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig>* configServer,
-                         narval::oculus::Sonar* sonarDriver)
+                         narval::oculus::SonarDriver* sonarDriver)
 {
     configServer->setCallback(boost::bind(&config_request, sonarDriver, _1, _2));
 }
@@ -199,7 +200,8 @@ int main(int argc, char **argv)
     node.param<std::string>("ping_topic",   pingTopic,   "ping");
     node.param<std::string>("status_topic", statusTopic, "status");
 
-    narval::oculus::Sonar sonarDriver;
+    narval::oculus::AsyncService ioService;
+    narval::oculus::SonarDriver  sonarDriver(ioService.io_service());
     
     // sonar status publisher
     ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>(statusTopic, 100);
@@ -220,9 +222,9 @@ int main(int argc, char **argv)
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig> configServer(node);
     configServer.setCallback(boost::bind(&config_request, &sonarDriver, _1, _2));
 
-    sonarDriver.start();
+    ioService.start();
     ros::spin();
-    sonarDriver.stop();
+    ioService.stop();
 
     return 0;
 }

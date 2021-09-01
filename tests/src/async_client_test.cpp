@@ -2,7 +2,8 @@
 #include <sstream>
 using namespace std;
 
-#include <narval_oculus/Sonar.h>
+#include <narval_oculus/AsyncService.h>
+#include <narval_oculus/SonarDriver.h>
 using namespace narval::oculus;
 
 void print_ping(const OculusSimplePingResult& pingMetadata,
@@ -46,13 +47,15 @@ void print_all(const OculusMessageHeader& header,
 
 int main()
 {
-    Sonar sonar;
+    //Sonar sonar;
+    AsyncService ioService;
+    SonarDriver sonar(ioService.io_service());
     
     //sonar.add_ping_callback(&print_ping);
     //sonar.add_dummy_callback(&print_dummy);
     sonar.add_message_callback(&print_all);
 
-    sonar.start();
+    ioService.start();
 
     sonar.on_next_ping([](const SonarDriver::PingResult& pingMetadata,
                           const std::vector<uint8_t>& data){
@@ -74,6 +77,8 @@ int main()
     });
     std::cout << "After awaited status" << std::endl;
     getchar();
+
+    ioService.stop();
 
     return 0;
 }

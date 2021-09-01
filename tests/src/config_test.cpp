@@ -3,7 +3,8 @@
 #include <thread>
 using namespace std;
 
-#include <narval_oculus/Sonar.h>
+#include <narval_oculus/AsyncService.h>
+#include <narval_oculus/SonarDriver.h>
 using namespace narval::oculus;
 
 void print_ping(const OculusSimplePingResult& pingMetadata,
@@ -23,17 +24,21 @@ void print_dummy(const OculusMessageHeader& msg)
 
 int main()
 {
-    Sonar sonar;
+    //Sonar sonar;
+    AsyncService ioService;
+    SonarDriver sonar(ioService.io_service());
     
     sonar.add_ping_callback(&print_ping);
     sonar.add_dummy_callback(&print_dummy);
 
-    sonar.start();
+    ioService.start();
 
     //sonar.request_fire_config(default_fire_config());
     //sonar.request_fire_config(default_fire_config());
 
     getchar();
+
+    ioService.stop();
 
     return 0;
 }

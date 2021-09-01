@@ -12,6 +12,11 @@ AsyncService::~AsyncService()
     this->stop();
 }
 
+AsyncService::IoServicePtr AsyncService::io_service()
+{
+    return service_;
+}
+
 bool AsyncService::is_running() const
 {
     return isRunning_;

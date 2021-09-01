@@ -15,7 +15,6 @@ list(APPEND narval_oculus_headers
     include/narval_oculus/SonarClient.h
     include/narval_oculus/SonarDriver.h
     include/narval_oculus/AsyncService.h
-    include/narval_oculus/Sonar.h
 )
 
 add_library(narval_oculus SHARED

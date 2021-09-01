@@ -29,6 +29,8 @@ class AsyncService
     AsyncService();
     ~AsyncService();
 
+    IoServicePtr io_service();
+
     bool is_running() const;
     void start();
     void stop();
