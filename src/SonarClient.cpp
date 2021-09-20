@@ -129,6 +129,10 @@ void SonarClient::on_first_status(const OculusStatusMsg& msg)
     // device id and ip fetched from status message
     sonarId_ = msg.hdr.srcDeviceId;
     remote_ = remote_from_status<EndPoint>(msg);
+    
+    std::cout << "Got Oculus status"
+              << "\n- netip   : " << ip_to_string(msg.ipAddr)
+              << "\n- netmask : " << ip_to_string(msg.ipMask) << std::endl;
 
     // attempting connection
     socket_ = std::make_unique<Socket>(*ioService_);
