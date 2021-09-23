@@ -37,7 +37,7 @@ target_link_libraries(narval_oculus PUBLIC
     Boost::system
     Boost::thread
 )
-target_compile_features(narval_oculus PUBLIC cxx_std_11)
+target_compile_features(narval_oculus PUBLIC cxx_std_14)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/narval_installation.cmake)
 narval_install_target(narval_oculus)
