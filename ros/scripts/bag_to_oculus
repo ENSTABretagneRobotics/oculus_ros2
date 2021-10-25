@@ -1,0 +1,127 @@
+#! /usr/bin/python3
+
+import os
+import sys
+import pathlib
+import struct
+import argparse
+
+import rosbag
+
+parser = argparse.ArgumentParser(description='Extract an Oculus sonar ping messages from a ROS bag and save them in the .oculus native format.')
+parser.add_argument('input', type=str, help='Path to rosbag.')
+parser.add_argument('-o', dest='output', type=str, help='Path where to save the .oculus file.')
+parser.add_argument('-t', dest='topic', type=str, default='',
+                    help='Name of the topic containing the ping.')
+parser.add_argument('-m', dest='msg_type', type=str, default='oculus_sonar/OculusPing',
+                    help='ROS message type of the ping (change this only if you know what you are doing).')
+parser.add_argument('-U', '--use-input-dir', dest='use_input_dir', default=False, action='store_true',
+                    help='Use input dir and auto-generated filename as output path')
+args = parser.parse_args()
+
+# Checking input path
+if not os.path.isfile(args.input):
+    raise ValueError('Invalid input, '+args.input+' : is not a regular file.')
+
+# if using input dir, generating a path
+if args.use_input_dir:
+    args.output = os.path.split(args.input)[0]
+# Checking output path
+if args.output:
+    # if output provided, checking if is directory
+    if os.path.isdir(args.output):
+        # if is directory, appending generated filename
+        args.output = os.path.join(args.output,
+            os.path.splitext(os.path.split(args.input)[1])[0] + '.oculus')
+else:
+    # If no output provided, generating one
+    args.output = os.path.splitext(os.path.split(args.input)[1])[0] + '.oculus'
+# Checking if output file exists
+# if os.path.isfile(args.output):
+if os.path.isfile(args.output):
+    confirmation = input("Output file '" + args.output
+                         +"' already exists. Overwrite ? [y/n]")
+    if confirmation[0] != 'y' and confirmation[0] != 'Y':
+        print('Aborting.')
+        sys.exit()
+
+bag = rosbag.Bag(args.input, 'r')
+infos = bag.get_type_and_topic_info()
+
+# Checking rosbag for valid input
+if not args.topic:
+    # no user defined topic, selecting one automatically with message type
+    # oculus_sonar/OculusPing.
+
+    # Checking if the rosbag effectively contains some ping data.
+    if  args.msg_type not in infos.msg_types.keys():
+        raise ValueError("ROS bag '" + args.input
+            +"' does not seem to contain any '"+args.msg_type+" messages.")
+
+    # Finding topic names which type is oculus_sonar/OculusPing
+    topicNames = [name for name,info in infos.topics.items()
+                  if info.msg_type == args.msg_type]
+    if len(topicNames) > 1:
+        raise ValueError("The ROS bag '"+args.input
+                         + "' contains more than one ping topic : "
+                         + str(topicNames)
+                         + ". Please select one with the '-t' option." )
+    if len(topicNames) == 0:
+        raise ValueError("The ROS bag '"+args.input+"' knows the '"
+                        + args.msg_type+ "' but doesn't contain any topic "
+                        + "with this type. It may be corrupted.")
+
+    # Only one topic using the oculus ping message type
+    args.topic = topicNames[0]
+if infos.topics[args.topic].message_count < 1:
+    raise ValueError("No message in '"+args.topic+"' topic.")
+
+print('Starting ping extraction')
+print('input        :', args.input)
+print('output       :', args.output)
+print('topic        :', args.topic)
+print('message type :', args.msg_type)
+
+with open(args.output,'wb') as outputFile:
+    log_header_struct = (
+        {'name': 'fileHeader', 'type': 'I','val' : 2037},
+        {'name': 'sizeHeader', 'type': 'I','val' : 48},
+        {'name': 'source', 'type': '16s','val' : "Oculus".encode('ascii')},
+        {'name': 'version', 'type': 'H','val' : 1},
+        {'name': 'encryption', 'type': 'H','val' : 0},
+        {'name': 'key', 'type': 'Q','val' : 0},
+        {'name': 'spare1', 'type': 'I','val' : 123},
+        {'name': 'time_unix', 'type': 'd','val' : 0},
+    )
+    
+    log_header_fmt =list(map(lambda x: x['type'], log_header_struct))
+    log_header_names = list(map(lambda x: x['name'], log_header_struct))
+    log_header_val = list(map(lambda x: x['val'], log_header_struct))
+    
+    for ii in range(len(log_header_val)):
+        outputFile.write(struct.pack(log_header_fmt[ii], log_header_val[ii]))
+    
+    
+    for i,bagMessage in enumerate(bag.read_messages(topics=[args.topic])):
+        header_struct = (
+            {'name': 'itemHeader', 'type': 'I','val' : 2037},
+            {'name': 'sizeHeader', 'type': 'I','val' : 40},
+            {'name': 'messageType', 'type': 'H','val' : 10},
+            {'name': 'version', 'type': 'H','val' : 2},
+            {'name': 'spare1', 'type': 'I','val' : 125},
+            {'name': 'time_unix', 'type': 'd','val' : bagMessage.timestamp.to_time()},
+            {'name': 'compression', 'type': 'H','val' : 0},
+            {'name': 'spare2', 'type': 'H','val' : 126},
+            {'name': 'rawSize', 'type': 'I','val' : 0},
+            {'name': 'payloadSize', 'type': 'I','val' : 0},
+        )
+    
+        header_fmt =list(map(lambda x: x['type'], header_struct))
+        header_names = list(map(lambda x: x['name'], header_struct))
+        header_val = list(map(lambda x: x['val'], header_struct))
+    
+        for ii in range(len(header_val)):
+            outputFile.write(struct.pack(header_fmt[ii], header_val[ii]))
+    
+        outputFile.write(bagMessage.message.data)
+print("Done.")

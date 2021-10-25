@@ -43,3 +43,9 @@ target_link_libraries(oculus_sonar_node PRIVATE
 )
 add_dependencies(oculus_sonar_node oculus_sonar_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 
+# installing converter script
+catkin_install_python(PROGRAMS scripts/bag_to_oculus
+                      DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+
+
