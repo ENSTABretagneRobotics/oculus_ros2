@@ -112,6 +112,7 @@ class SonarDriver : public SonarClient
     template <typename F, class... Args>
     bool on_next_message(F&& func, Args&&... args);
     bool on_next_message(const MessageCallbacks::CallbackT& callback);
+    bool wait_next_message();
 };
 
 // status callbacks

@@ -268,6 +268,16 @@ bool SonarDriver::on_next_message(const MessageCallbacks::CallbackT& callback)
     return messageCallbacks_.add_single_shot(callback);
 }
 
+/**
+ * This is a synchronization primitive allowing for waiting for the sonar to be
+ * ready for example.
+ */
+bool SonarDriver::wait_next_message()
+{
+    auto dummy = [](const OculusMessageHeader&, const std::vector<uint8_t>&) {};
+    return this->on_next_message(dummy);
+}
+
 }; //namespace oculus
 }; //namespace narval
 
