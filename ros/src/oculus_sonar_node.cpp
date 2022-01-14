@@ -94,8 +94,8 @@ void publish_config(narval::oculus::SonarDriver* sonarDriver,
 
     config.frequency_mode   = lastConfig.masterMode;
     config.ping_rate        = lastConfig.pingRate; // is broken (?) sonar side
-    config.data_depth       = lastConfig.flags & 0x2;
-    config.send_gain        = lastConfig.flags & 0x4;
+    config.data_depth       = (lastConfig.flags & 0x2) ? 1 : 0;
+    config.send_gain        = (lastConfig.flags & 0x4) ? 1 : 0;
     config.range            = lastConfig.range;
     config.gamma_correction = lastConfig.gammaCorrection;
     config.gain_percent     = lastConfig.gainPercent;
@@ -153,8 +153,8 @@ void config_request(narval::oculus::SonarDriver* sonarDriver,
     auto feedback = sonarDriver->request_ping_config(currentConfig);
     config.frequency_mode   = feedback.masterMode;
     //config.ping_rate      = feedback.pingRate // is broken (?) sonar side
-    config.data_depth       = feedback.flags & 0x2;
-    config.send_gain        = feedback.flags & 0x4;
+    config.data_depth       = (feedback.flags & 0x2) ? 1 : 0;
+    config.send_gain        = (feedback.flags & 0x4) ? 1 : 0;
     config.range            = feedback.range;
     config.gamma_correction = feedback.gammaCorrection;
     config.gain_percent     = feedback.gainPercent;
