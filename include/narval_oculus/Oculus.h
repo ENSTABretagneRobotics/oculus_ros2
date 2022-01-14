@@ -146,6 +146,10 @@ public:
                                 // bit 1: 0 = 8 bit data, 1 = 16 bit data
                                 // bit 2: 0 = wont send gain, 1 = send gain
                                 // bit 3: 0 = send full return message, 1 = send simple return message
+                                // bit 4: gain assist ?
+                                // bit 5: ?
+                                // bit 6: enable 512 beams
+                                // bit 7: ?
   double range;                 // The range demand in percent or m depending on flags
   double gainPercent;           // The gain demand
   double speedOfSound;          // ms-1, if set to zero then internal calc will apply using salinity

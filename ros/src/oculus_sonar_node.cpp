@@ -94,8 +94,11 @@ void publish_config(narval::oculus::SonarDriver* sonarDriver,
 
     config.frequency_mode   = lastConfig.masterMode;
     config.ping_rate        = lastConfig.pingRate; // is broken (?) sonar side
-    config.data_depth       = (lastConfig.flags & 0x2) ? 1 : 0;
-    config.send_gain        = (lastConfig.flags & 0x4) ? 1 : 0;
+    config.data_depth       = (lastConfig.flags & 0x02) ? 1 : 0;
+    config.send_gain        = (lastConfig.flags & 0x04) ? 1 : 0;
+    //config.full_ping        = (lastConfig.flags & 0x08) ? 1 : 0;
+    config.gain_assist      = (lastConfig.flags & 0x10) ? 1 : 0;
+    config.nbeams           = (lastConfig.flags & 0x40) ? 1 : 0;
     config.range            = lastConfig.range;
     config.gamma_correction = lastConfig.gammaCorrection;
     config.gain_percent     = lastConfig.gainPercent;
@@ -125,18 +128,29 @@ void config_request(narval::oculus::SonarDriver* sonarDriver,
     }
 
     // flags
-    currentConfig.flags = 0x9; // always in meters, simple ping
+    currentConfig.flags = 0x09; // always in meters, simple ping
     switch(config.data_depth)
     {
         case oculus_sonar::OculusSonar_8bits:
             break;
         case oculus_sonar::OculusSonar_16bits:
-            currentConfig.flags |= 0x2;
+            currentConfig.flags |= 0x02;
+            break;
+        default:break;
+    }
+    switch(config.nbeams)
+    {
+        case oculus_sonar::OculusSonar_256beams:
+            break;
+        case oculus_sonar::OculusSonar_512beams:
+            currentConfig.flags |= 0x40;
             break;
         default:break;
     }
     if(config.send_gain)
-        currentConfig.flags |= 0x4;
+        currentConfig.flags |= 0x04;
+    if(config.gain_assist)
+        currentConfig.flags |= 0x10;
 
     currentConfig.range           = config.range;
     currentConfig.gammaCorrection = config.gamma_correction;
@@ -153,8 +167,11 @@ void config_request(narval::oculus::SonarDriver* sonarDriver,
     auto feedback = sonarDriver->request_ping_config(currentConfig);
     config.frequency_mode   = feedback.masterMode;
     //config.ping_rate      = feedback.pingRate // is broken (?) sonar side
-    config.data_depth       = (feedback.flags & 0x2) ? 1 : 0;
-    config.send_gain        = (feedback.flags & 0x4) ? 1 : 0;
+    config.data_depth       = (feedback.flags & 0x02) ? 1 : 0;
+    config.send_gain        = (feedback.flags & 0x04) ? 1 : 0;
+    //config.full_ping        = (feedback.flags & 0x08) ? 1 : 0;
+    config.gain_assist      = (feedback.flags & 0x10) ? 1 : 0;
+    config.nbeams           = (feedback.flags & 0x40) ? 1 : 0;
     config.range            = feedback.range;
     config.gamma_correction = feedback.gammaCorrection;
     config.gain_percent     = feedback.gainPercent;
