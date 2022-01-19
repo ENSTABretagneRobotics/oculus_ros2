@@ -43,6 +43,21 @@ target_link_libraries(oculus_sonar_node PRIVATE
 )
 add_dependencies(oculus_sonar_node oculus_sonar_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 
+find_package(rtac_display)
+if(TARGET rtac_display)
+    add_executable(oculus_sonar_display
+        src/PingRenderer.cpp
+        src/oculus_sonar_display.cpp
+    )
+    target_include_directories(oculus_sonar_display PRIVATE src)
+    target_link_libraries(oculus_sonar_display PRIVATE
+        ${catkin_LIBRARIES}
+        narval_oculus
+        rtac_display
+    )
+    add_dependencies(oculus_sonar_display oculus_sonar_generate_messages_cpp ${PROJECT_NAME}_gencfg)
+endif()
+
 # installing converter script
 catkin_install_python(PROGRAMS scripts/bag_to_oculus
                       DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
