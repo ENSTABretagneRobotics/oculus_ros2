@@ -19,6 +19,8 @@ using namespace std;
 
 #include <conversions.h>
 
+using SonarDriver = narval::oculus::SonarDriver<ros::Time>;
+
 void publish_status(ros::Publisher& publisher, const OculusStatusMsg& status)
 {
     static oculus_sonar::OculusStatus msg;
@@ -28,7 +30,7 @@ void publish_status(ros::Publisher& publisher, const OculusStatusMsg& status)
     publisher.publish(msg);
 }
 
-void publish_ping(narval::oculus::SonarDriver* sonarDriver,
+void publish_ping(SonarDriver* sonarDriver,
                   ros::Publisher& publisher, 
                   const OculusSimplePingResult& pingMetadata,
                   const std::vector<uint8_t>& pingData)
@@ -46,10 +48,12 @@ void publish_ping(narval::oculus::SonarDriver* sonarDriver,
     for(int i = 0; i < msg.data.size(); i++)
         msg.data[i] = pingData[i];
 
+    msg.header.stamp    = sonarDriver->last_header_stamp();
+    msg.header.frame_id = "oculus_sonar";
     publisher.publish(msg);
 }
 
-void handle_dummy(narval::oculus::SonarDriver* sonarDriver, 
+void handle_dummy(SonarDriver* sonarDriver, 
                   ros::Publisher& pingPublisher,
                   const OculusMessageHeader& header)
 {
@@ -75,7 +79,7 @@ std::ostream& operator<<(std::ostream& os, const oculus_sonar::OculusSonarConfig
     return os;
 }
 
-void publish_config(narval::oculus::SonarDriver* sonarDriver,
+void publish_config(SonarDriver* sonarDriver,
     dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig>* configServer,
     boost::recursive_mutex* configMutex,
     const OculusMessageHeader& header, const std::vector<uint8_t>& data)
@@ -108,11 +112,11 @@ void publish_config(narval::oculus::SonarDriver* sonarDriver,
     configServer->updateConfig(config);
 }
 
-void config_request(narval::oculus::SonarDriver* sonarDriver, 
+void config_request(SonarDriver* sonarDriver, 
                     oculus_sonar::OculusSonarConfig& config,
                     int32_t level)
 {
-    narval::oculus::SonarDriver::PingConfig currentConfig;
+    SonarDriver::PingConfig currentConfig;
     std::memset(&currentConfig, 0, sizeof(currentConfig));
 
     currentConfig.masterMode = config.frequency_mode;
@@ -180,21 +184,13 @@ void config_request(narval::oculus::SonarDriver* sonarDriver,
 }
 
 void set_config_callback(dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig>* configServer,
-                         narval::oculus::SonarDriver* sonarDriver)
+                         SonarDriver* sonarDriver)
 {
     configServer->setCallback(boost::bind(&config_request, sonarDriver, _1, _2));
 }
 
 int main(int argc, char **argv)
 {
-    narval::oculus::AsyncService ioService;
-    narval::oculus::SonarDriver  sonarDriver(ioService.io_service());
-    ioService.start();
-    if(!sonarDriver.wait_next_message()) {
-        std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
-                  << "Is it properly connected ?" << std::endl;
-    }
-    
     ros::init(argc, argv, "oculus_sonar");
 
     // Setting up namespace to node name (why not by default ??)
@@ -208,16 +204,22 @@ int main(int argc, char **argv)
     node.param<std::string>("ping_topic",   pingTopic,   "ping");
     node.param<std::string>("status_topic", statusTopic, "status");
 
-    // sonar status publisher
     ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>(statusTopic, 100);
+    ros::Publisher pingPublisher   = node.advertise<oculus_sonar::OculusPing>(pingTopic, 100);
+
+    narval::oculus::AsyncService ioService;
+    SonarDriver sonarDriver(ioService.io_service());
+    ioService.start();
+    if(!sonarDriver.wait_next_message()) {
+        std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
+                  << "Is it properly connected ?" << std::endl;
+    }
+    
     sonarDriver.add_status_callback(&publish_status, statusPublisher);
-
-    // ping publisher
-    ros::Publisher pingPublisher = node.advertise<oculus_sonar::OculusPing>(pingTopic, 100);
     sonarDriver.add_ping_callback(&publish_ping, &sonarDriver, pingPublisher);
-
     // callback on dummy messages to reactivate the pings as needed
     sonarDriver.add_dummy_callback(&handle_dummy, &sonarDriver, pingPublisher);
+
 
     // config server
     //boost::recursive_mutex configMutex;
