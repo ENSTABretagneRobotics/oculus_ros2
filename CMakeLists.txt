@@ -21,8 +21,8 @@ add_library(narval_oculus SHARED
     # src/utils.cpp
     src/print_utils.cpp
     src/StatusListener.cpp
-    src/SonarClient.cpp
-    src/SonarDriver.cpp
+    # src/SonarClient.cpp
+    # src/SonarDriver.cpp
     src/AsyncService.cpp
 )
 set_target_properties(narval_oculus PROPERTIES
@@ -37,7 +37,7 @@ target_link_libraries(narval_oculus PUBLIC
     Boost::system
     Boost::thread
 )
-target_compile_features(narval_oculus PUBLIC cxx_std_14)
+target_compile_features(narval_oculus PUBLIC cxx_std_17)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/narval_installation.cmake)
 narval_install_target(narval_oculus)

@@ -40,7 +40,7 @@ void print_dummy(const OculusMessageHeader& msg)
 
 int main()
 {
-    auto ioService = std::make_shared<SonarDriver::IoService>();
+    auto ioService = std::make_shared<SonarDriver<>::IoService>();
     SonarDriver driver(ioService);
     
     driver.add_ping_callback(&print_ping);
