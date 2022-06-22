@@ -1,5 +1,3 @@
-Header header
-
 OculusFireConfig fireMessage
 uint32  pingId
 uint32  status

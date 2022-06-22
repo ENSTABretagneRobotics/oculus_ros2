@@ -13,6 +13,7 @@ using namespace std;
 #include <narval_oculus/SonarDriver.h>
 
 #include <oculus_sonar/OculusStatus.h>
+#include <oculus_sonar/OculusStampedPing.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <oculus_sonar/OculusSonarConfig.h>
@@ -43,7 +44,7 @@ void publish_ping(SonarDriver* sonarDriver,
                   const OculusSimplePingResult& pingMetadata,
                   const std::vector<uint8_t>& pingData)
 {
-    static oculus_sonar::OculusPing msg;
+    static oculus_sonar::OculusStampedPing msg;
 
     if(publisher.getNumSubscribers() == 0) {
         cout << "Going to standby mode" << endl;
@@ -51,10 +52,10 @@ void publish_ping(SonarDriver* sonarDriver,
         //return;
     }
     
-    narval::oculus::copy_to_ros(msg, pingMetadata);
-    msg.data.resize(pingData.size());
-    for(int i = 0; i < msg.data.size(); i++)
-        msg.data[i] = pingData[i];
+    narval::oculus::copy_to_ros(msg.ping, pingMetadata);
+    msg.ping.data.resize(pingData.size());
+    for(int i = 0; i < msg.ping.data.size(); i++)
+        msg.ping.data[i] = pingData[i];
 
     msg.header.stamp    = to_ros_stamp(sonarDriver->last_header_stamp());
     msg.header.frame_id = "oculus_sonar";
@@ -213,8 +214,10 @@ int main(int argc, char **argv)
     node.param<std::string>("ping_topic",   pingTopic,   "ping");
     node.param<std::string>("status_topic", statusTopic, "status");
 
-    ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>(statusTopic, 100);
-    ros::Publisher pingPublisher   = node.advertise<oculus_sonar::OculusPing>(pingTopic, 100);
+    ros::Publisher statusPublisher = node.advertise<oculus_sonar::OculusStatus>(statusTopic,
+                                                                                100);
+    ros::Publisher pingPublisher   = node.advertise<oculus_sonar::OculusStampedPing>(pingTopic,
+                                                                                     100);
 
     narval::oculus::AsyncService ioService;
     SonarDriver sonarDriver(ioService.io_service());

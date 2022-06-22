@@ -21,6 +21,7 @@ add_message_files(FILES
    OculusStatus.msg
    OculusFireConfig.msg
    OculusPing.msg
+   OculusStampedPing.msg
 )
 
 ## Generate added messages and services with any dependencies listed here
