@@ -75,10 +75,10 @@ int main()
 
     ioService.start();
 
-    sonar.on_next_ping([](const SonarDriver<>::PingResult& pingMetadata,
-                          const std::vector<uint8_t>& data){
-        std::cout << "Got awaited ping !" << std::endl;
-    });
+    // sonar.on_next_ping([](const SonarDriver::PingResult& pingMetadata,
+    //                       const std::vector<uint8_t>& data){
+    //     std::cout << "Got awaited ping !" << std::endl;
+    // });
     cout << "After awaited ping" << endl;
     
     // stopping sonar firing
@@ -90,9 +90,9 @@ int main()
     });
     std::cout << "After awaited dummy" << std::endl;
     
-    sonar.on_next_status([](const OculusStatusMsg& msg) {
-        std::cout << "Got awaited status !" << std::endl;
-    });
+    //sonar.on_next_status([](const OculusStatusMsg& msg) {
+    //    std::cout << "Got awaited status !" << std::endl;
+    //});
     std::cout << "After awaited status" << std::endl;
     getchar();
 

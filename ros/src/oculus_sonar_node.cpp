@@ -19,7 +19,7 @@ using namespace std;
 
 #include <conversions.h>
 
-using SonarDriver = narval::oculus::SonarDriver<ros::Time>;
+using SonarDriver = narval::oculus::SonarDriver;
 
 void publish_status(ros::Publisher& publisher, const OculusStatusMsg& status)
 {
@@ -28,6 +28,14 @@ void publish_status(ros::Publisher& publisher, const OculusStatusMsg& status)
     narval::oculus::copy_to_ros(msg, status);
 
     publisher.publish(msg);
+}
+
+inline ros::Time to_ros_stamp(const SonarDriver::TimePoint& stamp)
+{
+    size_t nano = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        stamp.time_since_epoch()).count();
+    size_t seconds = nano / 1000000000;
+    return ros::Time(seconds, nano - 1000000000*seconds);
 }
 
 void publish_ping(SonarDriver* sonarDriver,
@@ -48,7 +56,7 @@ void publish_ping(SonarDriver* sonarDriver,
     for(int i = 0; i < msg.data.size(); i++)
         msg.data[i] = pingData[i];
 
-    msg.header.stamp    = sonarDriver->last_header_stamp();
+    msg.header.stamp    = to_ros_stamp(sonarDriver->last_header_stamp());
     msg.header.frame_id = "oculus_sonar";
     publisher.publish(msg);
 }
@@ -183,8 +191,9 @@ void config_request(SonarDriver* sonarDriver,
     config.salinity         = feedback.salinity;
 }
 
-void set_config_callback(dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig>* configServer,
-                         SonarDriver* sonarDriver)
+void set_config_callback(
+    dynamic_reconfigure::Server<oculus_sonar::OculusSonarConfig>* configServer,
+    SonarDriver* sonarDriver)
 {
     configServer->setCallback(boost::bind(&config_request, sonarDriver, _1, _2));
 }
