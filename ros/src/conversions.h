@@ -12,46 +12,46 @@ namespace narval { namespace oculus {
 
 void copy_to_ros(oculus_sonar::OculusHeader& msg, const OculusMessageHeader& header)
 {
-    msg.oculusId     = header.oculusId;
-    msg.srcDeviceId  = header.srcDeviceId;
-    msg.dstDeviceId  = header.dstDeviceId;
-    msg.msgId        = header.msgId;
-    msg.msgVersion   = header.msgVersion;
-    msg.payloadSize  = header.payloadSize;
+    msg.oculus_id     = header.oculusId;
+    msg.srcDevice_id  = header.srcDeviceId;
+    msg.dstDevice_id  = header.dstDeviceId;
+    msg.msg_id        = header.msgId;
+    msg.msg_version   = header.msgVersion;
+    msg.payload_size  = header.payloadSize;
     msg.spare2       = header.spare2;
 }
 
 void copy_to_ros(oculus_sonar::OculusVersionInfo& msg, const OculusVersionInfo& version)
 {
-    msg.firmwareVersion0 = version.firmwareVersion0;
-    msg.firmwareDate0    = version.firmwareDate0;
-    msg.firmwareVersion1 = version.firmwareVersion1;
-    msg.firmwareDate1    = version.firmwareDate1;
-    msg.firmwareVersion2 = version.firmwareVersion2;
-    msg.firmwareDate2    = version.firmwareDate2;
+    msg.firmware_version0 = version.firmwareVersion0;
+    msg.firmware_date0    = version.firmwareDate0;
+    msg.firmware_version1 = version.firmwareVersion1;
+    msg.firmware_date1    = version.firmwareDate1;
+    msg.firmware_version2 = version.firmwareVersion2;
+    msg.firmware_date2    = version.firmwareDate2;
 }
 
 void copy_to_ros(oculus_sonar::OculusStatus& msg, const OculusStatusMsg& status)
 {
     copy_to_ros(msg.hdr, status.hdr);
 
-    msg.deviceId        = status.deviceId;
-    msg.deviceType      = status.deviceType;
-    msg.partNumber      = status.partNumber;
+    msg.device_id        = status.deviceId;
+    msg.device_type      = status.deviceType;
+    msg.part_number      = status.partNumber;
     msg.status          = status.status;
 
     copy_to_ros(msg.versinInfo,status.versinInfo);
 
-    msg.ipAddr          = status.ipAddr;
-    msg.ipMask          = status.ipMask;
-    msg.connectedIpAddr = status.connectedIpAddr;
+    msg.ip_addr          = status.ipAddr;
+    msg.ip_mask          = status.ipMask;
+    msg.connected_ip_addr = status.connectedIpAddr;
 
-    msg.macAddr0        = status.macAddr0;
-    msg.macAddr1        = status.macAddr1;
-    msg.macAddr2        = status.macAddr2;
-    msg.macAddr3        = status.macAddr3;
-    msg.macAddr4        = status.macAddr4;
-    msg.macAddr5        = status.macAddr5;
+    msg.mac_addr0        = status.macAddr0;
+    msg.mac_addr1        = status.macAddr1;
+    msg.mac_addr2        = status.macAddr2;
+    msg.mac_addr3        = status.macAddr3;
+    msg.mac_addr4        = status.macAddr4;
+    msg.mac_addr5        = status.macAddr5;
 
     msg.temperature0    = status.temperature0;
     msg.temperature1    = status.temperature1;
@@ -68,34 +68,34 @@ void copy_to_ros(oculus_sonar::OculusFireConfig& msg, const OculusSimpleFireMess
 {
     copy_to_ros(msg.head, fireConfig.head);
 
-    msg.masterMode      = fireConfig.masterMode;
-    msg.pingRate        = fireConfig.pingRate;
-    msg.networkSpeed    = fireConfig.networkSpeed;
-    msg.gammaCorrection = fireConfig.gammaCorrection;
+    msg.master_mode      = fireConfig.masterMode;
+    msg.ping_rate        = fireConfig.pingRate;
+    msg.network_speed    = fireConfig.networkSpeed;
+    msg.gamma_correction = fireConfig.gammaCorrection;
     msg.flags           = fireConfig.flags;
     msg.range           = fireConfig.range;
-    msg.gainPercent     = fireConfig.gainPercent;
-    msg.speedOfSound    = fireConfig.speedOfSound;
+    msg.gain_percent     = fireConfig.gainPercent;
+    msg.speed_of_sound    = fireConfig.speedOfSound;
     msg.salinity        = fireConfig.salinity;
 }
 
 void copy_to_ros(oculus_sonar::OculusPing& msg, const OculusSimplePingResult& ping)
 {
     copy_to_ros(msg.fireMessage, ping.fireMessage);
-    msg.pingId            = ping.pingId;
+    msg.ping_id            = ping.pingId;
     msg.status            = ping.status;
     msg.frequency         = ping.frequency;
     msg.temperature       = ping.temperature;
     msg.pressure          = ping.pressure;
-    msg.speeedOfSoundUsed = ping.speeedOfSoundUsed;
-    msg.pingStartTime     = ping.pingStartTime;
-    msg.dataSize          = ping.dataSize;
-    msg.rangeResolution   = ping.rangeResolution;
-    msg.nRanges           = ping.nRanges;
-    msg.nBeams            = ping.nBeams;
-    msg.imageOffset       = ping.imageOffset;
-    msg.imageSize         = ping.imageSize;
-    msg.messageSize       = ping.messageSize;
+    msg.speeed_of_sound_used = ping.speeedOfSoundUsed;
+    msg.ping_start_time     = ping.pingStartTime;
+    msg.data_size          = ping.dataSize;
+    msg.range_resolution   = ping.rangeResolution;
+    msg.n_ranges           = ping.nRanges;
+    msg.n_beams            = ping.nBeams;
+    msg.image_offset       = ping.imageOffset;
+    msg.image_size         = ping.imageSize;
+    msg.message_size       = ping.messageSize;
 }
 
 }; //namespace oculus
