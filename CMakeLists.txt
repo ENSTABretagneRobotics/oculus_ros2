@@ -18,11 +18,10 @@ list(APPEND narval_oculus_headers
 )
 
 add_library(narval_oculus SHARED
-    # src/utils.cpp
     src/print_utils.cpp
     src/StatusListener.cpp
-    # src/SonarClient.cpp
-    # src/SonarDriver.cpp
+    src/SonarClient.cpp
+    src/SonarDriver.cpp
     src/AsyncService.cpp
 )
 set_target_properties(narval_oculus PROPERTIES
