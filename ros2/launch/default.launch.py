@@ -13,7 +13,7 @@ def generate_launch_description():
     
     ld.add_action(DeclareLaunchArgument(
         name='port',
-        default_value="this_is_a_port",
+        default_value='this_is_a_port',
         description='Filters Configuration'))
     
     config = os.path.join(
@@ -25,29 +25,15 @@ def generate_launch_description():
     oculus_sonar_node = Node(
          package='oculus_sonar',
          executable='oculus_sonar_node',
-        #  namespace='oculus_sonar',
-        #  name='test',
-        parameters=[config],
+         name='oculus_sonar',
+        #  parameters=[config],
+        parameters=[{
+          'ping_topic': 'ping', 
+          'status_topic': 'status'
+        }],
         arguments=['-port', LaunchConfiguration('port')],
-        output="screen"
+        output='screen'
       )
     ld.add_action(oculus_sonar_node)
 
     return ld
-
-# <?xml version="1.0"?>
-# <launch>
-#     <!-- these are local variables for the launch file -->
-#     <arg name="port" default="this_is_a_port"/>
-
-#     <!-- respawn : will restart if killed
-#         required : will kill every thing if this node is killed -->
-#     <node name="oculus_sonar" pkg="oculus_sonar" type="oculus_sonar_node"
-#           respawn="true" output="screen">
-#         <param name="port" value="$(arg port)"/>
-#         <rosparam>
-#             ping_topic:   "ping"
-#             status_topic: "status"
-#         </rosparam>
-#     </node>
-# </launch>

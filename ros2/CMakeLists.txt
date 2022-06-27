@@ -70,7 +70,7 @@ include_directories(
 add_executable(oculus_sonar_node
     src/oculus_sonar_node.cpp
 )
-target_include_directories(oculus_sonar_node PRIVATE src)
+target_include_directories(oculus_sonar_node PRIVATE include)
 target_link_libraries(oculus_sonar_node PRIVATE
     ${ament_LIBRARIES}
     narval_oculus
@@ -83,7 +83,7 @@ if(TARGET rtac_display)
         src/PingRenderer.cpp
         src/oculus_sonar_display.cpp
     )
-    target_include_directories(oculus_sonar_display PRIVATE src)
+    target_include_directories(oculus_sonar_display PRIVATE include)
     target_link_libraries(oculus_sonar_display PRIVATE
         ${catkin_LIBRARIES}
         narval_oculus

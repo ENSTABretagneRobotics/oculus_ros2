@@ -9,6 +9,7 @@ using namespace std;
 #include <boost/thread/recursive_mutex.hpp>
 #include "ros/ros.h"
 
+
 #include <narval_oculus/AsyncService.h>
 #include <narval_oculus/SonarDriver.h>
 
@@ -18,7 +19,7 @@ using namespace std;
 #include <dynamic_reconfigure/server.h>
 #include <oculus_sonar/OculusSonarConfig.h>
 
-#include <conversions.h>
+#include <include/conversions.h>
 
 using SonarDriver = narval::oculus::SonarDriver;
 
