@@ -1,22 +1,22 @@
 OculusHeader hdr
 
-uint32  device_id
-uint16  device_type
-uint16  part_number
+uint32  deviceId
+uint16  deviceType
+uint16  partNumber
 uint32  status
 
-OculusVersionInfo versin_info
+OculusVersionInfo versinInfo
 
-uint32  ip_addr
-uint32  ip_mask
-uint32  connected_ip_addr
+uint32  ipAddr
+uint32  ipMask
+uint32  connectedIpAddr
 
-uint8   mac_addr0
-uint8   mac_addr1
-uint8   mac_addr2
-uint8   mac_addr3
-uint8   mac_addr4
-uint8   mac_addr5
+uint8   macAddr0
+uint8   macAddr1
+uint8   macAddr2
+uint8   macAddr3
+uint8   macAddr4
+uint8   macAddr5
 
 float64 temperature0
 float64 temperature1

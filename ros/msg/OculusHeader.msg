@@ -1,9 +1,9 @@
-uint16 oculus_id
-uint16 src_device_id
-uint16 dst_device_id
-uint16 msg_id
-uint16 msg_version
-uint32 payload_size
+uint16 oculusId
+uint16 srcDeviceId
+uint16 dstDeviceId
+uint16 msgId
+uint16 msgVersion
+uint32 payloadSize
 uint16 spare2
 
 
