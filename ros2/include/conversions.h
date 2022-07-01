@@ -2,11 +2,11 @@
 #define _DEF_NARVAL_OCULUS_ROS_CONVERSIONS_H_
 
 #include <narval_oculus/Oculus.h>
-#include <oculus_sonar/OculusHeader.h>
-#include <oculus_sonar/OculusVersionInfo.h>
-#include <oculus_sonar/OculusStatus.h>
-#include <oculus_sonar/OculusFireConfig.h>
-#include <oculus_sonar/OculusPing.h>
+#include <oculus_sonar/msg/OculusHeader.hpp>
+#include <oculus_sonar/msg/OculusVersionInfo.hpp>
+#include <oculus_sonar/msg/OculusStatus.hpp>
+#include <oculus_sonar/msg/OculusFireConfig.hpp>
+#include <oculus_sonar/msg/OculusPing.hpp>
 
 namespace narval { namespace oculus {
 
