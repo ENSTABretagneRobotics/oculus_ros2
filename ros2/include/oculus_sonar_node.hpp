@@ -8,8 +8,8 @@
 #include <narval_oculus/AsyncService.h>
 #include <narval_oculus/SonarDriver.h>
 
-#include <oculus_sonar/OculusStatus.h>
-#include <oculus_sonar/OculusStampedPing.h>
+#include <oculus_sonar/msg/OculusStatus.hpp>
+#include <oculus_sonar/msg/OculusStampedPing.hpp>
 
 class OculusSonarNode : public rclcpp::Node
 {

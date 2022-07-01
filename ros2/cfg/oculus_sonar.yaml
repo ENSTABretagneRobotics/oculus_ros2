@@ -1,5 +1,6 @@
 # oculus_sonar:
 # ros__parameters:
+frame_id: "sonar" # Frame of reference for the ping messages.
 ping_topic: "ping" # Topic name where ping messages are published.
 status_topic: "status" # Topic name where status messages are published.
 
@@ -34,9 +35,9 @@ nbeams: 0 # Number of ping beams.
 #  0: Oculus outputs 256 beams.
 #  1: Oculus outputs 512 beams.
 
-send_gain: "False" # Send range gain with data.
-gain_assist: "False" # Enable auto gain.
-# full_ping: "False" # Send full ping message.
+send_gain: false # Send range gain with data.
+gain_assist: false # Enable auto gain.
+# full_ping: false # Send full ping message.
 
 range: 3.0 # Sonar range (in meters), min=0.3, max=40.0.
 
@@ -45,5 +46,5 @@ gamma_correction: 127 # Gamma correction, min=0, max=255
 gain_percent: 50.0 # Gain percentage (%), min=0.1, max=100.0
 
 sound_speed: 0.0 # Sound speed (in m/s, set to 0 for it to be calculated using salinity), min=1400.0, max=1600.0
-use_salinity: "True" # Use salinity to calculate sound_speed.
-salinity: 0.0 # Salinity (in parts per thousand (ppt,ppm,g/kg), used to calculate sound speed if needed, min=0.0, max=100
+use_salinity: true # Use salinity to calculate sound_speed.
+salinity: 0.0 # Salinity (in parts per thousand (ppt,ppm,g/kg), used to calculate sound speed if needed), min=0.0, max=100
