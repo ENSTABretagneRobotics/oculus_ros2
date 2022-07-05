@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(oculus_sonar VERSION 0.1)
+project(oculus_ros2 VERSION 0.1)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -9,26 +9,26 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
-find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(oculus_interfaces REQUIRED)
 
-if(NOT TARGET narval_oculus)
-    find_package(narval_oculus REQUIRED)
+if(NOT TARGET oculus_driver)
+    find_package(oculus_driver REQUIRED)
 endif()
 
 # Generate Messages/Services
 # find_package(builtin_interfaces REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
+# find_package(rosidl_default_generators REQUIRED)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/OculusHeader.msg"
-  "msg/OculusVersionInfo.msg"
-  "msg/OculusStatus.msg"
-  "msg/OculusFireConfig.msg"
-  "msg/OculusPing.msg"
-  "msg/OculusStampedPing.msg"
-  DEPENDENCIES std_msgs #builtin_interfaces
-)
+# rosidl_generate_interfaces(${PROJECT_NAME}
+#   "msg/OculusHeader.msg"
+#   "msg/OculusVersionInfo.msg"
+#   "msg/OculusStatus.msg"
+#   "msg/OculusFireConfig.msg"
+#   "msg/OculusPing.msg"
+#   "msg/OculusStampedPing.msg"
+#   DEPENDENCIES std_msgs #builtin_interfaces
+# )
 
 # replace with target include directories ?
 include_directories(${rclcpp_INCLUDE_DIRS})
@@ -43,8 +43,15 @@ add_executable(oculus_sonar_node
     src/oculus_sonar_node.cpp
 )
 # target_include_directories(oculus_sonar_node include)
-target_link_libraries(oculus_sonar_node
-    narval_oculus
+# target_link_libraries(oculus_sonar_node
+#     oculus_driver
+# )
+
+ament_target_dependencies(oculus_sonar_node
+  rclcpp
+  oculus_driver
+  builtin_interfaces
+  oculus_interfaces
 )
 
 # INSTALL
@@ -53,14 +60,14 @@ install(PROGRAMS scripts/bag_to_oculus
 install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
 
 # EXPORTS
-ament_export_dependencies(rosidl_default_runtime)
+ament_export_dependencies(
+  oculus_driver
+  builtin_interfaces
+  oculus_interfaces
+)
 
-# ament_target_dependencies(oculus_sonar_node
-#   "rclcpp"
-# )
-
-rosidl_target_interfaces(oculus_sonar_node
-  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+# rosidl_target_interfaces(oculus_sonar_node
+#   ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 ament_package()
 

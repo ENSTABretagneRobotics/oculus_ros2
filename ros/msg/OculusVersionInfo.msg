@@ -1,7 +1,0 @@
-uint32 firmwareVersion0
-uint32 firmwareDate0
-uint32 firmwareVersion1
-uint32 firmwareDate1
-uint32 firmwareVersion2
-uint32 firmwareDate2
-
