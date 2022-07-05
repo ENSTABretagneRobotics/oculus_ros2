@@ -2,8 +2,7 @@ using namespace std;
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 
-#include <include/conversions.h>
-#include <include/oculus_sonar_node.hpp>
+#include "oculus_sonar_node.hpp"
 
 using SonarDriver = narval::oculus::SonarDriver;
 
@@ -78,6 +77,53 @@ OculusSonarNode::OculusSonarNode() : Node('oculus_sonar')
 OculusSonarNode::~OculusSonarNode()
 {
     this->io_service_->stop();
+}
+
+void publish_status(const OculusStatusMsg& status)
+{
+    static oculus_sonar::msg::OculusStatus msg;
+    
+    narval::oculus::copy_to_ros(msg, status);
+
+    this->status_publisher_->publish(msg);
+}
+
+inline rclcpp::Time to_ros_stamp(const SonarDriver::TimePoint& stamp)
+{
+    size_t nano = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        stamp.time_since_epoch()).count();
+    size_t seconds = nano / 1000000000;
+    return rclcpp::Time(seconds, nano - 1000000000*seconds);
+}
+
+void publish_ping(const OculusSimplePingResult& pingMetadata,
+                  const std::vector<uint8_t>& pingData)
+{
+    static oculus_sonar::msg::OculusStampedPing msg;
+     
+    
+    if(this->ping_publisher_->getNumSubscribers() == 0) {
+        cout << "Going to standby mode" << endl;
+        this->sonar_driver_->standby();
+        //return;
+    }
+    
+    narval::oculus::copy_to_ros(msg.ping, pingMetadata);
+    msg.ping.data.resize(pingData.size());
+    for(int i = 0; i < msg.ping.data.size(); i++)
+        msg.ping.data[i] = pingData[i];
+
+    msg.header.stamp    = to_ros_stamp(this->sonar_driver_->last_header_stamp());
+    msg.header.frame_id = "oculus_sonar";
+    this->ping_publisher_->publish(msg);
+}
+
+void handle_dummy(const OculusMessageHeader& header)
+{
+    if(this->ping_publisher_->getNumSubscribers() > 0) {
+        cout << "Exiting standby mode" << endl;
+        this->sonar_driver_->resume();
+    }
 }
 
 rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(

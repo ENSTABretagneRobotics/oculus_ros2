@@ -1,4 +1,4 @@
-Header header
+std_msgs/Header header
 
 OculusFireConfig fire_message
 uint32  ping_id

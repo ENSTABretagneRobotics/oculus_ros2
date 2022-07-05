@@ -17,7 +17,7 @@ if(NOT TARGET narval_oculus)
 endif()
 
 # Generate Messages/Services
-find_package(builtin_interfaces REQUIRED)
+# find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -27,7 +27,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OculusFireConfig.msg"
   "msg/OculusPing.msg"
   "msg/OculusStampedPing.msg"
-  DEPENDENCIES builtin_interfaces std_msgs
+  DEPENDENCIES std_msgs #builtin_interfaces
 )
 
 # replace with target include directories ?
@@ -42,20 +42,25 @@ include_directories(
 add_executable(oculus_sonar_node
     src/oculus_sonar_node.cpp
 )
-target_include_directories(oculus_sonar_node PRIVATE include)
-target_link_libraries(oculus_sonar_node PRIVATE
-    ${ament_LIBRARIES}
+# target_include_directories(oculus_sonar_node include)
+target_link_libraries(oculus_sonar_node
     narval_oculus
 )
 
-# ament_lint_auto_find_test_dependencies()
-
+# INSTALL
 install(PROGRAMS scripts/bag_to_oculus
         DESTINATION bin)
+install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
 
 # EXPORTS
-ament_export_include_directories(include)                  
 ament_export_dependencies(rosidl_default_runtime)
+
+# ament_target_dependencies(oculus_sonar_node
+#   "rclcpp"
+# )
+
+rosidl_target_interfaces(oculus_sonar_node
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 ament_package()
 
