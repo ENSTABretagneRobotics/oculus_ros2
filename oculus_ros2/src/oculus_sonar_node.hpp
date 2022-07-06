@@ -7,11 +7,11 @@
 
 #include "conversions.h"
 
-#include <narval_oculus/AsyncService.h>
-#include <narval_oculus/SonarDriver.h>
+#include <oculus_driver/AsyncService.h>
+#include <oculus_driver/SonarDriver.h>
 
-#include "oculus_sonar/msg/OculusStatus.hpp"
-#include "oculus_sonar/msg/OculusStampedPing.hpp"
+#include "oculus_sonar/msg/oculus_status.hpp"
+#include "oculus_sonar/msg/oculus_stamped_ping.hpp"
 
 class OculusSonarNode : public rclcpp::Node
 {

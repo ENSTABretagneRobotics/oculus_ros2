@@ -11,24 +11,11 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(oculus_interfaces REQUIRED)
+find_package(Boost 1.71.0 COMPONENTS system thread REQUIRED)
 
 if(NOT TARGET oculus_driver)
     find_package(oculus_driver REQUIRED)
 endif()
-
-# Generate Messages/Services
-# find_package(builtin_interfaces REQUIRED)
-# find_package(rosidl_default_generators REQUIRED)
-
-# rosidl_generate_interfaces(${PROJECT_NAME}
-#   "msg/OculusHeader.msg"
-#   "msg/OculusVersionInfo.msg"
-#   "msg/OculusStatus.msg"
-#   "msg/OculusFireConfig.msg"
-#   "msg/OculusPing.msg"
-#   "msg/OculusStampedPing.msg"
-#   DEPENDENCIES std_msgs #builtin_interfaces
-# )
 
 # replace with target include directories ?
 include_directories(${rclcpp_INCLUDE_DIRS})
@@ -50,7 +37,6 @@ add_executable(oculus_sonar_node
 ament_target_dependencies(oculus_sonar_node
   rclcpp
   oculus_driver
-  builtin_interfaces
   oculus_interfaces
 )
 

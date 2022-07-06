@@ -19,6 +19,9 @@ endif()
 
 # Generate Messages/Services
 find_package(rosidl_default_generators REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+
+list(APPEND TARGET_DEPENDENCIES rosidl_default_generators)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OculusHeader.msg"
@@ -27,7 +30,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OculusFireConfig.msg"
   "msg/OculusPing.msg"
   "msg/OculusStampedPing.msg"
-  DEPENDENCIES std_msgs
+  DEPENDENCIES builtin_interfaces std_msgs
 )
 
 # EXPORTS
