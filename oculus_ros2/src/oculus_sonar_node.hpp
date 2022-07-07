@@ -10,8 +10,8 @@
 #include <oculus_driver/AsyncService.h>
 #include <oculus_driver/SonarDriver.h>
 
-#include "oculus_sonar/msg/oculus_status.hpp"
-#include "oculus_sonar/msg/oculus_stamped_ping.hpp"
+#include "oculus_interfaces/msg/oculus_status.hpp"
+#include "oculus_interfaces/msg/oculus_stamped_ping.hpp"
 
 class OculusSonarNode : public rclcpp::Node
 {
@@ -21,11 +21,12 @@ class OculusSonarNode : public rclcpp::Node
 
 
   private:
-    narval::oculus::SonarDriver sonar_driver_{nullptr};
-    narval::oculus::AsyncService io_service_{nullptr};
+    narval::oculus::SonarDriver sonar_driver_;
+    narval::oculus::AsyncService io_service_;
 
-    rclcpp::Publisher<oculus_sonar::msg::OculusStatus>::SharedPtr status_publisher_{nullptr};
-    rclcpp::Publisher<oculus_sonar::msg::OculusStampedPing>::SharedPtr ping_publisher_{nullptr};
+    std::string ping_topic_, status_topic_;
+    rclcpp::Publisher<oculus_interfaces::msg::OculusStatus>::SharedPtr status_publisher_{nullptr};
+    rclcpp::Publisher<oculus_interfaces::msg::OculusStampedPing>::SharedPtr ping_publisher_{nullptr};
     
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_{nullptr};
 

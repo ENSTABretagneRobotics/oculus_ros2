@@ -10,18 +10,18 @@
 
 namespace narval { namespace oculus {
 
-void copy_to_ros(oculus_sonar::msg::OculusHeader::SharedPtr msg, const OculusMessageHeader& header)
+void copy_to_ros(oculus_interfaces::msg::OculusHeader &msg, const OculusMessageHeader& header)
 {
     msg.oculus_id     = header.oculusId;
-    msg.srcDevice_id  = header.srcDeviceId;
-    msg.dstDevice_id  = header.dstDeviceId;
+    msg.src_device_id  = header.srcDeviceId;
+    msg.dst_device_id  = header.dstDeviceId;
     msg.msg_id        = header.msgId;
     msg.msg_version   = header.msgVersion;
     msg.payload_size  = header.payloadSize;
     msg.spare2       = header.spare2;
 }
 
-void copy_to_ros(oculus_sonar::msg::OculusVersionInfo::SharedPtr msg, const OculusVersionInfo& version)
+void copy_to_ros(oculus_interfaces::msg::OculusVersionInfo &msg, const OculusVersionInfo& version)
 {
     msg.firmware_version0 = version.firmwareVersion0;
     msg.firmware_date0    = version.firmwareDate0;
@@ -31,7 +31,7 @@ void copy_to_ros(oculus_sonar::msg::OculusVersionInfo::SharedPtr msg, const Ocul
     msg.firmware_date2    = version.firmwareDate2;
 }
 
-void copy_to_ros(oculus_sonar::msg::OculusStatus::SharedPtr msg, const OculusStatusMsg& status)
+void copy_to_ros(oculus_interfaces::msg::OculusStatus &msg, const OculusStatusMsg& status)
 {
     copy_to_ros(msg.hdr, status.hdr);
 
@@ -40,7 +40,7 @@ void copy_to_ros(oculus_sonar::msg::OculusStatus::SharedPtr msg, const OculusSta
     msg.part_number      = status.partNumber;
     msg.status          = status.status;
 
-    copy_to_ros(msg.versinInfo,status.versinInfo);
+    copy_to_ros(msg.versin_info,status.versinInfo);
 
     msg.ip_addr          = status.ipAddr;
     msg.ip_mask          = status.ipMask;
@@ -64,7 +64,7 @@ void copy_to_ros(oculus_sonar::msg::OculusStatus::SharedPtr msg, const OculusSta
     msg.pressure        = status.pressure;
 }
 
-void copy_to_ros(oculus_sonar::msg::OculusFireConfig::SharedPtr msg, const OculusSimpleFireMessage& fireConfig)
+void copy_to_ros(oculus_interfaces::msg::OculusFireConfig &msg, const OculusSimpleFireMessage& fireConfig)
 {
     copy_to_ros(msg.head, fireConfig.head);
 
@@ -79,9 +79,9 @@ void copy_to_ros(oculus_sonar::msg::OculusFireConfig::SharedPtr msg, const Oculu
     msg.salinity        = fireConfig.salinity;
 }
 
-void copy_to_ros(oculus_sonar::msg::OculusPing::SharedPtr msg, const OculusSimplePingResult& ping)
+void copy_to_ros(oculus_interfaces::msg::OculusPing &msg, const OculusSimplePingResult& ping)
 {
-    copy_to_ros(msg.fireMessage, ping.fireMessage);
+    copy_to_ros(msg.fire_message, ping.fireMessage);
     msg.ping_id            = ping.pingId;
     msg.status            = ping.status;
     msg.frequency         = ping.frequency;
@@ -98,7 +98,7 @@ void copy_to_ros(oculus_sonar::msg::OculusPing::SharedPtr msg, const OculusSimpl
     msg.message_size       = ping.messageSize;
 }
 
-}; //namespace oculus
-}; //namespace narval
+} //namespace oculus
+} //namespace narval
 
 #endif //_DEF_NARVAL_OCULUS_ROS_CONVERSIONS_H_

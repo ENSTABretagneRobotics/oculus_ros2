@@ -6,7 +6,7 @@ using namespace std;
 
 using SonarDriver = narval::oculus::SonarDriver;
 
-OculusSonarNode::OculusSonarNode() : Node('oculus_sonar')
+OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
 {
     if (!this->has_parameter("frame_id")) {
         this->declare_parameter<string>("frame_id", "sonar");
@@ -53,35 +53,34 @@ OculusSonarNode::OculusSonarNode() : Node('oculus_sonar')
     if (!this->has_parameter("salinity")) {
         this->declare_parameter<double>("salinity", 0.0);
     }
-    std::string pingTopic, statusTopic;
-    this->get_parameter("ping_topic", pingTopic);
-    this->get_parameter("status_topic", statusTopic);
+    this->get_parameter("ping_topic", ping_topic_);
+    this->get_parameter("status_topic", status_topic_);
 
     this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, _1));
     
-    this->ping_publisher_ = this->create_publisher<oculus_sonar::msg::OculusStampedPing>(pingTopic, 100);
-    this->status_publisher_ = this->create_publisher<oculus_sonar::msg::OculusStatus>(statusTopic, 100);
+    this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStampedPing>(ping_topic_, 100);
+    this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(status_topic_, 100);
 
-    this->sonar_driver_ = SonarDriver(this->io_service_->io_service());
-    this->io_service_->start();
+    this->sonar_driver_ = SonarDriver(this->io_service_.io_service());
+    this->io_service_.start();
     if(!this->sonar_driver_.wait_next_message()) {
         std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
                   << "Is it properly connected ?" << std::endl;
     }
-    this->sonar_driver_->add_status_callback(&publish_status, this->status_publisher_);
-    this->sonar_driver_->add_ping_callback(&publish_ping, this->sonar_driver_, this->ping_publisher_);
+    this->sonar_driver_.add_status_callback(this->publish_status, this->status_publisher_);
+    this->sonar_driver_.add_ping_callback(this->publish_ping, this->sonar_driver_, this->ping_publisher_);
     // callback on dummy messages to reactivate the pings as needed
-    this->sonar_driver_->add_dummy_callback(&handle_dummy, this->sonar_driver_, this->ping_publisher_);
+    this->sonar_driver_.add_dummy_callback(this->handle_dummy, this->sonar_driver_, this->ping_publisher_);
 }
 
 OculusSonarNode::~OculusSonarNode()
 {
-    this->io_service_->stop();
+    this->io_service_.stop();
 }
 
-void publish_status(const OculusStatusMsg& status)
+void OculusSonarNode::publish_status(const OculusStatusMsg& status)
 {
-    static oculus_sonar::msg::OculusStatus msg;
+    static oculus_interfaces::msg::OculusStatus msg;
     
     narval::oculus::copy_to_ros(msg, status);
 
@@ -96,15 +95,15 @@ inline rclcpp::Time to_ros_stamp(const SonarDriver::TimePoint& stamp)
     return rclcpp::Time(seconds, nano - 1000000000*seconds);
 }
 
-void publish_ping(const OculusSimplePingResult& pingMetadata,
+void OculusSonarNode::publish_ping(const OculusSimplePingResult& pingMetadata,
                   const std::vector<uint8_t>& pingData)
 {
-    static oculus_sonar::msg::OculusStampedPing msg;
+    static oculus_interfaces::msg::OculusStampedPing msg;
      
     
-    if(this->ping_publisher_->getNumSubscribers() == 0) {
+    if(this->count_subscribers(this->ping_topic_) == 0) {
         cout << "Going to standby mode" << endl;
-        this->sonar_driver_->standby();
+        this->sonar_driver_.standby();
         //return;
     }
     
@@ -113,16 +112,16 @@ void publish_ping(const OculusSimplePingResult& pingMetadata,
     for(int i = 0; i < msg.ping.data.size(); i++)
         msg.ping.data[i] = pingData[i];
 
-    msg.header.stamp    = to_ros_stamp(this->sonar_driver_->last_header_stamp());
+    msg.header.stamp    = to_ros_stamp(this->sonar_driver_.last_header_stamp());
     msg.header.frame_id = "oculus_sonar";
     this->ping_publisher_->publish(msg);
 }
 
-void handle_dummy(const OculusMessageHeader& header)
+void OculusSonarNode::handle_dummy(const OculusMessageHeader& header)
 {
-    if(this->ping_publisher_->getNumSubscribers() > 0) {
+    if(this->count_subscribers(this->ping_topic_) > 0) {
         cout << "Exiting standby mode" << endl;
-        this->sonar_driver_->resume();
+        this->sonar_driver_.resume();
     }
 }
 
@@ -153,9 +152,9 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(
         } else if (param.get_name() == "data_depth") {
             switch(param.as_int())
             {
-                case oculus_sonar::OculusSonar_8bits:
+                case 0: // 8 bits
                     break;
-                case oculus_sonar::OculusSonar_16bits:
+                case 1: // 16 bits
                     currentConfig.flags |= 0x02;
                     break;
                 default:break;
@@ -163,9 +162,9 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(
         } else if (param.get_name() == "nbeams") {
             switch(param.as_int())
             {
-                case oculus_sonar::OculusSonar_256beams:
+                case 0: // 256 beams
                     break;
-                case oculus_sonar::OculusSonar_512beams:
+                case 1: // 512 beams
                     currentConfig.flags |= 0x40;
                     break;
                 default:break;
@@ -205,34 +204,34 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(
         // }
     }
     // send config to Oculus sonar and wait for feedback
-    auto feedback = this->sonar_driver_->request_ping_config(currentConfig);
+    auto feedback = this->sonar_driver_.request_ping_config(currentConfig);
 
     rcl_interfaces::msg::SetParametersResult result;
     result.successful = true;
     result.reason = "";
 
-    if(currentConfig.frequency_mode   != feedback.masterMode)
+    if(currentConfig.masterMode   != feedback.masterMode)
     {
         result.successful = false;
         result.reason.append("frequency_mode ");
     }
-    //currentConfig.ping_rate      != feedback.pingRate // is broken (?) sonar side
-    if(currentConfig.data_depth       != (feedback.flags & 0x02) ? 1 : 0)
+    //currentConfig.pingRate      != feedback.pingRate // is broken (?) sonar side
+    if((currentConfig.flags & 0x02) ? 1 : 0 != (feedback.flags & 0x02) ? 1 : 0)
     {
         result.successful = false;
         result.reason.append("data_depth ");
     }
-    if(currentConfig.send_gain        != (feedback.flags & 0x04) ? 1 : 0)
+    if((currentConfig.flags & 0x04) ? 1 : 0 != (feedback.flags & 0x04) ? 1 : 0)
     {
         result.successful = false;
         result.reason.append("send_gain ");
     }
-    if(currentConfig.gain_assist        != (feedback.flags & 0x10) ? 1 : 0)
+    if((currentConfig.flags & 0x10) ? 1 : 0 != (feedback.flags & 0x10) ? 1 : 0)
     {
         result.successful = false;
         result.reason.append("gain_assist ");
     }
-    if(currentConfig.nbeams           != (feedback.flags & 0x40) ? 1 : 0)
+    if((currentConfig.flags & 0x40) ? 1 : 0 != (feedback.flags & 0x40) ? 1 : 0)
     {
         result.successful = false;
         result.reason.append("nbeams ");
@@ -242,17 +241,17 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(
         result.successful = false;
         result.reason.append("range ");
     }
-    if(currentConfig.gamma_correction != feedback.gammaCorrection)
+    if(currentConfig.gammaCorrection != feedback.gammaCorrection)
     {
         result.successful = false;
         result.reason.append("gamma_correction ");
     }
-    if(currentConfig.gain_percent     != feedback.gainPercent)
+    if(currentConfig.gainPercent     != feedback.gainPercent)
     {
         result.successful = false;
         result.reason.append("gain_percent ");
     }
-    if(currentConfig.sound_speed      != feedback.speedOfSound)
+    if(currentConfig.speedOfSound      != feedback.speedOfSound)
     {
         result.successful = false;
         result.reason.append("sound_speed ");
@@ -262,7 +261,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(
         result.successful = false;
         result.reason.append("salinity ");
     }
-    //currentConfig.full_ping        != (feedback.flags & 0x08) ? 1 : 0
+    //(currentConfig.flags & 0x08) ? 1 : 0 != (feedback.flags & 0x08) ? 1 : 0
     
     if(!result.successful)
         result.reason.append("failed to be changed.");
