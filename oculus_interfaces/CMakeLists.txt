@@ -21,8 +21,6 @@ endif()
 find_package(rosidl_default_generators REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 
-list(APPEND TARGET_DEPENDENCIES rosidl_default_generators)
-
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OculusHeader.msg"
   "msg/OculusVersionInfo.msg"

@@ -56,21 +56,23 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     this->get_parameter("ping_topic", ping_topic_);
     this->get_parameter("status_topic", status_topic_);
 
-    this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, _1));
+    this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, std::placeholders::_1));
     
     this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStampedPing>(ping_topic_, 100);
     this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(status_topic_, 100);
 
-    this->sonar_driver_ = SonarDriver(this->io_service_.io_service());
+    // this->io_service_ = narval::oculus::AsyncService();
+    this->sonar_driver_ = std::make_shared<SonarDriver>(this->io_service_.io_service());
+    // this->sonar_driver_ = SonarDriver(this->io_service_.io_service());
     this->io_service_.start();
-    if(!this->sonar_driver_.wait_next_message()) {
+    if(!this->sonar_driver_->wait_next_message()) {
         std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
                   << "Is it properly connected ?" << std::endl;
     }
-    this->sonar_driver_.add_status_callback(this->publish_status, this->status_publisher_);
-    this->sonar_driver_.add_ping_callback(this->publish_ping, this->sonar_driver_, this->ping_publisher_);
+    this->sonar_driver_->add_status_callback(this->publish_status, this->status_publisher_);
+    this->sonar_driver_->add_ping_callback(this->publish_ping, this->sonar_driver_, this->ping_publisher_);
     // callback on dummy messages to reactivate the pings as needed
-    this->sonar_driver_.add_dummy_callback(this->handle_dummy, this->sonar_driver_, this->ping_publisher_);
+    this->sonar_driver_->add_dummy_callback(this->handle_dummy, this->sonar_driver_, this->ping_publisher_);
 }
 
 OculusSonarNode::~OculusSonarNode()
@@ -103,7 +105,7 @@ void OculusSonarNode::publish_ping(const OculusSimplePingResult& pingMetadata,
     
     if(this->count_subscribers(this->ping_topic_) == 0) {
         cout << "Going to standby mode" << endl;
-        this->sonar_driver_.standby();
+        this->sonar_driver_->standby();
         //return;
     }
     
@@ -112,7 +114,7 @@ void OculusSonarNode::publish_ping(const OculusSimplePingResult& pingMetadata,
     for(int i = 0; i < msg.ping.data.size(); i++)
         msg.ping.data[i] = pingData[i];
 
-    msg.header.stamp    = to_ros_stamp(this->sonar_driver_.last_header_stamp());
+    msg.header.stamp    = to_ros_stamp(this->sonar_driver_->last_header_stamp());
     msg.header.frame_id = "oculus_sonar";
     this->ping_publisher_->publish(msg);
 }
@@ -121,12 +123,11 @@ void OculusSonarNode::handle_dummy(const OculusMessageHeader& header)
 {
     if(this->count_subscribers(this->ping_topic_) > 0) {
         cout << "Exiting standby mode" << endl;
-        this->sonar_driver_.resume();
+        this->sonar_driver_->resume();
     }
 }
 
-rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(
-  const std::vector<rclcpp::Parameter> & parameters)
+rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(const std::vector<rclcpp::Parameter> &parameters)
 {
     SonarDriver::PingConfig currentConfig;
     std::memset(&currentConfig, 0, sizeof(currentConfig));
@@ -204,7 +205,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(
         // }
     }
     // send config to Oculus sonar and wait for feedback
-    auto feedback = this->sonar_driver_.request_ping_config(currentConfig);
+    auto feedback = this->sonar_driver_->request_ping_config(currentConfig);
 
     rcl_interfaces::msg::SetParametersResult result;
     result.successful = true;
