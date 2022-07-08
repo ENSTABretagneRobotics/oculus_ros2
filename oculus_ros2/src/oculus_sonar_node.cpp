@@ -69,10 +69,10 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
         std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
                   << "Is it properly connected ?" << std::endl;
     }
-    this->sonar_driver_->add_status_callback(this->publish_status, this->status_publisher_);
-    this->sonar_driver_->add_ping_callback(this->publish_ping, this->sonar_driver_, this->ping_publisher_);
+    this->sonar_driver_->add_status_callback(std::bind(&OculusSonarNode::publish_status, this, std::placeholders::_1));
+    this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publish_ping, this, std::placeholders::_1, std::placeholders::_2));
     // callback on dummy messages to reactivate the pings as needed
-    this->sonar_driver_->add_dummy_callback(this->handle_dummy, this->sonar_driver_, this->ping_publisher_);
+    this->sonar_driver_->add_dummy_callback(std::bind(&OculusSonarNode::handle_dummy, this));
 }
 
 OculusSonarNode::~OculusSonarNode()
@@ -119,7 +119,7 @@ void OculusSonarNode::publish_ping(const OculusSimplePingResult& pingMetadata,
     this->ping_publisher_->publish(msg);
 }
 
-void OculusSonarNode::handle_dummy(const OculusMessageHeader& header)
+void OculusSonarNode::handle_dummy()
 {
     if(this->count_subscribers(this->ping_topic_) > 0) {
         cout << "Exiting standby mode" << endl;

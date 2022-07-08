@@ -37,5 +37,5 @@ class OculusSonarNode : public rclcpp::Node
     void publish_status(const OculusStatusMsg& status);
     void publish_ping(const OculusSimplePingResult& pingMetadata,
                       const std::vector<uint8_t>& pingData);
-    void handle_dummy(const OculusMessageHeader& header);
+    void handle_dummy();
 };
