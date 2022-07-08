@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(oculus_interfaces REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(Boost 1.71.0 COMPONENTS system thread REQUIRED)
 
 if(NOT TARGET oculus_driver)
@@ -38,6 +39,7 @@ ament_target_dependencies(oculus_sonar_node
   rclcpp
   oculus_driver
   oculus_interfaces
+  rcl_interfaces
 )
 
 # INSTALL
@@ -46,11 +48,11 @@ install(PROGRAMS scripts/bag_to_oculus
 install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
 
 # EXPORTS
-ament_export_dependencies(
-  oculus_driver
-  builtin_interfaces
-  oculus_interfaces
-)
+# ament_export_dependencies(
+#   oculus_driver
+#   builtin_interfaces
+#   oculus_interfaces
+# )
 
 # rosidl_target_interfaces(oculus_sonar_node
 #   ${PROJECT_NAME} "rosidl_typesupport_cpp")

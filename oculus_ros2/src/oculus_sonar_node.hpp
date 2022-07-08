@@ -13,6 +13,8 @@
 #include "oculus_interfaces/msg/oculus_status.hpp"
 #include "oculus_interfaces/msg/oculus_stamped_ping.hpp"
 
+#include "rcl_interfaces/msg/parameter_descriptor.hpp"
+
 class OculusSonarNode : public rclcpp::Node
 {
   public:
