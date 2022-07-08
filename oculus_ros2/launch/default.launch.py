@@ -8,6 +8,7 @@ from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
+    pkg_oculus = get_package_share_directory('oculus_ros2')
     
     ld = LaunchDescription()
     
@@ -16,14 +17,14 @@ def generate_launch_description():
         default_value='this_is_a_port',
         description='Filters Configuration'))
     
-    config = os.path.join(
-      get_package_share_directory('oculus_sonar'),
-      'cfg',
-      'oculus_sonar.yaml'
-      )
+    # config = os.path.join(
+    #   get_package_share_directory('oculus_ros2'),
+    #   'cfg',
+    #   'oculus_sonar.yaml'
+    #   )
    
     oculus_sonar_node = Node(
-         package='oculus_sonar',
+         package='oculus_ros2',
          executable='oculus_sonar_node',
          name='oculus_sonar',
         #  parameters=[config],

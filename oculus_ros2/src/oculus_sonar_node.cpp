@@ -11,12 +11,12 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     if (!this->has_parameter("frame_id")) {
         this->declare_parameter<string>("frame_id", "sonar");
     }
-    // if (!this->has_parameter("ping_topic")) {
-    //     this->declare_parameter<string>("ping_topic", "ping");
-    // }
-    // if (!this->has_parameter("status_topic")) {
-    //     this->declare_parameter<string>("status_topic", "ping");
-    // }
+    if (!this->has_parameter("ping_topic")) {
+        this->declare_parameter<string>("ping_topic", "ping");
+    }
+    if (!this->has_parameter("status_topic")) {
+        this->declare_parameter<string>("status_topic", "ping");
+    }
     if (!this->has_parameter("frequency_mode")) {
         rcl_interfaces::msg::ParameterDescriptor param_desc;
         rcl_interfaces::msg::IntegerRange range;
@@ -104,7 +104,7 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     if (!this->has_parameter("sound_speed")) {
         rcl_interfaces::msg::ParameterDescriptor param_desc;
         rcl_interfaces::msg::FloatingPointRange range;
-        range.set__from_value(1400.0).set__to_value(1600.0).set__step(0.1);
+        range.set__from_value(0.0).set__to_value(1600.0).set__step(0.1); // min = 1400.0 but must include 0.0 for configuration
         param_desc.name = "sound_speed";
         param_desc.type = rclcpp::ParameterType::PARAMETER_DOUBLE;
         param_desc.description = "Sound speed (in m/s, set to 0 for it to be calculated using salinity), min=1400.0, max=1600.0.";
@@ -137,7 +137,6 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(status_topic_, 100);
 
     this->sonar_driver_ = std::make_shared<SonarDriver>(this->io_service_.io_service());
-    // this->sonar_driver_ = SonarDriver(this->io_service_.io_service());
     this->io_service_.start();
     if(!this->sonar_driver_->wait_next_message()) {
         std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "

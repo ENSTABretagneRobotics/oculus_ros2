@@ -47,15 +47,9 @@ install(PROGRAMS scripts/bag_to_oculus
         DESTINATION bin)
 install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
 
-# EXPORTS
-# ament_export_dependencies(
-#   oculus_driver
-#   builtin_interfaces
-#   oculus_interfaces
-# )
-
-# rosidl_target_interfaces(oculus_sonar_node
-#   ${PROJECT_NAME} "rosidl_typesupport_cpp")
+install(TARGETS 
+  oculus_sonar_node
+  DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
 
