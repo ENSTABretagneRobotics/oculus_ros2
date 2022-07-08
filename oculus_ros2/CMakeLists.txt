@@ -30,10 +30,6 @@ include_directories(
 add_executable(oculus_sonar_node
     src/oculus_sonar_node.cpp
 )
-# target_include_directories(oculus_sonar_node include)
-# target_link_libraries(oculus_sonar_node
-#     oculus_driver
-# )
 
 ament_target_dependencies(oculus_sonar_node
   rclcpp
