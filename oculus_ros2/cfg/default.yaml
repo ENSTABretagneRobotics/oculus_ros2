@@ -1,0 +1,48 @@
+oculus_sonar:
+  ros__parameters:
+    frame_id: "sonar" # Frame of reference for the ping messages.
+
+    frequency_mode: 1 # Sonar beam frequency mode.
+    # 1: Low frequency (1.2MHz, wide aperture).
+    # 2: High frequency (2.1MHz, narrow aperture).
+
+    ping_rate: 0 # Frequency of ping fires.
+    # 0: 10Hz max ping rate.
+    # 1: 15Hz max ping rate.
+    # 2: 40Hz max ping rate.
+    # 3: 5Hz max ping rate.
+    # 4: 2Hz max ping rate.
+    # 5: Standby mode (no ping fire).
+
+    # # Hint on available network speed (no feedback, sonar seems to ignore it)
+    # network_speed: 0 # Hint on network available speed ? min=0, max=255
+
+    # Set to non-configurable (by choice)
+    # # the next 3 parameters are used to fill the OculusFireMessage.flags parameter
+    # # For now only compatible with SimplePingResult
+    # range_type: 1 # Range unit type.
+    # 0: Interpret range in percents.
+    # 1: Interpret range in meters.
+
+
+    data_depth: 0 # Ping data encoding bit count.
+    # 0: Ping data encoded on 8bits.
+    # 1: Ping data encoded on 16bits.
+
+    nbeams: 0 # Number of ping beams.
+    #  0: Oculus outputs 256 beams.
+    #  1: Oculus outputs 512 beams.
+
+    send_gain: false # Send range gain with data.
+    gain_assist: false # Enable auto gain.
+    # full_ping: false # Send full ping message.
+
+    range: 3.0 # Sonar range (in meters), min=0.3, max=40.0.
+
+    # These parameters are for scaling data (investigate)
+    gamma_correction: 127 # Gamma correction, min=0, max=255
+    gain_percent: 50.0 # Gain percentage (%), min=0.1, max=100.0
+
+    sound_speed: 0.0 # Sound speed (in m/s, set to 0 for it to be calculated using salinity), min=1400.0, max=1600.0
+    use_salinity: true # Use salinity to calculate sound_speed.
+    salinity: 0.0 # Salinity (in parts per thousand (ppt,ppm,g/kg), used to calculate sound speed if needed), min=0.0, max=100
