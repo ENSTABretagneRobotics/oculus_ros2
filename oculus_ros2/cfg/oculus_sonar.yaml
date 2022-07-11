@@ -1,12 +1,10 @@
 # oculus_sonar:
 # ros__parameters:
 frame_id: "sonar" # Frame of reference for the ping messages.
-# ping_topic: "ping" # Topic name where ping messages are published.
-# status_topic: "status" # Topic name where status messages are published.
 
 frequency_mode: 1 # Sonar beam frequency mode.
 # 1: Low frequency (1.2MHz, wide aperture).
-# 2: High frequency (2.1Mhz, narrow aperture).
+# 2: High frequency (2.1MHz, narrow aperture).
 
 ping_rate: 0 # Frequency of ping fires.
 # 0: 10Hz max ping rate.
