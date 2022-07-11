@@ -73,4 +73,7 @@ Parameter name: ping_rate
 
 ```
 
-To dynamically reconfigure the sonar parameters, use the RQT Dynamic Reconfigure GUI.
+To dynamically reconfigure the sonar parameters, use the RQT Dynamic Reconfigure GUI, or use the following example command line:
+```
+ros2 param set /oculus_sonar gain_assist true
+```
