@@ -73,4 +73,4 @@ Parameter name: ping_rate
 
 ```
 
-To dynamically reconfigure the sonar parameters, use RQT Dynamic Reconfigure.
+To dynamically reconfigure the sonar parameters, use the RQT Dynamic Reconfigure GUI.
