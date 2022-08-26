@@ -4,7 +4,7 @@
   <version>0.0.1</version>
   <description>ROS node for BluePrint subsea Oculus sonar</description>
 
-  <maintainer email="pierre.narvor@ensta-bretagne.fr">Pierre Narvor</maintainer>
+  <maintainer email="auguste@forssea-robotics.fr">Auguste BOURGOIS</maintainer>
 
   <license>BSD3</license>
 
@@ -23,7 +23,6 @@
   <exec_depend>message_runtime</exec_depend>
 
   <depend>Boost</depend>
-  <depend>oculus_driver</depend>
   <depend>oculus_interfaces</depend>
   <depend>rcl_interfaces</depend>
 

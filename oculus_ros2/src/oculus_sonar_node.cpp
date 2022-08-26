@@ -4,7 +4,7 @@ using namespace std;
 
 #include "oculus_sonar_node.hpp"
 
-using SonarDriver = narval::oculus::SonarDriver;
+using SonarDriver = oculus::SonarDriver;
 
 OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
 {
@@ -151,7 +151,7 @@ void OculusSonarNode::publish_status(const OculusStatusMsg& status)
 {
     static oculus_interfaces::msg::OculusStatus msg;
     
-    narval::oculus::copy_to_ros(msg, status);
+    oculus::copy_to_ros(msg, status);
 
     this->status_publisher_->publish(msg);
 }
@@ -176,7 +176,7 @@ void OculusSonarNode::publish_ping(const OculusSimplePingResult& pingMetadata,
         //return;
     }
     
-    narval::oculus::copy_to_ros(msg.ping, pingMetadata);
+    oculus::copy_to_ros(msg.ping, pingMetadata);
     msg.ping.data.resize(pingData.size());
     for(int i = 0; i < msg.ping.data.size(); i++)
         msg.ping.data[i] = pingData[i];

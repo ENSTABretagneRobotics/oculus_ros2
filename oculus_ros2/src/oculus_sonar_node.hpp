@@ -23,8 +23,8 @@ class OculusSonarNode : public rclcpp::Node
 
 
   private:
-    std::shared_ptr<narval::oculus::SonarDriver> sonar_driver_;
-    narval::oculus::AsyncService io_service_;
+    std::shared_ptr<oculus::SonarDriver> sonar_driver_;
+    oculus::AsyncService io_service_;
 
     std::string ping_topic_ = "ping";
     std::string status_topic_ = "status";
