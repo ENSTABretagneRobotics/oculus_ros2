@@ -13,7 +13,7 @@ find_package(oculus_driver QUIET)
 if(NOT TARGET oculus_driver)
     include(FetchContent)
     FetchContent_Declare(oculus_driver
-        GIT_REPOSITORY   https://github.com/pnarvor/oculus_driver.git
+        GIT_REPOSITORY   https://github.com/ENSTABretagneRobotics/oculus_driver.git
         GIT_TAG          v1.0
     )
     FetchContent_MakeAvailable(oculus_driver)
