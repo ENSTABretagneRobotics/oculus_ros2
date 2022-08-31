@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(oculus_ros2 VERSION 0.1)
+project(oculus_ros2 VERSION 1.0)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -14,7 +14,7 @@ if(NOT TARGET oculus_driver)
     include(FetchContent)
     FetchContent_Declare(oculus_driver
         GIT_REPOSITORY   https://github.com/pnarvor/oculus_driver.git
-        GIT_TAG          pnarvor
+        GIT_TAG          v1.0
     )
     FetchContent_MakeAvailable(oculus_driver)
 endif()

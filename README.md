@@ -1,31 +1,65 @@
-# NARVAL Oculus
+# Oculus sonar ROS2
 
-Simple C++ driver library for the Blueprint Subsea Oculus sonar.
+ROS2 node for the Blueprint Subsea Oculus sonar.
 
-Also contains a simple ROS1 node. The ROS node is not the primary focus of this
-repository and might be limited in its features compared to the narval_oculus
-driver library (although it is very usable). Feel free to make your own or
-upgrade this one !
+## Metapackage description
 
-Note : this library was only tested on Ubuntu-based systems. Although it was
-made with cross-compatible tools (Boost library, CMake), don't expect this to
-work out of the box with other systems.
+This is a ROS2 metapackage including:
+ * A ROS2 package **oculus_interfaces** containing the useful ROS messages definitions,
+ * A ROS2 package **oculus_ros2** interfacing the driver messages with ROS2 topics,
+ * A ROS2 package **oculus_image_converter** converting the sonar raw images into a fan-shaped view and publishing them on a ROS2 topic (TO DO @estellearrc).
+
+## Requirements
+
+This ROS2 metapackage was developed and tested using:
+* Ubuntu 20.04 LTS 
+* ROS2 galactic
+* CMake 3.23
+
 
 ## Getting started
 
-The narval_oculus driver library must be compiled and installed before the ROS
-node is compiled. The installation location must be listed under the
-CMAKE_PREFIX_PATH environment variable for catkin to be able to find it when
-compiling the ROS node.
+### Installation (with internet connection)
 
-### Compiling and installing the narval_oculus driver library
+**The oculus_ros2 node is merely a wrapper and depends on an external
+oculus_driver library which does most of the work. This library will be
+automatically downloaded during the colcon build process. If you don't have an
+internet connection available, see the instruction further below.**
 
-This library follows a standard CMake compilation procedure.
+Create or go to your colcon workspace into the *src* folder:
+```
+cd <your colcon workspace>/src
+```
 
-Create a build directory :
+Clone the metapackage repository:
+```
+git clone https://github.com/forssea-robotics/narval_oculus.git
+```
+
+Compile the metapackage:
+```
+cd .. && colcon build
+source install/setup.bash
+```
+
+### Installation (without an internet connection)
+
+#### Install the oculus_driver library
+
+If you don't have an internet connection available on the system on which you
+want to use this node, your have to install the
+[oculus_driver](https://github.com/pnarvor/oculus_driver) library beforehand.
+
+Clone or copy the oculus_driver library :
+```
+git clone https://github.com/pnarvor/oculus_driver.git
+```
+
+This library follows a standard CMake compilation procedure. cd into the repo
+and create a build directory :
 
 ```
-mkdir build && cd build
+cd oculus_driver && mkdir build && cd build
 ```
 
 Generate your build system with CMake, compile and install :
@@ -45,32 +79,71 @@ If not, put this at the end your $HOME/.bashrc file:
 export CMAKE_PREFIX_PATH=<your install location>:$CMAKE_PREFIX_PATH
 ```
 
-### Adding the ROS node to your catkin workspace
+Now follow the oculus_ros2 node installation procedure normally. If the
+oculus_driver is properly installed **at a location included in the
+CMAKE_PREFIX_PATH environment variable**. The node should compile properly.
 
-Create a symlink in your catkin workspace pointing to the "ros" directory in the
-narval_oculus repository.
 
-Go to your catkin workspace "src" folder:
-```
-cd <your catkin workspace>/src
-```
+## Using the oculus_ros2 node
 
-Create a simlink pointing to the narval_oculus/ros package:
+Launch ROS2 node with your listening port for sonar data (default 52102):
 ```
-ln -s <where you cloned the narval_oculus git repository>/narval_oculus/ros oculus_sonar
+ros2 launch oculus_ros2 default.launch.py -port <your port>
 ```
 
-Build the oculus_sonar ROS node:
+**N.B.** Remap topics to change their name in the launch file.
+
+**Always make sure the sonar is underwater before powering it !**
+
+In normal operation the sonar will continuously send ping. Various ping
+parameters can be changed (ping signal frequency, ping rate...). The sonar will
+retain its current configuration between power cycles. This makes very important
+to **not** power up the sonar before putting it underwater. It may send pings
+even if the ROS node is not launched (it should not break right away but will
+heat up very fast).
+
+If the ROS node is launched, it will stop the ping emission if there are no
+subscribers on the /oculus_sonar/ping topic.
+
+### Sonar parameters configuration
+
+The default values used to configure the sonar parameters are [here](/oculus_ros2/cfg/default.yaml). They are declared in the code as ROS2 parameters if no custom configuration is used.
+
+Copy and paste this YAML file to create your custom sonar configuration, and indicate it in the [launch file](/oculus_ros2/launch/default.launch.py) or create your own launch file.
+
+To see all the available parameters use:
 ```
-cd .. && catkin_make
+ros2 param list
+```
+To get a detailed description of a param, for example *ping_rate*, use:
+```
+ros2 param describe /oculus_sonar ping_rate 
+```
+And you get:
+```
+Parameter name: ping_rate
+  Type: integer
+  Description: Frequency of ping fires.
+	0: 10Hz max ping rate.
+	1: 15Hz max ping rate.
+	2: 40Hz max ping rate.
+	3: 5Hz max ping rate.
+	4: 2Hz max ping rate.
+	5: Standby mode (no ping fire).
+  Constraints:
+    Min value: 0
+    Max value: 5
+    Step: 1
+
 ```
 
-Check you can start the node:
+To dynamically reconfigure the sonar parameters, use the RQT Dynamic Reconfigure GUI, or use the following example command line:
 ```
-rosrun oculus_sonar oculus_sonar_node
+ros2 param set /oculus_sonar gain_assist true
 ```
 
-All set !
+The sonar might take a lot of time to acknowledge a parameter change (especially
+parameters related to sound velocity and salinity).
 
 
 ## How it works (in brief)
@@ -81,6 +154,8 @@ The Oculus sonar connects to the system through the network. The sonar itself
 has a fixed IP address which may or may not be indicated on the box. To avoid
 bricking of the sonar by "lack of post-it", the sonar makes himself known on the
 network by broadcasting its own IP address. The IP address is therefore always
+For other problems, feel free to contact the maintainer at
+pierre.narvor@ensta-bretagne.fr.
 retrievable, regardless of your system network configuration.
 
 The oculus_sonar library should always detect the IP of a plugged in Oculus
@@ -98,37 +173,10 @@ on Ubuntu).
 
 #### General operation
 
-**Always make sure the sonar is underwater before powering it !**
-
-In normal operation the sonar will continuously send ping. Various ping
-parameters can be changed (ping signal frequency, ping rate...). The sonar will
-retain its current configuration between power cycles. This makes very important
-to **not** power up the sonar before putting it underwater. It may send pings
-even if the ROS node is not launched (it should not break right away but will
-heat up very fast).
-
-If the ROS node is launched, it will stop the ping emission if there are no
-subscribers on the /oculus_sonar/ping topic.
-
-
-The ping parameters can be changed using the rqt_reconfigure graphical tool.
-```
-rosrun rqt_reconfigure rqt_reconfigure
-```
-The sonar might take a lot of time to acknowledge a parameter change (especially
-parameters related to sound velocity and salinity).
-
-
 ## Troubleshooting
 
 Most of the issue you ~~might~~ will encounter are related to network setup.
 Check the Network configuration section.
 
-For other problems, feel free to contact the maintainer at
-pierre.narvor@ensta-bretagne.fr.
 
 
-## Acknowledgements
-
-This was inspired from https://github.com/apl-ocean-engineering/liboculus. A
-similar software by Aaron Marburg from University of Washington.
