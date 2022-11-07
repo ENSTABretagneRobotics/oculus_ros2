@@ -1,0 +1,19 @@
+rosbag2_bagfile_information:
+  version: 4
+  storage_identifier: sqlite3
+  relative_file_paths:
+    - my_bag_0.db3
+  duration:
+    nanoseconds: 0
+  starting_time:
+    nanoseconds_since_epoch: 9223372036854775807
+  message_count: 0
+  topics_with_message_count:
+    - topic_metadata:
+        name: chatter
+        type: std_msgs/msg/String
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 0
+  compression_format: ""
+  compression_mode: ""
