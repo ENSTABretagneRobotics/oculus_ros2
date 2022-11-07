@@ -6,7 +6,7 @@ import pathlib
 import struct
 import argparse
 
-import rosbag
+import ros2bag
 
 parser = argparse.ArgumentParser(description='Extract an Oculus sonar ping messages from a ROS bag and save them in the .oculus native format.')
 parser.add_argument('input', type=str, help='Path to rosbag.')
@@ -45,7 +45,7 @@ if os.path.isfile(args.output):
         print('Aborting.')
         sys.exit()
 
-bag = rosbag.Bag(args.input, 'r')
+bag = ros2bag.Bag(args.input, 'r')
 infos = bag.get_type_and_topic_info()
 
 # Checking rosbag for valid input
