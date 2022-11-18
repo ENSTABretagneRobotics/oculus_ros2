@@ -10,11 +10,12 @@ find_package(std_msgs REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 
 find_package(oculus_driver QUIET)
+
 if(NOT TARGET oculus_driver)
     include(FetchContent)
     FetchContent_Declare(oculus_driver
-        GIT_REPOSITORY   https://github.com/ENSTABretagneRobotics/oculus_driver.git
-        GIT_TAG          v1.0
+        GIT_REPOSITORY https://github.com/ENSTABretagneRobotics/oculus_driver.git
+        GIT_TAG v1.0
     )
     FetchContent_MakeAvailable(oculus_driver)
 endif()
@@ -27,24 +28,38 @@ target_link_libraries(oculus_sonar_node PUBLIC
     oculus_driver
 )
 target_compile_features(oculus_sonar_node PRIVATE cxx_std_17)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(oculus_sonar_node PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 ament_target_dependencies(oculus_sonar_node PUBLIC
-  rclcpp
-  oculus_interfaces
-  rcl_interfaces
+    rclcpp
+    oculus_interfaces
+    rcl_interfaces
 )
 
 # INSTALL
-install(PROGRAMS scripts/bag_to_oculus
-        DESTINATION bin)
-install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
+add_executable(talker src/publisher_member_function.cpp)
+ament_target_dependencies(talker rclcpp oculus_interfaces)    # CHANGE
 
-install(TARGETS 
-  oculus_sonar_node
+add_executable(listener src/subscriber_member_function.cpp)
+ament_target_dependencies(listener rclcpp oculus_interfaces)  # CHANGE
+
+install(TARGETS
+  talker
+  listener
   DESTINATION lib/${PROJECT_NAME})
 
-ament_package()
 
+install(PROGRAMS
+    scripts/bag_to_oculus
+    scripts/oculus_to_bag
+    DESTINATION bin)
+install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
+
+install(TARGETS
+    oculus_sonar_node
+    DESTINATION lib/${PROJECT_NAME})
+
+ament_package()

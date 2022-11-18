@@ -137,7 +137,7 @@ print('output       :', args.output)
 print('topic        :', args.topic)
 print('message type :', args.msg_type)
 
-with open(args.output, 'wb') as outputFile:
+with open(args.output, 'rb') as inputFile:
     log_header_struct = (
         {'name': 'fileHeader', 'type': 'I', 'val': 2037},
         {'name': 'sizeHeader', 'type': 'I', 'val': 48},
@@ -154,7 +154,7 @@ with open(args.output, 'wb') as outputFile:
     log_header_val = list(map(lambda x: x['val'], log_header_struct))
 
     for ii in range(len(log_header_val)):
-        outputFile.write(struct.pack(log_header_fmt[ii], log_header_val[ii]))
+        struct.pack(log_header_fmt[ii], log_header_val[ii]) = inputFile.read()
 
     for i, bagMessage in enumerate(bag.read_messages(topics=[args.topic])):
         header_struct = (
