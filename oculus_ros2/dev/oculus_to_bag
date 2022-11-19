@@ -1,0 +1,57 @@
+#! /usr/bin/python3
+
+
+from rclpy.time import Time
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
+import time
+import rosbag2_py
+import matplotlib.pyplot as plt
+from example_interfaces.msg import String
+from rclpy.serialization import serialize_message
+from rclpy.duration import Duration
+from rclpy.clock import Clock
+print("coucou")
+
+
+def main(args=None):
+    writer = rosbag2_py.SequentialWriter()
+
+    storage_options = rosbag2_py._storage.StorageOptions(
+        uri='big_synthetic_bag',
+        storage_id='sqlite3')
+    converter_options = rosbag2_py._storage.ConverterOptions('', '')
+    writer.open(storage_options, converter_options)
+
+    topic_info = rosbag2_py._storage.TopicMetadata(
+        name='synthetic',
+        type='example_interfaces/msg/String',
+        serialization_format='cdr')
+    writer.create_topic(topic_info)
+    for k in range(50):
+
+       # time_stamp = Clock().now()
+
+        # time_stamp = Clock().now() + Time(seconds=k, nanoseconds=0)
+
+        ClockType = _rclpy.ClockType
+        clock_type = ClockType.SYSTEM_TIME
+        __clock = _rclpy.Clock(clock_type)
+        with Clock().handle:
+            rcl_time = __clock.get_now()
+        time_stamp = Time(nanoseconds=rcl_time.nanoseconds + k*1e9,
+                          clock_type=Clock().clock_type)
+
+        data = String()
+        data.data = str(time.time())
+        writer.write(
+            'synthetic',
+            serialize_message(data),
+            time_stamp.nanoseconds
+        )
+        # time.sleep(.1)
+
+
+if __name__ == '__main__':
+    print("======= START MAIN =============")
+    main()
+    print("======= END MAIN =============")

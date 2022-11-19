@@ -40,21 +40,20 @@ ament_target_dependencies(oculus_sonar_node PUBLIC
 )
 
 # INSTALL
-add_executable(talker src/publisher_member_function.cpp)
-ament_target_dependencies(talker rclcpp oculus_interfaces)    # CHANGE
+add_executable(talker dev/publisher_member_function.cpp)
+ament_target_dependencies(talker rclcpp oculus_interfaces) # CHANGE
 
-add_executable(listener src/subscriber_member_function.cpp)
-ament_target_dependencies(listener rclcpp oculus_interfaces)  # CHANGE
+add_executable(listener dev/subscriber_member_function.cpp)
+ament_target_dependencies(listener rclcpp oculus_interfaces) # CHANGE
 
 install(TARGETS
-  talker
-  listener
-  DESTINATION lib/${PROJECT_NAME})
-
+    talker
+    listener
+    DESTINATION lib/${PROJECT_NAME})
 
 install(PROGRAMS
     scripts/bag_to_oculus
-    scripts/oculus_to_bag
+    dev/oculus_to_bag
     DESTINATION bin)
 install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
 
