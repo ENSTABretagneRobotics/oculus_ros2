@@ -7,7 +7,7 @@ import time
 import rosbag2_py
 import matplotlib.pyplot as plt
 from example_interfaces.msg import String
-from oculus_interfaces.msg import OculusStampedPing
+from oculus_interfaces.msg import OculusPing
 from rclpy.serialization import serialize_message
 from rclpy.duration import Duration
 from rclpy.clock import Clock
@@ -89,7 +89,7 @@ class Parser:
 
     def main(self, ars=None):
         self.new_topic(name="test_dev", type='example_interfaces/msg/String')
-        self.new_topic(name="oculus_dev", type='oculus_interfaces/msg/OculusStampedPing')
+        self.new_topic(name="oculus_dev", type='oculus_interfaces/msg/OculusPing')
 
         for k in range(50):
 
@@ -98,105 +98,93 @@ class Parser:
 
             self.publish(topic_name="test_dev", msg=msg1, time_stamp=k*1e9)
 
-            msg2 = OculusStampedPing()
-            # header:
-            # header.stamp:
-            msg2.header.stamp.sec = 0
-            msg2.header.stamp.nanosec = 0
-            # 
-            msg2.header.frame_id = ''
-            #
-            # ping:
+            msg2 = OculusPing()
+            
             # ping.heder.stamp
-            msg2.ping.header.stamp.sec: 0
-            msg2.ping.header.stamp.nanosec: 0
+            msg2.header.stamp.sec: 0
+            msg2.header.stamp.nanosec: 0
 
-            msg2.ping.header.frame_id = ''
+            msg2.header.frame_id = ''
             # ping.fire_message:
             # ping.fire_message.head:
-            msg2.ping.fire_message.head.oculus_id = 0
-            msg2.ping.fire_message.head.src_device_id = 0
-            msg2.ping.fire_message.head.dst_device_id = 0
-            msg2.ping.fire_message.head.msg_id = 0
-            msg2.ping.fire_message.head.msg_version = 0
-            msg2.ping.fire_message.head.payload_size = 0
-            msg2.ping.fire_message.head.spare2 = 0
+            msg2.fire_message.head.oculus_id = 0
+            msg2.fire_message.head.src_device_id = 0
+            msg2.fire_message.head.dst_device_id = 0
+            msg2.fire_message.head.msg_id = 0
+            msg2.fire_message.head.msg_version = 0
+            msg2.fire_message.head.payload_size = 0
+            msg2.fire_message.head.spare2 = 0
             #
-            msg2.ping.fire_message.master_mode = 0
-            msg2.ping.fire_message.ping_rate = 0
-            msg2.ping.fire_message.network_speed = 0
-            msg2.ping.fire_message.gamma_correction = 0
-            msg2.ping.fire_message.flags = 0
-            msg2.ping.fire_message.range = 0.0
-            msg2.ping.fire_message.gain_percent = 0.0
-            msg2.ping.fire_message.speed_of_sound = 0.0
-            msg2.ping.fire_message.salinity = 0.0
+            msg2.fire_message.master_mode = 0
+            msg2.fire_message.ping_rate = 0
+            msg2.fire_message.network_speed = 0
+            msg2.fire_message.gamma_correction = 0
+            msg2.fire_message.flags = 0
+            msg2.fire_message.range = 0.0
+            msg2.fire_message.gain_percent = 0.0
+            msg2.fire_message.speed_of_sound = 0.0
+            msg2.fire_message.salinity = 0.0
             #
-            msg2.ping.ping_id = 0
-            msg2.ping.status = 0
-            msg2.ping.frequency = 0.0
-            msg2.ping.temperature = 0.0
-            msg2.ping.pressure = 0.0
-            msg2.ping.speeed_of_sound_used = 0.0
-            msg2.ping.ping_start_time = 0
-            msg2.ping.data_size = 0
-            msg2.ping.range_resolution = 0.0
-            msg2.ping.n_ranges = 0
-            msg2.ping.n_beams = 0
-            msg2.ping.image_offset = 0
-            msg2.ping.image_size = 0
-            msg2.ping.message_size = 0
-            msg2.ping.data = []
+            msg2.ping_id = 0
+            msg2.status = 0
+            msg2.frequency = 0.0
+            msg2.temperature = 0.0
+            msg2.pressure = 0.0
+            msg2.speeed_of_sound_used = 0.0
+            msg2.ping_start_time = 0
+            msg2.data_size = 0
+            msg2.range_resolution = 0.0
+            msg2.n_ranges = 0
+            msg2.n_beams = 0
+            msg2.image_offset = 0
+            msg2.image_size = 0
+            msg2.message_size = 0
+            msg2.data = []
 
             self.publish(topic_name="oculus_dev", msg=msg2, time_stamp=k*1e9)
 
 
 """
-oculus_interfaces.OculusStampedPing :
+oculus_interfaces.OculusPing :
+
 header:
     stamp:
         sec: 0
         nanosec: 0
     frame_id: ''
-ping:
-    header:
-        stamp:
-            sec: 0
-            nanosec: 0
-        frame_id: ''
-    fire_message:
-        head:
-            oculus_id: 0
-            src_device_id: 0
-            dst_device_id: 0
-            msg_id: 0
-            msg_version: 0
-            payload_size: 0
-            spare2: 0
-        master_mode: 0
-        ping_rate: 0
-        network_speed: 0
-        gamma_correction: 0
-        flags: 0
-        range: 0.0
-        gain_percent: 0.0
-        speed_of_sound: 0.0
-        salinity: 0.0
-    ping_id: 0
-    status: 0
-    frequency: 0.0
-    temperature: 0.0
-    pressure: 0.0
-    speeed_of_sound_used: 0.0
-    ping_start_time: 0
-    data_size: 0
-    range_resolution: 0.0
-    n_ranges: 0
-    n_beams: 0
-    image_offset: 0
-    image_size: 0
-    message_size: 0
-    data: []
+fire_message:
+    head:
+        oculus_id: 0
+        src_device_id: 0
+        dst_device_id: 0
+        msg_id: 0
+        msg_version: 0
+        payload_size: 0
+        spare2: 0
+    master_mode: 0
+    ping_rate: 0
+    network_speed: 0
+    gamma_correction: 0
+    flags: 0
+    range: 0.0
+    gain_percent: 0.0
+    speed_of_sound: 0.0
+    salinity: 0.0
+ping_id: 0
+status: 0
+frequency: 0.0
+temperature: 0.0
+pressure: 0.0
+speeed_of_sound_used: 0.0
+ping_start_time: 0
+data_size: 0
+range_resolution: 0.0
+n_ranges: 0
+n_beams: 0
+image_offset: 0
+image_size: 0
+message_size: 0
+data: []
 """
 
 if __name__ == '__main__':

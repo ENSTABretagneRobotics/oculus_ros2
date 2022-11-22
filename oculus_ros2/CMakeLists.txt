@@ -46,15 +46,20 @@ ament_target_dependencies(talker rclcpp oculus_interfaces) # CHANGE
 add_executable(listener dev/subscriber_member_function.cpp)
 ament_target_dependencies(listener rclcpp oculus_interfaces) # CHANGE
 
+add_executable(oculus_to_log dev/oculus_to_log.cpp)
+ament_target_dependencies(oculus_to_log rclcpp oculus_interfaces) # CHANGE
+
 install(TARGETS
     talker
     listener
+    oculus_to_log
     DESTINATION lib/${PROJECT_NAME})
 
 install(PROGRAMS
     scripts/bag_to_oculus
-    dev/oculus_to_bag
+    dev/oculus_to_bag.py
     DESTINATION bin)
+    
 install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
 
 install(TARGETS
