@@ -1,109 +1,50 @@
+#include <iostream>
+#include <oculus_driver/Recorder.h>
 
-
-
-
-#include <iostream> // bibliothèque d’entrées/sorties
-// #include <fstream>
-// #include <assert.h>
-#include "../../../oculus_driver/include/oculus_driver/Oculus.h"
-
-
-main(int argc, char *argv[])
+std::string display_LogItem(oculus::blueprint::LogItem item)
 {
-    std::cout << "coucou" << std::endl;
-    return EXIT_SUCCESS;
-}
+    /*
+        uint32_t itemHeader;   // Fixed 4 byte header byte
+        uint32_t sizeHeader;   // Size of this structure
+        uint16_t type;         // Identifer for the contained data type
+        uint16_t version;      // Version for the data type
+        double   time;         // Time item creation
+        uint16_t compression;  // Compression type 0 = none, 1 = qCompress
+        uint32_t originalSize; // Size of the payload prior to any compression
+        uint32_t payloadSize;  // Size of the following payload
+     */
 
-
-
-
-
-
-
-
-/* 
-
-#include <iostream> // bibliothèque d’entrées/sorties
-#include <fstream>
-#include <assert.h>
-#include <cmath>
-#include <stdio.h>
-#include <opencv2/opencv.hpp>
-
-#include "header.hpp"
-
-typedef uint32_t U32;
-typedef float_t F32;
-
-
-
-
-
-std::ifstream sdf_file;
-
-struct PING
-{
-    SYS5000HEADER header;
-    uint16_t chanels_size[10];
-    uint16_t *data[10];
+    std::ostringstream str_item;
+    str_item << "itemHeader: " << item.itemHeader << "   // Fixed 4 byte header byte" << std::endl;
+    str_item << "sizeHeader: " << item.sizeHeader << "   // Size of this structure" << std::endl;
+    str_item << "type: " << item.type << "         // Identifer for the contained data type" << std::endl;
+    str_item << "version: " << item.version << "      // Version for the data type" << std::endl;
+    str_item << "  time: " << item.time << "         // Time item creation" << std::endl;
+    str_item << "compression: " << item.compression << "  // Compression type 0 = none, 1 = qCompress" << std::endl;
+    str_item << "originalSize: " << item.originalSize << " // Size of the payload prior to any compression" << std::endl;
+    str_item << "payloadSize: " << item.payloadSize << "  // Size of the following payload" << std::endl;
+    return str_item.str();
 };
 
-
-
-void load_ping(PING &ping)
+int main(int argc, char **argv)
 {
-    U32 mkr;
-    // sdf_file.seekg(4 * 1); // pass the marker
-    sdf_file.read((char *)&mkr, sizeof(mkr));
-    assert(mkr == 0xFFFFFFFF);
-    int marker_cursor = sdf_file.tellg();
-    sdf_file.read((char *)&ping.header, sizeof(ping.header));
-    for (int k = 0; k < 10; k++)
+    if (argc < 2)
     {
-        ping.chanels_size[k] = 2276;
-        ping.data[k] = new uint16_t[ping.chanels_size[k]];
-        sdf_file.seekg(sizeof(uint16_t), sdf_file.cur);
-        sdf_file.read((char *)ping.data[k], ping.chanels_size[k] * sizeof(uint16_t));
+        throw std::runtime_error("Must give a .oculus file as parameter");
     }
-    // int cursor = sdf_file.tellg();
-    sdf_file.seekg(ping.header.numberBytes - sdf_file.tellg() + marker_cursor, sdf_file.cur);
-}
+    std::cout << "Opening file : " << argv[1] << std::endl;
 
-void load_pings(std::vector<PING> &pings)
-{
-    sdf_file.open("../s5k20110414_082223.sdf");
-    sdf_file.seekg(0, std::ios::end);
-    long last_byte = sdf_file.tellg();
-    std::cout << "last_byte = " << last_byte << std::endl;
-    sdf_file.seekg(0, std::ios::beg);
-    std::cout << "sdf_file.tellg() = " << sdf_file.tellg() << std::endl;
-    // last_byte = 2*45800;
-
-    while (sdf_file.tellg() < last_byte) //(sdf_file.tellg()!=-1) //
+    oculus::FileReader file(argv[1]);
+    oculus::blueprint::LogItem header;
+    std::vector<uint8_t> data;
+    while (file.read_next(header, data))
     {
-        PING ping;
-        // std::cout << "sdf_file.tellg() = " << sdf_file.tellg() << std::endl;
-        load_ping(ping);
-        // std::cout << "sdf_file.tellg()2 = " << sdf_file.tellg() << std::endl;
-        pings.push_back(ping);
-        // std::cout << "coucou " << std::endl;
+        std::cout << "Got item : " << header.type << std::endl;
+        std::cout << "data: " << data[0] << std::endl;
+        std::cout << "size data: " << std::size(data) << std::endl;
+        std::cout << "display_LogHeader(header) : \n"
+                  << display_LogItem(header) << std::endl;
     }
 
-    sdf_file.close();
+    return 0;
 }
-
-main(int argc, char *argv[])
-{
-
-    sdf_file.open("../s5k20110414_082223.sdf");
-    load_ping(ping);
-    std::cout << "sizeof(ping) = " << sizeof(ping) << std::endl;
-    std::cout << "ping.header.pageVersion = " << ping.header.pageVersion << std::endl;
-    std::cout << "ping.chanels_size[9] = " << ping.chanels_size[9] << std::endl;
-    sdf_file.close();
-
-    std::vector<PING> pings;
-    load_pings(pings);
-    return EXIT_SUCCESS;
-}
- */

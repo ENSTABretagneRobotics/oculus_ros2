@@ -15,7 +15,7 @@ if(NOT TARGET oculus_driver)
     include(FetchContent)
     FetchContent_Declare(oculus_driver
         GIT_REPOSITORY https://github.com/ENSTABretagneRobotics/oculus_driver.git
-        GIT_TAG v1.0
+        GIT_TAG master # tag for developpement : TODO handle the good version
     )
     FetchContent_MakeAvailable(oculus_driver)
 endif()
@@ -23,7 +23,7 @@ endif()
 add_executable(oculus_sonar_node
     src/oculus_sonar_node.cpp
 )
-target_link_libraries(oculus_sonar_node PUBLIC
+target_link_libraries(oculus_sonar_node PRIVATE
     ${ament_LIBRARIES}
     oculus_driver
 )
@@ -39,19 +39,14 @@ ament_target_dependencies(oculus_sonar_node PUBLIC
     rcl_interfaces
 )
 
-# INSTALL
-add_executable(talker dev/publisher_member_function.cpp)
-ament_target_dependencies(talker rclcpp oculus_interfaces) # CHANGE
-
-add_executable(listener dev/subscriber_member_function.cpp)
-ament_target_dependencies(listener rclcpp oculus_interfaces) # CHANGE
-
 add_executable(oculus_to_log dev/oculus_to_log.cpp)
-ament_target_dependencies(oculus_to_log rclcpp oculus_interfaces) # CHANGE
+target_link_libraries(oculus_to_log PRIVATE
+    ${ament_LIBRARIES}
+    oculus_driver
+)
+ament_target_dependencies(oculus_to_log PUBLIC rclcpp oculus_interfaces) 
 
 install(TARGETS
-    talker
-    listener
     oculus_to_log
     DESTINATION lib/${PROJECT_NAME})
 
@@ -59,7 +54,7 @@ install(PROGRAMS
     scripts/bag_to_oculus
     dev/oculus_to_bag.py
     DESTINATION bin)
-    
+
 install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
 
 install(TARGETS
