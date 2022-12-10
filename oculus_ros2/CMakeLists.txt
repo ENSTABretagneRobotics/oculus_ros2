@@ -39,20 +39,11 @@ ament_target_dependencies(oculus_sonar_node PUBLIC
     rcl_interfaces
 )
 
-add_executable(oculus_to_log dev/oculus_to_log.cpp)
-target_link_libraries(oculus_to_log PRIVATE
-    ${ament_LIBRARIES}
-    oculus_driver
-)
-ament_target_dependencies(oculus_to_log PUBLIC rclcpp oculus_interfaces) 
 
-install(TARGETS
-    oculus_to_log
-    DESTINATION lib/${PROJECT_NAME})
 
 install(PROGRAMS
     scripts/bag_to_oculus
-    dev/oculus_to_bag.py
+    dev/oculus_to_bag
     DESTINATION bin)
 
 install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})

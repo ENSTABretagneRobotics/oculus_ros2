@@ -3,17 +3,15 @@
 
 from rclpy.time import Time
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
-import time
 import rosbag2_py
 import matplotlib.pyplot as plt
-from example_interfaces.msg import String
 from oculus_interfaces.msg import OculusPing
 from rclpy.serialization import serialize_message
 from rclpy.duration import Duration
 from rclpy.clock import Clock
 
 """
-INSA+TALATION NEEDED
+INTALATION NEEDED
 TODO @HY update README.md
 ```bash
 git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
@@ -110,9 +108,6 @@ class Parser:
 class Oculus_parser (Parser):
 
     def main(self, ars=None):
-        self.new_topic(name="oculus_dev",
-                       type='oculus_interfaces/msg/OculusPing')
-
         parser = argparse.ArgumentParser(
             prog='OculusFileReader',
             description='Example of how to read and display the content of a .oculus ' +
@@ -122,6 +117,9 @@ class Oculus_parser (Parser):
         args = parser.parse_args()
 
         print('Opening', args.filename)
+
+        self.new_topic(name="oculus_dev",
+                       type='oculus_interfaces/msg/OculusPing')
 
         f = OculusFileReader(args.filename)
         msg = f.read_next_ping()  # this can be called several time to iterate through the pings
@@ -133,7 +131,7 @@ class Oculus_parser (Parser):
         k = 0
         while msg:
             k += 1
-            print(k)
+            # print(k)
 
             bearings = 0.01*np.array(msg.bearing_data())
             linearAngles = np.linspace(
@@ -223,8 +221,8 @@ class Oculus_parser (Parser):
             msg2.data_size = 0
             msg2.range_resolution = 0.0
             msg2.n_ranges = 0
-            msg2.n_beams = msg.message().data().nbytes
-            msg2.image_offset = msg.message().data().suboffsets
+            # msg2.n_beams = msg.message().data().nbeams
+            # msg2.image_offset = msg.message().data().suboffsets
             msg2.image_size = msg.message().data().ndim
             msg2.message_size = msg.message().data().shape[0]
             # msg2.data = []
