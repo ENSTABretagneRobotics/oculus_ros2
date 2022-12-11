@@ -10,10 +10,12 @@ in my `CMakeListe.txt` but I want to install `my_python_script.py` under a diffe
 
 To change the name of a file during installation with CMake, you can use the RENAME option. This option allows you to specify a different name for the file when it is installed. Here is how you can use the RENAME option to change the name of my_python_script.py to new_name.py:
 
+```cmake
 install(PROGRAMS
     src/my_python_script.py
     RENAME new_name.py
     DESTINATION bin)
+```
 
 This will cause CMake to install the my_python_script.py script as new_name.py in the bin directory.
 hugo.yverneau@gmail.com
@@ -21,11 +23,13 @@ If I have sevral scripts in my install, and I just want to rename one of them, h
 
 If you have multiple scripts in your install() command and you only want to rename one of them, you can specify the RENAME option for that specific script. For example, if you have two scripts in your install() command, script1.py and script2.py, and you want to rename script1.py to new_script1.py, you can use the following install() command:
 
+```cmake
 install(PROGRAMS
     src/script1.py
     RENAME new_script1.py
     src/script2.py
     DESTINATION bin)
+```
 
 This will cause CMake to install script1.py as new_script1.py and script2.py with its original name in the bin directory. Note that the RENAME option only applies to the file immediately preceding it, so you should specify the RENAME option immediately after the file you want to rename.
 hugo.yverneau@gmail.com
@@ -42,11 +46,13 @@ Yes, you can specify the RENAME option after the file you want to rename, even i
 
 If you want to rename script1.py to new_script1.py, you would need to specify the RENAME option immediately after script1.py, like this:
 
+```cmake
 install(PROGRAMS
     src/script2.py
     src/script1.py
     RENAME new_script1.py
     DESTINATION bin)
+```
 
 This will cause CMake to install script2.py with its original name and script1.py as new_script1.py in the bin directory.
 hugo.yverneau@gmail.com
@@ -67,9 +73,9 @@ install(PROGRAMS
     src/script1.py
     RENAME new_script1.py
     DESTINATION bin)
-
+```
 Or:
-
+```cmake
 install(PROGRAMS
     src/script2.py
     src/script1.py; RENAME new_script1.py
@@ -127,7 +133,7 @@ pip3 install --user -e .
 ```
 command ?
 
-In the example I provided, the pip3 install --user -e . command is not being executed by CMake. This is because CMake only handles the process of downloading and installing the oculus_driver repository, but it does not automatically install the Python packages contained in the repository.
+In the example I provided, the `pip3 install --user -e` . command is not being executed by CMake. This is because CMake only handles the process of downloading and installing the oculus_driver repository, but it does not automatically install the Python packages contained in the repository.
 
 To install the Python packages in the oculus_driver repository, you would need to use a separate tool, such as pip, to install the packages. You can either run the pip3 install --user -e . command manually after the oculus_driver repository has been downloaded and installed by CMake, or you can add a custom build step to your CMake build process to execute this command automatically.
 

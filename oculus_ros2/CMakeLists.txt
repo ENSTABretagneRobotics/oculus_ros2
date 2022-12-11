@@ -39,11 +39,13 @@ ament_target_dependencies(oculus_sonar_node PUBLIC
     rcl_interfaces
 )
 
-
-
 install(PROGRAMS
     scripts/bag_to_oculus
-    dev/oculus_to_bag
+    DESTINATION bin)
+
+install(PROGRAMS
+    dev/oculus_to_bag.py
+    RENAME oculus_to_bag
     DESTINATION bin)
 
 install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})

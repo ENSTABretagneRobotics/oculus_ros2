@@ -2,6 +2,7 @@ I am using ROS2. How can I generate rosbag from a python script. I want to publi
 
 You can generate a rosbag by using the ros2 bag command in a terminal. To generate a rosbag from a Python script, you can use the ROS2Bag class in the rosbag2 package. Here's an example of how you can use this class to create a rosbag and publish PoseStamped messages to it:
 
+```python
 import rclpy
 from geometry_msgs.msg import PoseStamped
 from rosbag2 import ROS2Bag
@@ -29,6 +30,7 @@ bag.write("pose_stamped_topic", pose_stamped)
 bag.close()
 
 rclpy.shutdown()
+```
 
 This script will create a rosbag called my_bag.bag and write a single PoseStamped message to it. The timestamp on the message will be the current time when the message is published. You can modify this script to publish multiple messages with different timestamps if needed.
 hugo.yverneau@gmail.com
@@ -36,6 +38,7 @@ I want to change the line `pose_stamped.header.stamp = rclpy.time.Time()  # Use 
 
 You can use the Time class in the rclpy.time module to create a time object for the timestamp you want. Here's how you can modify the code to use the specified time for the PoseStamped message's timestamp:
 
+```python
 import rclpy
 from geometry_msgs.msg import PoseStamped
 from rosbag2 import ROS2Bag
@@ -68,13 +71,14 @@ bag.write("pose_stamped_topic", pose_stamped)
 bag.close()
 
 rclpy.shutdown()
+```
 
 In this code, we create a Time object with the specified timestamp and then set the timestamp on the PoseStamped message using this object. You can then use this modified script to create a rosbag with the PoseStamped message having the timestamp you want.
 hugo.yverneau@gmail.com
 can you add some line to parse the date (in the format "mm/dd/yyyy-hh:mm:sec") to `sec=1544762932, nanosec=121212`
 
 Yes, you can use the datetime module in Python to parse the date string and convert it to a timestamp in seconds and nanoseconds. Here's an example of how you can modify the code to do this:
-
+```python
 import rclpy
 from datetime import datetime
 from geometry_msgs.msg import PoseStamped
@@ -114,13 +118,14 @@ bag.write("pose_stamped_topic", pose_stamped)
 bag.close()
 
 rclpy.shutdown()
+```
 
 In this code, we use the datetime.strptime method to parse the date string and convert it to a datetime object. We then use the strftime method to convert this object to a timestamp in seconds and nanoseconds. This timestamp is then used to create a Time object, which is used to set the timestamp on the PoseStamped message. You can use this modified script to create a rosbag with the PoseStamped message having the timestamp specified in the date string.
 hugo.yverneau@gmail.com
 Can you resume this thread with all the needed code in a markdown format ?
 
 Sure, here's the complete code for creating a rosbag with a PoseStamped message having a specific timestamp:
-
+```python
 import rclpy
 from datetime import datetime
 from geometry_msgs.msg import PoseStamped
@@ -160,6 +165,7 @@ bag.write("pose_stamped_topic", pose_stamped)
 bag.close()
 
 rclpy.shutdown()
+```
 
 This code will create a rosbag called my_bag.bag and write a single PoseStamped message to it. The timestamp on the message will be the time specified in the date string "12/12/2012-12:12:12.121212". You can modify this script as needed to create a rosbag with multiple messages or with different timestamps.
 hugo.yverneau@gmail.com
@@ -169,6 +175,7 @@ The rosbag2 package uses the timestamp on the message itself to determine the ti
 
 In the code you provided, the timestamp on the PoseStamped message is set using the rclpy.time.Time class, like this:
 
+```python
 # Create a time object for the timestamp
 timestamp = rclpy.time.Time(sec=timestamp_secs, nanosec=timestamp_nsecs)
 
@@ -184,6 +191,7 @@ timestamp = rclpy.time.Time()
 
 # Set the timestamp on the message
 pose_stamped.header.stamp = timestamp
+```
 
 This will use the current time as the timestamp on the PoseStamped message, and the message will be published to the rosbag with this timestamp as the time of publication.
 hugo.yverneau@gmail.com
@@ -193,6 +201,7 @@ When you use the ros2 bag play command to play a rosbag, the messages in the bag
 
 In the code you provided, the timestamp on the PoseStamped message is set using the rclpy.time.Time class, like this:
 
+```python
 # Create a time object for the timestamp
 timestamp = rclpy.time.Time(sec=timestamp_secs, nanosec=timestamp_nsecs)
 
@@ -208,6 +217,7 @@ timestamp = rclpy.time.Time()
 
 # Set the timestamp on the message
 pose_stamped.header.stamp = timestamp
+```
 
 This will use the current time as the timestamp on the PoseStamped message, and the message will be published to the rosbag with this timestamp as the time of publication. When you play the rosbag using the ros2 bag play command, the messages in the bag will be published with this timestamp as the time of publication.
 hugo.yverneau@gmail.com
@@ -217,6 +227,7 @@ The write method of the ROS2Bag class in the rosbag2 package does not have any o
 
 In the code you provided, the timestamp on the PoseStamped message is set using the rclpy.time.Time class, like this:
 
+```python
 # Create a time object for the timestamp
 timestamp = rclpy.time.Time(sec=timestamp_secs, nanosec=timestamp_nsecs)
 
@@ -245,5 +256,6 @@ message_info.timestamp = timestamp
 
 # Publish the message to the bag using the MessageInfo object
 bag.write("pose_stamped_topic", pose_stamped, message_info)
+```
 
 In this code, we create a MessageInfo object and set the timestamp field on this object to the desired time. We then pass this object as the third argument to the write method, along with the topic name and message. This will cause the message to be published to the rosbag with the timestamp on the MessageInfo object as the time of publication.
