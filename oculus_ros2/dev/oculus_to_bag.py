@@ -18,11 +18,14 @@ TODO @HY update README.md
 git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
 ```
 ```bash
-pip install pybind11
+pip3 install pybind11
 ```
 In /oculus_driver/python
 ```bash
 cd oculus_driver/python
+$ rm -r build/ oculus_python.egg-info/ # if needed
+```
+```bash
 pip3 install --user -e .
 ```
 """
@@ -30,6 +33,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 from oculus_python.files import OculusFileReader
+
+
+
+
+
+
+
+
 
 
 class RosBagCreator:
@@ -91,7 +102,7 @@ class RosBagCreator:
         return Time(nanoseconds=nanoseconds,
                     clock_type=Clock().clock_type)
 
-    def publish(self, topic_name, msg, time_stamp=None):
+    def publish(self, topic_name, msg, nanoseconds=None):
         """
         Write to the rosbag a new published entry.
 
@@ -103,10 +114,10 @@ class RosBagCreator:
         self.writer.write(
             "oculus_dev",
             serialize_message(msg),
-            self.custom_clock(time_stamp).nanoseconds
+            self.custom_clock(nanoseconds).nanoseconds
         )
 
-       
+
 class Oculus_parser(RosBagCreator):
     def __init__(self):
         parser = argparse.ArgumentParser(
@@ -129,28 +140,27 @@ class Oculus_parser(RosBagCreator):
                        type='oculus_interfaces/msg/OculusPing')
 
     def create_ros_oculus_msg(self, oculus_ping_msg):
-        # print("mgs = ", oculus_ping_msg)
-        # oculus_interfaces.msg.OculusPing(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''),
-        #   fire_message=oculus_interfaces.msg.OculusFireConfig(head=oculus_interfaces.msg.OculusHeader(oculus_id=0, src_device_id=0,
-        #       dst_device_id=0, msg_id=0, msg_version=0, payload_size=0, spare2=0), master_mode=0, ping_rate=0,
-
-        # print(dir(msg))
+        # print("timestamp",           oculus_ping_msg.timestamp())
+        # print("timestamp_micros",    oculus_ping_msg.timestamp_micros())
+        # print(dir(oculus_ping_msg), "\n")
         # ['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__',
         #   '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__',
         #   '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', 'bearing_count', 'bearing_data', 'data', 'gains',
         #   'has_gains', 'master_mode', 'message', 'ping_data', 'range_count', 'raw_ping_data', 'sample_size']
 
-        # print(dir(msg.message))
+        # print(dir(oculus_ping_msg.master_mode()), "\n")
+
+        # print(dir(oculus_ping_msg.message), "\n")
         # ['__call__', '__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__func__', '__ge__', '__get__',
         #   '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__ne__', '__new__', '__reduce__',
         #   '__reduce_ex__', '__repr__', '__self__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']
 
-        # print(dir(msg.message()))
+        # print(dir(oculus_ping_msg.message()), "\n")
         # ['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__',
         #   '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__',
         #   '__setattr__', '__sizeof__', '__str__', '__subclasshook__', 'data', 'header']
 
-        # print(dir(msg.message().header()))
+        # print(dir(oculus_ping_msg.message().header()), "\n")
         # ['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__',
         #   '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__',
         #   '__setattr__', '__sizeof__', '__str__', '__subclasshook__', 'dstDeviceId', 'msgId', 'msgVersion', 'oculusId', 'payloadSize', 'spare2',
@@ -158,18 +168,16 @@ class Oculus_parser(RosBagCreator):
 
         # print(">>>>>>>>>>>>", oculus_ping_msg)
 
-        # print(dir(oculus_ping_msg.message().data()))
+        # print(dir(oculus_ping_msg.message().data()), "\n")
         # ['__class__', '__delattr__', '__delitem__', '__dir__', '__doc__', '__enter__', '__eq__', '__exit__', '__format__', '__ge__',
         #   '__getattribute__', '__getitem__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__len__', '__lt__', '__ne__',
         #   '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__setitem__', '__sizeof__', '__str__', '__subclasshook__',
         #   'c_contiguous', 'cast', 'contiguous', 'f_contiguous', 'format', 'hex', 'itemsize', 'nbytes', 'ndim', 'obj', 'readonly', 'release',
         #   'shape', 'strides', 'suboffsets', 'tobytes', 'tolist', 'toreadonly']
 
-
-
         ros_msg = OculusPing()
 
-        seconds = 2*1e9+.3
+        seconds = oculus_ping_msg.timestamp_micros()*1e-6
         ros_msg.header.stamp.sec = int(seconds)
         ros_msg.header.stamp.nanosec = int((seconds % 1)*1e9)
 
@@ -201,6 +209,7 @@ class Oculus_parser(RosBagCreator):
         ros_msg.temperature = 0.0
         ros_msg.pressure = 0.0
         ros_msg.speeed_of_sound_used = 0.0
+        # print("\n>>>>>>>>", oculus_ping_msg.message().data().pingStartTime)
         ros_msg.ping_start_time = 0
         ros_msg.data_size = 0
         ros_msg.range_resolution = 0.0
@@ -213,7 +222,7 @@ class Oculus_parser(RosBagCreator):
         # ros_msg.data = [oculus_ping_msg.message().data()[k] for k in range(oculus_ping_msg.message().data().shape[0])]
         ros_msg.data = oculus_ping_msg.message().data().tolist()
 
-        print(">>>>>>>>>>><", ros_msg, "\n\n")
+        # print(">>>>>>>>>>><", ros_msg, "\n\n")
 
         return ros_msg
 
@@ -242,16 +251,15 @@ class Oculus_parser(RosBagCreator):
 
             ros_msg = self.create_ros_oculus_msg(oculus_ping_msg)
 
-            seconds = 0  # TODO
-
             self.publish(topic_name="oculus_dev",
-                         msg=ros_msg, time_stamp=seconds)
+                         msg=ros_msg, nanoseconds=oculus_ping_msg.message().timestamp_micros()*1e3)
 
             # this can be called several time to iterate through the pings
             oculus_ping_msg = self.file.read_next_ping()
             # will return None when finished
 
-        print("\nFile parsing is done")
+        print("\n")
+        print("[oculus_to_bag] File parsing is done")
 
 
 if __name__ == '__main__':

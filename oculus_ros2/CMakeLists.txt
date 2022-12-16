@@ -15,7 +15,7 @@ if(NOT TARGET oculus_driver)
     include(FetchContent)
     FetchContent_Declare(oculus_driver
         GIT_REPOSITORY https://github.com/ENSTABretagneRobotics/oculus_driver.git
-        GIT_TAG master # tag for developpement : TODO handle the good version
+        GIT_TAG pnarvor # tag for developpement : TODO handle the good version
     )
     FetchContent_MakeAvailable(oculus_driver)
 endif()
