@@ -44,8 +44,8 @@ install(PROGRAMS
     DESTINATION bin)
 
 install(PROGRAMS
-    dev/oculus_to_bag.py
-    RENAME oculus_to_bag
+    dev/oculus_to_rosbag.py
+    RENAME oculus_to_rosbag
     DESTINATION bin)
 
 install(DIRECTORY launch cfg DESTINATION share/${PROJECT_NAME})
