@@ -40,9 +40,18 @@ ament_target_dependencies(oculus_sonar_node PUBLIC
 )
 
 install(PROGRAMS
-    scripts/bag_to_oculus
+    scripts/bag_to_oculus # not working
     DESTINATION bin)
 
+install(PROGRAMS
+    dev/display_oculus_subscriber.py
+    DESTINATION share)
+
+install(PROGRAMS
+    dev/display_oculus_file.py
+    RENAME display_oculus_file
+    DESTINATION bin)
+    
 install(PROGRAMS
     dev/oculus_to_rosbag.py
     RENAME oculus_to_rosbag
