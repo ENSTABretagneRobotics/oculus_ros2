@@ -184,8 +184,8 @@ class Oculus_parser(RosBagCreator):
         ros_msg.header.stamp.nanosec = int((seconds % 1)*1e9)
 
         ros_msg.header.frame_id = 'sonar'
-        # ping.fire_message:
-        # ping.fire_message.head:
+
+        
         ros_msg.fire_message.head.oculus_id = oculus_ping_msg.message().header().oculusId
         ros_msg.fire_message.head.src_device_id = oculus_ping_msg.message().header().srcDeviceId
         ros_msg.fire_message.head.dst_device_id = oculus_ping_msg.message().header().dstDeviceId
@@ -193,31 +193,32 @@ class Oculus_parser(RosBagCreator):
         ros_msg.fire_message.head.msg_version = oculus_ping_msg.message().header().msgVersion
         ros_msg.fire_message.head.payload_size = oculus_ping_msg.message().header().payloadSize
         ros_msg.fire_message.head.spare2 = oculus_ping_msg.message().header().spare2
-        #
-        # oculus_ping_msg.master_mode
+        
         ros_msg.fire_message.master_mode = oculus_ping_msg.master_mode()
         ros_msg.fire_message.ping_rate = 0
         ros_msg.fire_message.network_speed = 0
         ros_msg.fire_message.gamma_correction = 0
         ros_msg.fire_message.flags = 0
-        ros_msg.fire_message.range = 0.0
-        ros_msg.fire_message.gain_percent = 0.0
-        ros_msg.fire_message.speed_of_sound = 0.0
+        ros_msg.fire_message.range = oculus_ping_msg.range()
+        ros_msg.fire_message.gain_percent = oculus_ping_msg.gain_percent()
+        ros_msg.fire_message.speed_of_sound = oculus_ping_msg.speed_of_sound_used()
         ros_msg.fire_message.salinity = 0.0
-        #
-        ros_msg.ping_id = 0
+        
+        ros_msg.ping_id = oculus_ping_msg.ping_index()
         ros_msg.status = 0
-        ros_msg.frequency = 0.0
-        ros_msg.temperature = 0.0
-        ros_msg.pressure = 0.0
-        ros_msg.speeed_of_sound_used = 0.0
-        # print("\n>>>>>>>>", oculus_ping_msg.message().data().pingStartTime)
-        ros_msg.ping_start_time = 0
+        ros_msg.frequency = oculus_ping_msg.frequency()
+        ros_msg.temperature = oculus_ping_msg.temperature()
+        ros_msg.pressure = oculus_ping_msg.pressure()
+        ros_msg.speeed_of_sound_used = oculus_ping_msg.speed_of_sound_used()
+        ros_msg.ping_start_time = 0 #oculus_ping_msg.message().ping_firing_date()
         ros_msg.data_size = 0
-        ros_msg.range_resolution = 0.0
-        ros_msg.n_ranges = 0
-        # ros_msg.n_beams = oculus_ping_msg.message().data().nbeams
-        # ros_msg.image_offset = oculus_ping_msg.message().data().suboffsets
+        ros_msg.range_resolution = oculus_ping_msg.range_resolution()
+        ros_msg.n_ranges = oculus_ping_msg.range_count()
+        ros_msg.n_beams = oculus_ping_msg.bearing_count()
+        suboffsets = oculus_ping_msg.message().data().suboffsets
+        if suboffsets:
+            print("suboffsets =", suboffsets)
+            ros_msg.image_offset = suboffsets
         ros_msg.image_size = oculus_ping_msg.message().data().ndim
         ros_msg.message_size = oculus_ping_msg.message().data().shape[0]
         # ros_msg.data = []
@@ -254,7 +255,7 @@ class Oculus_parser(RosBagCreator):
             ros_msg = self.create_ros_oculus_msg(oculus_ping_msg)
 
             self.publish(topic_name=self.args.topicname,
-                         msg=ros_msg, nanoseconds=oculus_ping_msg.message().timestamp_micros()*1e3 + self.args.secondsoffset*1e9)
+                         msg=ros_msg, nanoseconds=oculus_ping_msg.timestamp_micros()*1e3 + self.args.secondsoffset*1e9)
 
             # this can be called several time to iterate through the pings
             oculus_ping_msg = self.file.read_next_ping()

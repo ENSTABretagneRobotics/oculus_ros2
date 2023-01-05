@@ -22,7 +22,7 @@ import time
 
 class OculusDisplayer(Node):
     def __init__(self):
-        super().__init__('display_oculus_subscriber')
+        super().__init__('oculus_subscriber_to_image')
 
       
         # Create subscribers for the Imu and TwistWithCovarianceStamped messages

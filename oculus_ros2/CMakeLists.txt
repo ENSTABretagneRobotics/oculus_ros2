@@ -45,6 +45,7 @@ install(PROGRAMS
 
 install(PROGRAMS
     dev/display_oculus_subscriber.py
+    dev/oculus_subscriber_to_image.py
     DESTINATION share)
 
 install(PROGRAMS
