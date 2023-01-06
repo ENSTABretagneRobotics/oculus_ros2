@@ -9,7 +9,7 @@ import argparse
 from oculus_python.files import OculusFileReader
 from oculus_python import PingMessage
 
-from oculus_interfaces.msg import OculusPing
+from oculus_interfaces.msg import Ping
 import rclpy
 from rclpy.node import Node
 
@@ -27,7 +27,7 @@ class OculusDisplayer(Node):
       
         # Create subscribers for the Imu and TwistWithCovarianceStamped messages
         self.imu_subscriber = self.create_subscription(
-            OculusPing, self.args.topicname, self.callback, 10)
+            Ping, self.args.topicname, self.callback, 10)
         parser = argparse.ArgumentParser(
             prog='OculusFileReader',
             description='Example of how to read and display the content of a .oculus ' +

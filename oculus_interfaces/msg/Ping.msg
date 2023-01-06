@@ -1,4 +1,4 @@
-Header header
+std_msgs/Header header
 
 uint32  ping_id              # incrementing counter inside the sonar
 uint32  ping_firing_date      # Ping firing date (sonar internal clock, microseconds)
