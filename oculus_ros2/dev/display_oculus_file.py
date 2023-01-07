@@ -32,7 +32,7 @@ def display_oculus_ping(msg, ax, args):
     if msg.has_gains():
         gains = np.array(msg.gains())
     pingData = np.array(msg.ping_data()) / np.sqrt(gains)[:, np.newaxis]
-
+    # print("pingData =", list(pingData))
     # print('has gains   :', msg.has_gains())
     # print('sample size :', msg.sample_size())
     # print('ping shape  :', pingData.shape)

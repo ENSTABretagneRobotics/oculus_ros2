@@ -185,46 +185,6 @@ class Oculus_parser(RosBagCreator):
 
         ros_msg.header.frame_id = 'sonar'
 
-        # ros_msg.fire_message.head.oculus_id = ping_msg.message().header().oculusId
-        # ros_msg.fire_message.head.src_device_id = ping_msg.message().header().srcDeviceId
-        # ros_msg.fire_message.head.dst_device_id = ping_msg.message().header().dstDeviceId
-        # ros_msg.fire_message.head.msg_id = ping_msg.message().header().msgId
-        # ros_msg.fire_message.head.msg_version = ping_msg.message().header().msgVersion
-        # ros_msg.fire_message.head.payload_size = ping_msg.message().header().payloadSize
-        # ros_msg.fire_message.head.spare2 = ping_msg.message().header().spare2
-
-        # ros_msg.fire_message.master_mode = ping_msg.master_mode()
-        # ros_msg.fire_message.ping_rate = 0
-        # ros_msg.fire_message.network_speed = 0
-        # ros_msg.fire_message.gamma_correction = 0
-        # ros_msg.fire_message.flags = 0
-        # ros_msg.fire_message.range = ping_msg.range()
-        # ros_msg.fire_message.gain_percent = ping_msg.gain_percent()
-        # ros_msg.fire_message.speed_of_sound = ping_msg.speed_of_sound_used()
-        # ros_msg.fire_message.salinity = 0.0
-
-        # ros_msg.ping_id = ping_msg.ping_index()
-        # ros_msg.status = 0
-        # ros_msg.frequency = ping_msg.frequency()
-        # ros_msg.temperature = ping_msg.temperature()
-        # ros_msg.pressure = ping_msg.pressure()
-        # ros_msg.speeed_of_sound_used = ping_msg.speed_of_sound_used()
-        # ros_msg.ping_start_time = 0 #ping_msg.message().ping_firing_date()
-        # ros_msg.data_size = 0
-        # ros_msg.range_resolution = ping_msg.range_resolution()
-        # ros_msg.n_ranges = ping_msg.range_count()
-        # ros_msg.n_beams = ping_msg.bearing_count()
-        # ros_msg.data = []
-        # ros_msg.data = [ping_msg.message().data()[k] for k in range(ping_msg.message().data().shape[0])]
-        # ros_msg.data = ping_msg.message().data().tolist()
-
-        # suboffsets = ping_msg.message().data().suboffsets
-        # if suboffsets:
-        #     print("suboffsets =", suboffsets)
-        #     ros_msg.image_offset = suboffsets
-        # ros_msg.image_size = ping_msg.message().data().ndim
-        # ros_msg.message_size = ping_msg.message().data().shape[0]
-
         ros_msg.range = ping_msg.range_resolution()
         ros_msg.gain_percent = ping_msg.gain_percent()
         ros_msg.frequency = ping_msg.frequency()
@@ -236,8 +196,7 @@ class Oculus_parser(RosBagCreator):
         ros_msg.has_gains = ping_msg.has_gains()
         ros_msg.n_ranges = ping_msg.range_count()
         ros_msg.n_beams = ping_msg.bearing_count()
-        # print("\n>>>>>>>>", dir(ping_msg.message()), "\n")
-        # ros_msg.step = ping_msg.message().step()
+        ros_msg.step = ping_msg.bearing_count()*ping_msg.sample_size() + 4*ping_msg.has_gains()
         ros_msg.sample_size = ping_msg.sample_size()
         ros_msg.bearings = ping_msg.bearing_data()
         ros_msg.ping_data = ping_msg.message().data().tolist()
