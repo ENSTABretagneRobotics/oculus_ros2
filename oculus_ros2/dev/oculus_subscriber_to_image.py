@@ -51,13 +51,13 @@ class OculusDisplayer(Node):
         # print("oculus_msg.ping_data =", oculus_msg.ping_data)
         pingData = 255*255*(pingData - np.min(pingData))/(np.max(pingData)-np.min(pingData))
         pingData.astype(np.uint8)
-        print("pingData[:20] =", pingData[:20])
-        print("np.min(pingData) =", np.min(pingData))
-        print("np.max(pingData) =", np.max(pingData))
-        print("len(pingData) =", len(pingData))
-        print("oculus_msg.n_beams =", oculus_msg.n_beams)
-        print("oculus_msg.n_ranges =", oculus_msg.n_ranges)
-        print("oculus_msg.n_beams*oculus_msg.n_ranges =", (oculus_msg.n_beams)*oculus_msg.n_ranges)
+        # print("pingData[:20] =", pingData[:20])
+        # print("np.min(pingData) =", np.min(pingData))
+        # print("np.max(pingData) =", np.max(pingData))
+        # print("len(pingData) =", len(pingData))
+        # print("oculus_msg.n_beams =", oculus_msg.n_beams)
+        # print("oculus_msg.n_ranges =", oculus_msg.n_ranges)
+        # print("oculus_msg.n_beams*oculus_msg.n_ranges =", (oculus_msg.n_beams)*oculus_msg.n_ranges)
         assert(len(pingData)-8*256==oculus_msg.n_beams*oculus_msg.n_ranges)
         assert(oculus_msg.n_beams==oculus_msg.step)
         # image_msg.height = oculus_msg.n_beams
@@ -71,9 +71,9 @@ class OculusDisplayer(Node):
         # self.image_publisher.publish(image_msg)
 
         image_array = 1*255+np.zeros(((oculus_msg.n_beams)*(oculus_msg.n_ranges+8)), dtype=np.float32)
-        print(">>>>>>> len(image_array) =", len(image_array))
-        print(">>>>>>> len(pingData) =", len(pingData))
-        image_array = pingData
+        # print(">>>>>>> len(image_array) =", len(image_array))
+        # print(">>>>>>> len(pingData) =", len(pingData))
+        image_array = pingData[::-1]
         msg = Image()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = 'image_frame'
