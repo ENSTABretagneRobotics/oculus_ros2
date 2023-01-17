@@ -70,11 +70,11 @@ class OculusDisplayer(Node):
 
         # self.image_publisher.publish(image_msg)
 
-        image_array = 1*255+np.zeros(((oculus_msg.n_beams)*(oculus_msg.n_ranges+8)), dtype=np.float32)
+        # image_array = 1*255+np.zeros(((oculus_msg.n_beams)*(oculus_msg.n_ranges+8)), dtype=np.float32)
         # print(">>>>>>> len(image_array) =", len(image_array))
         # print(">>>>>>> len(pingData) =", len(pingData))
         # image_array = pingData[::-1]
-        image_array = pingData
+        image_array = 255 - pingData
         msg = Image()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = 'image_frame'
