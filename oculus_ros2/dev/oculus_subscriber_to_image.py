@@ -95,7 +95,9 @@ class OculusDisplayer(Node):
         image_array = 1*255+np.zeros(((oculus_msg.n_beams)*(oculus_msg.n_ranges+8)), dtype=np.float32)
         # print(">>>>>>> len(image_array) =", len(image_array))
         # print(">>>>>>> len(pingData) =", len(pingData))
-        image_array = pingData[::-1]
+
+        # image_array = pingData[::-1]
+        image_array = pingData
         self.msg = Image()
         self.msg.header.stamp = self.get_clock().now().to_msg()
         self.msg.header.frame_id = 'image_frame'
@@ -104,6 +106,7 @@ class OculusDisplayer(Node):
         self.msg.encoding = 'mono8'  # or 'mono16'
         self.msg.is_bigendian = False
         self.msg.step = oculus_msg.n_beams
+
         image_array = image_array.astype(np.uint8)  # or np.uint16
         self.msg.data = image_array.flatten().tobytes()
         if self.args.freq == 0 :
