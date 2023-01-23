@@ -57,7 +57,7 @@ namespace oculus
         msg.part_number = status.partNumber;
         msg.status = status.status;
 
-        copy_to_ros(msg.versin_info, status.versinInfo);
+        copy_to_ros(msg.version_info, status.versinInfo);
 
         msg.ip_addr = status.ipAddr;
         msg.ip_mask = status.ipMask;

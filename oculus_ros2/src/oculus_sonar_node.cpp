@@ -196,7 +196,8 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping) //
 
 void OculusSonarNode::handle_dummy()
 {
-    if (this->count_subscribers(this->ping_topic_) > 0)
+    if (this->count_subscribers(this->ping_topic_) > 0) //cherche un equivalent à self.ping_topic_.get_subscription_count() //! ping_topic_ est un string pas une classe 
+    // if(this->ping_topic_->get_subscription_count()>0) //? renvoie un size_t compile pas si décommenté
     {
         cout << "Exiting standby mode" << endl;
         this->sonar_driver_->resume();

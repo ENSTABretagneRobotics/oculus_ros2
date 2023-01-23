@@ -64,10 +64,18 @@ class OculusDisplayer(Node):
         bearings = 0.01*np.array(oculus_msg.bearings)
     
         if oculus_msg.has_gains:
-            TODO
-            gains = np.array(oculus_msg.gains())
-            pingData = np.array(oculus_msg.ping_data) / \
-                np.sqrt(gains)[:, np.newaxis]
+            #TODO
+            # If the hasGains
+            # field is true, each row starts with 4 bytes
+            # containing gain of the row (encoded as a little
+            # endian uint32. Divide the whole row by the square
+            # root of this gain to have consistent value across
+            # the image data).
+            pingData = np.array(oculus_msg.ping_data)
+            for rows in pingData:
+                val = int.from_bytes(pingData[rows][:5], "little")
+                pingData[rows] = pingData[rows][5:]/np.sqrt(val)
+
         else :
             pingData = np.array(oculus_msg.ping_data)
         # print("oculus_msg.ping_data =", oculus_msg.ping_data)
@@ -103,11 +111,11 @@ class OculusDisplayer(Node):
         self.msg.header.frame_id = 'sonar'
         self.msg.height = oculus_msg.n_ranges+8
         self.msg.width = oculus_msg.n_beams
-        self.msg.encoding = 'mono8'  # or 'mono16'
+        self.msg.encoding = 'mono32'  # or 'mono16'
         self.msg.is_bigendian = False
         self.msg.step = oculus_msg.n_beams
 
-        image_array = image_array.astype(np.uint8)  # or np.uint16
+        image_array = image_array.astype(np.uint8)  # or np.uint16 ? Work with mono8
         self.msg.data = image_array.flatten().tobytes()
         if self.args.freq == 0 :
             print("coucouc on publie sans freq")
