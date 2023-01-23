@@ -11,7 +11,7 @@
 #include <oculus_driver/SonarDriver.h>
 
 #include "oculus_interfaces/msg/oculus_status.hpp"
-#include "oculus_interfaces/msg/oculus_stamped_ping.hpp"
+#include "oculus_interfaces/msg/ping.hpp"
 
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 
@@ -29,14 +29,13 @@ class OculusSonarNode : public rclcpp::Node
     std::string ping_topic_ = "ping";
     std::string status_topic_ = "status";
     rclcpp::Publisher<oculus_interfaces::msg::OculusStatus>::SharedPtr status_publisher_{nullptr};
-    rclcpp::Publisher<oculus_interfaces::msg::OculusStampedPing>::SharedPtr ping_publisher_{nullptr};
+    rclcpp::Publisher<oculus_interfaces::msg::Ping>::SharedPtr ping_publisher_{nullptr};
     
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_{nullptr};
 
     rcl_interfaces::msg::SetParametersResult set_config_callback(const std::vector<rclcpp::Parameter> & parameters);
     
     void publish_status(const OculusStatusMsg& status);
-    void publish_ping(const OculusSimplePingResult& pingMetadata,
-                      const std::vector<uint8_t>& pingData);
+    void publish_ping(const oculus::PingMessage::ConstPtr& pingMetadata);
     void handle_dummy();
 };

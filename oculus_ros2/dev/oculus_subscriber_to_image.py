@@ -14,6 +14,9 @@ from rclpy.node import Node
 
 import numpy as np
 import time
+import sys
+import argparse
+
 
 
 class OculusDisplayer(Node):
@@ -28,11 +31,30 @@ class OculusDisplayer(Node):
         #                     help=". Default to '/sonar/oculus'")
 
         # self.args = parser.parse_args()
-
         self.imu_subscriber = self.create_subscription(
-            Ping, '/sonar/oculus', self.callback, 10)
+            Ping, '/sonar/ping', self.callback, 10)
         self.image_publisher = self.create_publisher(
-            Image, 'sonar/image', 10)
+            Image, 'sonar/image', 10)         
+        
+        parser = argparse.ArgumentParser(
+            prog='OculusFileReader',
+            description='Example of how to read and display the content of a .oculus ' +
+                        'file. This will display the first ping from a the file.')
+        parser.add_argument('-freq', '-frequency', type=float, default=0,
+                            help='Frequency to which the image will be published')
+        self.args = parser.parse_args()
+
+        
+        # try :
+        #     i = sys.argv.index("-freq")
+        #     timer_period = 1 / float(sys.argv[i + 1])  # the argument is given as a frequency
+        # except ValueError:
+        #     timer_period = 0.5  # seconds
+
+        if self.args.freq > 0 :
+            self.timer_period = 1 / self.args.freq
+            self.timer = self.create_timer(self.timer_period, self.timer_callback)
+        self.msg = 0
 
     def callback(self, oculus_msg):
         image_msg = Image()
@@ -70,23 +92,35 @@ class OculusDisplayer(Node):
 
         # self.image_publisher.publish(image_msg)
 
-        image_array = 1*255+np.zeros(((oculus_msg.n_beams)*(oculus_msg.n_ranges+8)), dtype=np.float32)
+        # image_array = 1*255+np.zeros(((oculus_msg.n_beams)*(oculus_msg.n_ranges+8)), dtype=np.float32)
         # print(">>>>>>> len(image_array) =", len(image_array))
         # print(">>>>>>> len(pingData) =", len(pingData))
-        # image_array = pingData[::-1]
-        image_array = pingData
-        msg = Image()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'image_frame'
-        msg.height = oculus_msg.n_ranges+8
-        msg.width = oculus_msg.n_beams
-        msg.encoding = 'mono8'  # or 'mono16'
-        msg.is_bigendian = False
-        msg.step = oculus_msg.n_beams
-        image_array = image_array.astype(np.uint8)  # or np.uint16
-        msg.data = image_array.flatten().tobytes()
 
-        self.image_publisher.publish(msg)
+        # image_array = pingData[::-1]
+        image_array = 255 - pingData
+        self.msg = Image()
+        self.msg.header.stamp = self.get_clock().now().to_msg()
+        self.msg.header.frame_id = 'sonar'
+        self.msg.height = oculus_msg.n_ranges+8
+        self.msg.width = oculus_msg.n_beams
+        self.msg.encoding = 'mono8'  # or 'mono16'
+        self.msg.is_bigendian = False
+        self.msg.step = oculus_msg.n_beams
+
+        image_array = image_array.astype(np.uint8)  # or np.uint16
+        self.msg.data = image_array.flatten().tobytes()
+        if self.args.freq == 0 :
+            print("coucouc on publie sans freq")
+            self.image_publisher.publish(self.msg)
+
+        
+    
+    def timer_callback(self):
+        if self.msg != 0 :
+            print("coucou on publie")
+            self.image_publisher.publish(self.msg)
+        self.msg = 0
+
 
 
 def main(args=None):
