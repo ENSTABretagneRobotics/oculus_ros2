@@ -30,7 +30,7 @@ class OculusDisplayer(Node):
         # self.args = parser.parse_args()
 
         self.imu_subscriber = self.create_subscription(
-            Ping, '/sonar/oculus', self.callback, 10)
+            Ping, '/sonar/ping', self.callback, 10)
         self.image_publisher = self.create_publisher(
             Image, 'sonar/image', 10)
 
