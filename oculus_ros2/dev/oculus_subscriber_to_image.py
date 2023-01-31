@@ -32,9 +32,9 @@ class OculusDisplayer(Node):
 
         # self.args = parser.parse_args()
         self.imu_subscriber = self.create_subscription(
-            Ping, '/sonar/ping', self.callback, 10)
+            Ping, 'oculus_sonar/ping', self.callback, 10)
         self.image_publisher = self.create_publisher(
-            Image, 'sonar/image', 10)         
+            Image, 'oculus_sonar/image', 10)         
         
         parser = argparse.ArgumentParser(
             prog='OculusFileReader',

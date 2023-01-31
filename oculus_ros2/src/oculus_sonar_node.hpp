@@ -17,25 +17,24 @@
 
 class OculusSonarNode : public rclcpp::Node
 {
-  public:
-    OculusSonarNode();
-    ~OculusSonarNode();
+public:
+  OculusSonarNode();
+  ~OculusSonarNode();
 
+private:
+  std::shared_ptr<oculus::SonarDriver> sonar_driver_;
+  oculus::AsyncService io_service_;
 
-  private:
-    std::shared_ptr<oculus::SonarDriver> sonar_driver_;
-    oculus::AsyncService io_service_;
+  std::string ping_topic_ = "ping";
+  std::string status_topic_ = "status";
+  rclcpp::Publisher<oculus_interfaces::msg::OculusStatus>::SharedPtr status_publisher_{nullptr};
+  rclcpp::Publisher<oculus_interfaces::msg::Ping>::SharedPtr ping_publisher_{nullptr};
 
-    std::string ping_topic_ = "ping";
-    std::string status_topic_ = "status";
-    rclcpp::Publisher<oculus_interfaces::msg::OculusStatus>::SharedPtr status_publisher_{nullptr};
-    rclcpp::Publisher<oculus_interfaces::msg::Ping>::SharedPtr ping_publisher_{nullptr};
-    
-    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_{nullptr};
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_{nullptr};
 
-    rcl_interfaces::msg::SetParametersResult set_config_callback(const std::vector<rclcpp::Parameter> & parameters);
-    
-    void publish_status(const OculusStatusMsg& status);
-    void publish_ping(const oculus::PingMessage::ConstPtr& pingMetadata);
-    void handle_dummy();
+  rcl_interfaces::msg::SetParametersResult set_config_callback(const std::vector<rclcpp::Parameter> &parameters);
+
+  void publish_status(const OculusStatusMsg &status);
+  void publish_ping(const oculus::PingMessage::ConstPtr &pingMetadata);
+  void handle_dummy();
 };

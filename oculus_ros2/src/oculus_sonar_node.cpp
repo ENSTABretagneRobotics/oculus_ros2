@@ -154,6 +154,12 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publish_ping, this, std::placeholders::_1));
     // callback on dummy messages to reactivate the pings as needed
     this->sonar_driver_->add_dummy_callback(std::bind(&OculusSonarNode::handle_dummy, this));
+
+    // // Set callback function for the number of subscribers
+    // this->ping_publisher_->on_subscription_count_change(
+    //   [this](size_t count) {
+    //     this->ping_publisher_count = count;
+    //   });
 }
 
 OculusSonarNode::~OculusSonarNode()
@@ -183,8 +189,8 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping) //
 {
     static oculus_interfaces::msg::Ping msg;
 
-    if (this->count_subscribers(this->ping_topic_) == 0)
-    { // TODO @HY what for ?
+    if (this->ping_publisher_->get_subscription_count() == 0)
+    {
         cout << "Going to standby mode" << endl;
         this->sonar_driver_->standby();
         // return;
@@ -196,7 +202,8 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping) //
 
 void OculusSonarNode::handle_dummy()
 {
-    if (this->count_subscribers(this->ping_topic_) > 0)
+
+    if (this->ping_publisher_->get_subscription_count() > 0)
     {
         cout << "Exiting standby mode" << endl;
         this->sonar_driver_->resume();
