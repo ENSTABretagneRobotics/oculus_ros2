@@ -72,12 +72,32 @@ class OculusDisplayer(Node):
             # root of this gain to have consistent value across
             # the image data).
             pingData = np.array(oculus_msg.ping_data)
-            for rows in pingData:
-                val = int.from_bytes(pingData[rows][:5], "little")
-                pingData[rows] = pingData[rows][5:]/np.sqrt(val)
+            # print(len(pingData))
+            pingData_nogain = []
+            size_whole_ping = oculus_msg.n_beams+4
+            for i in range(0, len(pingData), size_whole_ping):
+                val = int.from_bytes(pingData[i:i+4], "little")
+                for j in range(4,size_whole_ping):
+                    pingData[i+j] = pingData[i+j]/np.sqrt(val)
+                    pingData_nogain.append(pingData[i+j])
+            # print(len(pingData_nogain))
+            pingData = np.array(pingData_nogain)
+            # print("len(Pingdata) = ", len(pingData))
+            # print("value = ", oculus_msg.n_beams*oculus_msg.n_ranges)
+            # print(len(pingData) - oculus_msg.n_beams*oculus_msg.n_ranges)
+
+
+
+
+
+            assert(len(pingData)==oculus_msg.n_beams*oculus_msg.n_ranges)
 
         else :
             pingData = np.array(oculus_msg.ping_data)
+            assert(len(pingData)-8*256==oculus_msg.n_beams*oculus_msg.n_ranges)
+            if(oculus_msg.n_beams!=oculus_msg.step):
+                print("WARNING no gain and beams != n_range")
+
         # print("oculus_msg.ping_data =", oculus_msg.ping_data)
         pingData = 255*255*(pingData - np.min(pingData))/(np.max(pingData)-np.min(pingData))
         pingData.astype(np.uint8)
@@ -88,8 +108,10 @@ class OculusDisplayer(Node):
         # print("oculus_msg.n_beams =", oculus_msg.n_beams)
         # print("oculus_msg.n_ranges =", oculus_msg.n_ranges)
         # print("oculus_msg.n_beams*oculus_msg.n_ranges =", (oculus_msg.n_beams)*oculus_msg.n_ranges)
-        assert(len(pingData)-8*256==oculus_msg.n_beams*oculus_msg.n_ranges)
-        assert(oculus_msg.n_beams==oculus_msg.step)
+        print("beams = ", oculus_msg.n_beams)
+        print("step = ", oculus_msg.step)
+
+        
         # image_msg.height = oculus_msg.n_beams
         # image_msg.width = oculus_msg.n_ranges
         # image_msg.encoding = 'mono8'
@@ -110,10 +132,10 @@ class OculusDisplayer(Node):
         self.msg.header.stamp = self.get_clock().now().to_msg()
         self.msg.header.frame_id = 'sonar'
         self.msg.height = oculus_msg.n_ranges+8
-        self.msg.width = oculus_msg.n_beams
-        self.msg.encoding = 'mono32'  # or 'mono16'
+        self.msg.width = int((oculus_msg.n_beams+4)/2) #? pour le +4 et /2
+        self.msg.encoding = 'mono16'  # or 'mono16'
         self.msg.is_bigendian = False
-        self.msg.step = oculus_msg.n_beams
+        self.msg.step = oculus_msg.n_beams+4
 
         image_array = image_array.astype(np.uint8)  # or np.uint16 ? Work with mono8
         self.msg.data = image_array.flatten().tobytes()
