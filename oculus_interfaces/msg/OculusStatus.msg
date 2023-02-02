@@ -5,7 +5,7 @@ uint16  device_type
 uint16  part_number
 uint32  status
 
-OculusVersionInfo versin_info
+OculusVersionInfo version_info
 
 uint32  ip_addr
 uint32  ip_mask
