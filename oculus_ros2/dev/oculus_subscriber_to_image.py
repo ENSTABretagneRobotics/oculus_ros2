@@ -37,9 +37,9 @@ class OculusDisplayer(Node):
         # parser.add_argument('-freq', '-frequency', type=float, default=0,
         #                     help='Frequency to which the image will be published')
         # self.args = parser.parse_args()
-        self.freq = 0
-        # self.declare_parameter('freq', 0.)
-        # self.freq = self.get_parameter('freq').get_parameter_value()
+        # self.freq = 0
+        self.declare_parameter('freq', "0")
+        self.freq = float(self.get_parameter('freq').get_parameter_value().string_value)
 
         
 
