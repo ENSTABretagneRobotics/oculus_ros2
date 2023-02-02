@@ -23,12 +23,6 @@ class OculusDisplayer(Node):
     def __init__(self):
         super().__init__('oculus_subscriber_to_image')
 
-        # parser = argparse.ArgumentParser(
-        #     prog='OculusFileReader',
-        #     description='Example of how to read and display the content of a .oculus ' +
-        #                 'file. This will display the first ping from a the file.')
-        # parser.add_argument('-tn', '--topicname', type=str, default='/sonar/oculus',
-        #                     help=". Default to '/sonar/oculus'")
 
         # self.args = parser.parse_args()
         self.imu_subscriber = self.create_subscription(
@@ -43,15 +37,11 @@ class OculusDisplayer(Node):
         # parser.add_argument('-freq', '-frequency', type=float, default=0,
         #                     help='Frequency to which the image will be published')
         # self.args = parser.parse_args()
-        # self.args.freq = 0
         self.freq = 0
+        # self.declare_parameter('freq', 0.)
+        # self.freq = self.get_parameter('freq').get_parameter_value()
 
         
-        # try :
-        #     i = sys.argv.index("-freq")
-        #     timer_period = 1 / float(sys.argv[i + 1])  # the argument is given as a frequency
-        # except ValueError:
-        #     timer_period = 0.5  # seconds
 
         if self.freq > 0 :
             self.timer_period = 1 / self.args.freq
@@ -110,8 +100,8 @@ class OculusDisplayer(Node):
         # print("oculus_msg.n_beams =", oculus_msg.n_beams)
         # print("oculus_msg.n_ranges =", oculus_msg.n_ranges)
         # print("oculus_msg.n_beams*oculus_msg.n_ranges =", (oculus_msg.n_beams)*oculus_msg.n_ranges)
-        print("beams = ", oculus_msg.n_beams)
-        print("step = ", oculus_msg.step)
+        # print("beams = ", oculus_msg.n_beams)
+        # print("step = ", oculus_msg.step)
 
         
         # image_msg.height = oculus_msg.n_beams
@@ -134,22 +124,22 @@ class OculusDisplayer(Node):
         self.msg.header.stamp = self.get_clock().now().to_msg()
         self.msg.header.frame_id = 'sonar'
         self.msg.height = oculus_msg.n_ranges+8
-        self.msg.width = int((oculus_msg.n_beams+4)/2) #? pour le +4 et /2
+        self.msg.width = oculus_msg.n_beams
         self.msg.encoding = 'mono8'  # or 'mono16'
         self.msg.is_bigendian = False
-        self.msg.step = oculus_msg.n_beams+4
+        self.msg.step = oculus_msg.n_beams
 
         image_array = image_array.astype(np.uint8)  # or np.uint16 ? Work with mono8
         self.msg.data = image_array.flatten().tobytes()
         if self.freq <= 0 :
-            print("coucou on publie sans freq")
+            # print("coucou on publie sans freq")
             self.image_publisher.publish(self.msg)
 
         
     
     def timer_callback(self):
         if self.msg != 0 :
-            print("coucou on publie")
+            # print("coucou on publie")
             self.image_publisher.publish(self.msg)
         self.msg = 0
 
