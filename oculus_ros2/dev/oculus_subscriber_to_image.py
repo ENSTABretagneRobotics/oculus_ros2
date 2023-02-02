@@ -36,13 +36,15 @@ class OculusDisplayer(Node):
         self.image_publisher = self.create_publisher(
             Image, 'oculus_sonar/image', 10)         
         
-        parser = argparse.ArgumentParser(
-            prog='OculusFileReader',
-            description='Example of how to read and display the content of a .oculus ' +
-                        'file. This will display the first ping from a the file.')
-        parser.add_argument('-freq', '-frequency', type=float, default=0,
-                            help='Frequency to which the image will be published')
-        self.args = parser.parse_args()
+        # parser = argparse.ArgumentParser(
+        #     prog='OculusFileReader',
+        #     description='Example of how to read and display the content of a .oculus ' +
+        #                 'file. This will display the first ping from a the file.')
+        # parser.add_argument('-freq', '-frequency', type=float, default=0,
+        #                     help='Frequency to which the image will be published')
+        # self.args = parser.parse_args()
+        # self.args.freq = 0
+        self.freq = 0
 
         
         # try :
@@ -51,7 +53,7 @@ class OculusDisplayer(Node):
         # except ValueError:
         #     timer_period = 0.5  # seconds
 
-        if self.args.freq > 0 :
+        if self.freq > 0 :
             self.timer_period = 1 / self.args.freq
             self.timer = self.create_timer(self.timer_period, self.timer_callback)
         self.msg = 0
@@ -104,21 +106,21 @@ class OculusDisplayer(Node):
         # print(">>>>>>> len(image_array) =", len(image_array))
         # print(">>>>>>> len(pingData) =", len(pingData))
 
-        # image_array = pingData[::-1]
-        image_array = 255 - pingData
+        image_array = pingData[::-1]
+        # image_array = 255 - pingData
         self.msg = Image()
         self.msg.header.stamp = self.get_clock().now().to_msg()
         self.msg.header.frame_id = 'sonar'
         self.msg.height = oculus_msg.n_ranges+8
         self.msg.width = oculus_msg.n_beams
-        self.msg.encoding = 'mono32'  # or 'mono16'
+        self.msg.encoding = 'mono8'  # or 'mono16'
         self.msg.is_bigendian = False
         self.msg.step = oculus_msg.n_beams
 
         image_array = image_array.astype(np.uint8)  # or np.uint16 ? Work with mono8
         self.msg.data = image_array.flatten().tobytes()
-        if self.args.freq == 0 :
-            print("coucouc on publie sans freq")
+        if self.freq <= 0 :
+            print("coucou on publie sans freq")
             self.image_publisher.publish(self.msg)
 
         
