@@ -64,25 +64,66 @@ class OculusDisplayer(Node):
             # root of this gain to have consistent value across
             # the image data).
             pingData = np.array(oculus_msg.ping_data)
-            # print(len(pingData))
+            print("shape = ", pingData.shape)
+            init_shape = pingData.shape[0]
             pingData_nogain = []
-            size_whole_ping = oculus_msg.n_beams+4
-            for i in range(0, len(pingData), size_whole_ping):
-                val = int.from_bytes(pingData[i:i+4], "little")
-                for j in range(4,size_whole_ping):
-                    pingData[i+j] = pingData[i+j]/np.sqrt(val)
-                    pingData_nogain.append(pingData[i+j])
-            # print(len(pingData_nogain))
-            pingData = np.array(pingData_nogain)
-            # print("len(Pingdata) = ", len(pingData))
-            # print("value = ", oculus_msg.n_beams*oculus_msg.n_ranges)
-            # print(len(pingData) - oculus_msg.n_beams*oculus_msg.n_ranges)
+            assert(oculus_msg.step==oculus_msg.n_beams+4)
+
+            if False:
+                size_whole_ping = oculus_msg.step  # similar to oculus_msg.step ?
+                for i in range(0, len(pingData), size_whole_ping):
+                    # val = int.from_bytes(pingData[i:i+4], "little")
+                    for j in range(4, size_whole_ping):
+                        # pingData[i+j]/=np.sqrt(val)
+                        pingData_nogain.append(pingData[i+j])
+                pingData = np.array(pingData_nogain)
+                print("shape_without_gain = ", pingData.shape)
+            
+            if True:
+                pingData = np.reshape(pingData,(oculus_msg.n_ranges, oculus_msg.step))
+
+                val = pingData[:,:4]
+                pingData = pingData[:,4:].flatten()
+                assert(pingData.shape[0]==(oculus_msg.step-4)*oculus_msg.n_ranges)
+                # for i in range(len(pingData)):
+                #     # div_val = np.sqrt(val[i])
+                #     for j in range(len(pingData[i])):
+                #         pingData_nogain.append(pingData[i][j])
+
+                # pingData = np.
+
+
+
+            # print("init_shape = ", init_shape)
+            # print("")
+            assert (pingData.shape[0]==(init_shape-4*oculus_msg.n_ranges))
+            assert (len(pingData) == oculus_msg.n_beams*oculus_msg.n_ranges)
+            assert (oculus_msg.step == oculus_msg.n_beams+4)
 
 
 
 
 
             assert(len(pingData)==oculus_msg.n_beams*oculus_msg.n_ranges)
+            pingData = 255*255*(pingData - np.min(pingData))/(np.max(pingData)-np.min(pingData))
+            pingData.astype(np.uint8)
+
+            image_array = pingData[::-1]
+            # image_array = 255 - pingData
+            self.msg = Image()
+            self.msg.header.stamp = self.get_clock().now().to_msg()
+            self.msg.header.frame_id = 'sonar'
+            self.msg.height = oculus_msg.n_ranges
+            self.msg.width = oculus_msg.n_beams
+            self.msg.encoding = 'mono8'  # or 'mono16'
+            self.msg.is_bigendian = False
+            self.msg.step = oculus_msg.n_beams
+
+            image_array = image_array.astype(np.uint8)  # or np.uint16 ? Work with mono8
+            self.msg.data = image_array.flatten().tobytes()
+            if self.freq <= 0 :
+                # print("coucou on publie sans freq")
+                self.image_publisher.publish(self.msg)
 
         else :
             pingData = np.array(oculus_msg.ping_data)
@@ -90,50 +131,26 @@ class OculusDisplayer(Node):
             if(oculus_msg.n_beams!=oculus_msg.step):
                 print("WARNING no gain and beams != n_range")
 
-        # print("oculus_msg.ping_data =", oculus_msg.ping_data)
-        pingData = 255*255*(pingData - np.min(pingData))/(np.max(pingData)-np.min(pingData))
-        pingData.astype(np.uint8)
-        # print("pingData[:20] =", pingData[:20])
-        # print("np.min(pingData) =", np.min(pingData))
-        # print("np.max(pingData) =", np.max(pingData))
-        # print("len(pingData) =", len(pingData))
-        # print("oculus_msg.n_beams =", oculus_msg.n_beams)
-        # print("oculus_msg.n_ranges =", oculus_msg.n_ranges)
-        # print("oculus_msg.n_beams*oculus_msg.n_ranges =", (oculus_msg.n_beams)*oculus_msg.n_ranges)
-        # print("beams = ", oculus_msg.n_beams)
-        # print("step = ", oculus_msg.step)
+    
+            pingData = 255*255*(pingData - np.min(pingData))/(np.max(pingData)-np.min(pingData))
+            pingData.astype(np.uint8)
 
-        
-        # image_msg.height = oculus_msg.n_beams
-        # image_msg.width = oculus_msg.n_ranges
-        # image_msg.encoding = 'mono8'
-        # image_msg.is_bigendian = 0  # default value TODO
-        # image_msg.step = oculus_msg.step
-        # image_msg.data = pingData.flatten().tobytes()
+            image_array = pingData[::-1]
+            # image_array = 255 - pingData
+            self.msg = Image()
+            self.msg.header.stamp = self.get_clock().now().to_msg()
+            self.msg.header.frame_id = 'sonar'
+            self.msg.height = oculus_msg.n_ranges+8
+            self.msg.width = oculus_msg.n_beams
+            self.msg.encoding = 'mono8'  # or 'mono16'
+            self.msg.is_bigendian = False
+            self.msg.step = oculus_msg.n_beams
 
-
-        # self.image_publisher.publish(image_msg)
-
-        # image_array = 1*255+np.zeros(((oculus_msg.n_beams)*(oculus_msg.n_ranges+8)), dtype=np.float32)
-        # print(">>>>>>> len(image_array) =", len(image_array))
-        # print(">>>>>>> len(pingData) =", len(pingData))
-
-        image_array = pingData[::-1]
-        # image_array = 255 - pingData
-        self.msg = Image()
-        self.msg.header.stamp = self.get_clock().now().to_msg()
-        self.msg.header.frame_id = 'sonar'
-        self.msg.height = oculus_msg.n_ranges+8
-        self.msg.width = oculus_msg.n_beams
-        self.msg.encoding = 'mono8'  # or 'mono16'
-        self.msg.is_bigendian = False
-        self.msg.step = oculus_msg.n_beams
-
-        image_array = image_array.astype(np.uint8)  # or np.uint16 ? Work with mono8
-        self.msg.data = image_array.flatten().tobytes()
-        if self.freq <= 0 :
-            # print("coucou on publie sans freq")
-            self.image_publisher.publish(self.msg)
+            image_array = image_array.astype(np.uint8)  # or np.uint16 ? Work with mono8
+            self.msg.data = image_array.flatten().tobytes()
+            if self.freq <= 0 :
+                # print("coucou on publie sans freq")
+                self.image_publisher.publish(self.msg)
 
         
     
