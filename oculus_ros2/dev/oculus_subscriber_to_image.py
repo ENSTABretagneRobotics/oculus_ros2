@@ -40,11 +40,12 @@ class OculusDisplayer(Node):
         # self.freq = 0
         self.declare_parameter('freq', "0")
         self.freq = float(self.get_parameter('freq').get_parameter_value().string_value)
+        # print(self.freq)
 
         
 
         if self.freq > 0 :
-            self.timer_period = 1 / self.args.freq
+            self.timer_period = 1 / self.freq
             self.timer = self.create_timer(self.timer_period, self.timer_callback)
         self.msg = 0
 
@@ -155,6 +156,7 @@ class OculusDisplayer(Node):
         
     
     def timer_callback(self):
+        # print("coucou on publie")
         if self.msg != 0 :
             # print("coucou on publie")
             self.image_publisher.publish(self.msg)
