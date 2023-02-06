@@ -28,7 +28,10 @@ class OculusDisplayer(Node):
         self.imu_subscriber = self.create_subscription(
             Ping, 'oculus_sonar/ping', self.callback, 10)
         self.image_publisher = self.create_publisher(
-            Image, 'oculus_sonar/image', 10)         
+            Image, 'oculus_sonar/image', 10)
+
+        self.test_image_publisher = self.create_publisher(
+            Image, 'oculus_sonar/image_gains_non_traite', 10)          
         
         # parser = argparse.ArgumentParser(
         #     prog='OculusFileReader',
@@ -65,33 +68,40 @@ class OculusDisplayer(Node):
             # root of this gain to have consistent value across
             # the image data).
             pingData = np.array(oculus_msg.ping_data)
+            pingDataw = np.array(oculus_msg.ping_data)
+            # print("type = ", type(oculus_msg.ping_data))
+            # print("type_pingData = ", type(pingData[2]))
             print("shape = ", pingData.shape)
             init_shape = pingData.shape[0]
-            pingData_nogain = []
+            pingData_nogain, pingData_nogain1 = [],[]
             assert(oculus_msg.step==oculus_msg.n_beams+4)
+           
+        
+            pingData = np.reshape(pingData,(oculus_msg.n_ranges, oculus_msg.step))
+            pingDataw = np.reshape(pingDataw,(oculus_msg.n_ranges, oculus_msg.step))
+            val = pingData[:,:4]
+            pingData = pingData[:,4:]
+            pingDataw = pingDataw[:,4:]
 
-            if False:
-                size_whole_ping = oculus_msg.step  # similar to oculus_msg.step ?
-                for i in range(0, len(pingData), size_whole_ping):
-                    # val = int.from_bytes(pingData[i:i+4], "little")
-                    for j in range(4, size_whole_ping):
-                        # pingData[i+j]/=np.sqrt(val)
-                        pingData_nogain.append(pingData[i+j])
-                pingData = np.array(pingData_nogain)
-                print("shape_without_gain = ", pingData.shape)
-            
-            if True:
-                pingData = np.reshape(pingData,(oculus_msg.n_ranges, oculus_msg.step))
+            print("pingData = ", pingData)
+            for i in range(len(pingData)):
+                div_val = int.from_bytes(val[i],"little")
+                # div_val = 1    
+                print("============",pingData[i])    
+                for j in range(len(pingData[i])):
+                    # a = pingData[i][j]
+                    # b = pingDataw[i][j]
+                    pingData_nogain.append(pingData[i][j]/np.sqrt(div_val))
+                    pingData_nogain1.append(pingDataw[i][j])
 
-                val = pingData[:,:4]
-                pingData = pingData[:,4:].flatten()
-                assert(pingData.shape[0]==(oculus_msg.step-4)*oculus_msg.n_ranges)
-                # for i in range(len(pingData)):
-                #     # div_val = np.sqrt(val[i])
-                #     for j in range(len(pingData[i])):
-                #         pingData_nogain.append(pingData[i][j])
+            pingData = pingData.flatten() #Juste pour les assert
+            pingDataw = pingDataw.flatten()
+            # print("shape[0] = ", pingData.shape[0] )
+            # print("(Step-4)*ranges = ",(oculus_msg.step-4)*oculus_msg.n_ranges )
+            assert(pingData.shape[0]==(oculus_msg.step-4)*oculus_msg.n_ranges)
 
-                # pingData = np.
+            pingData = np.array(pingData_nogain)
+            pingDataw = np.array(pingData_nogain1)
 
 
 
@@ -100,12 +110,9 @@ class OculusDisplayer(Node):
             assert (pingData.shape[0]==(init_shape-4*oculus_msg.n_ranges))
             assert (len(pingData) == oculus_msg.n_beams*oculus_msg.n_ranges)
             assert (oculus_msg.step == oculus_msg.n_beams+4)
-
-
-
-
-
             assert(len(pingData)==oculus_msg.n_beams*oculus_msg.n_ranges)
+
+
             pingData = 255*255*(pingData - np.min(pingData))/(np.max(pingData)-np.min(pingData))
             pingData.astype(np.uint8)
 
@@ -120,11 +127,33 @@ class OculusDisplayer(Node):
             self.msg.is_bigendian = False
             self.msg.step = oculus_msg.n_beams
 
-            image_array = image_array.astype(np.uint8)  # or np.uint16 ? Work with mono8
+            image_array = image_array.astype(np.uint8)  # or np.uint16 ? Work with mono8 
             self.msg.data = image_array.flatten().tobytes()
+
+
+            pingDataw = 255*255*(pingDataw - np.min(pingDataw))/(np.max(pingDataw)-np.min(pingDataw))
+            pingDataw.astype(np.uint8)
+
+            image_array1 = pingDataw[::-1]
+            # image_array = 255 - pingData
+            self.msg1 = Image()
+            self.msg1.header.stamp = self.get_clock().now().to_msg()
+            self.msg1.header.frame_id = 'sonar1'
+            self.msg1.height = oculus_msg.n_ranges
+            self.msg1.width = oculus_msg.n_beams
+            self.msg1.encoding = 'mono8'  # or 'mono16'
+            self.msg1.is_bigendian = False
+            self.msg1.step = oculus_msg.n_beams
+
+            image_array1 = image_array1.astype(np.uint8)  # or np.uint16 ? Work with mono8 
+            self.msg1.data = image_array.flatten().tobytes()
+
+
+
             if self.freq <= 0 :
                 # print("coucou on publie sans freq")
                 self.image_publisher.publish(self.msg)
+                self.test_image_publisher.publish(self.msg1)
 
         else :
             pingData = np.array(oculus_msg.ping_data)
