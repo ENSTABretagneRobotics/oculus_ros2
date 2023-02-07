@@ -175,8 +175,7 @@ namespace oculus
 
         msg.bearings.assign(ping->bearing_data(),
                             ping->bearing_data() + ping->bearing_count());
-        msg.ping_data.assign(ping->ping_data(),
-                            ping->ping_data() + ping->ping_data_size());
+        msg.ping_data = ping->data();
     }
 
 } // namespace oculus
