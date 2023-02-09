@@ -155,11 +155,6 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     // callback on dummy messages to reactivate the pings as needed
     this->sonar_driver_->add_dummy_callback(std::bind(&OculusSonarNode::handle_dummy, this));
 
-    // // Set callback function for the number of subscribers
-    // this->ping_publisher_->on_subscription_count_change(
-    //   [this](size_t count) {
-    //     this->ping_publisher_count = count;
-    //   });
 }
 
 OculusSonarNode::~OculusSonarNode()
@@ -185,7 +180,7 @@ inline rclcpp::Time to_ros_stamp(const SonarDriver::TimePoint &stamp)
     return rclcpp::Time(seconds, nano - 1000000000 * seconds);
 }
 
-void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping) // TODO @HY
+void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
 {
     static oculus_interfaces::msg::Ping msg;
 
