@@ -7,14 +7,13 @@ ROS2 node for the Blueprint Subsea Oculus sonar.
 This is a ROS2 metapackage including:
  * A ROS2 package **oculus_interfaces** containing the useful ROS messages definitions,
  * A ROS2 package **oculus_ros2** interfacing the driver messages with ROS2 topics,
- * A ROS2 package **oculus_image_converter** converting the sonar raw images into a fan-shaped view and publishing them on a ROS2 topic (TO DO @estellearrc).
-
+ 
 ## Requirements
 
 This ROS2 metapackage was developed and tested using:
-* Ubuntu 20.04 LTS 
-* ROS2 galactic
-* CMake 3.23
+* Ubuntu 22.04 LTS 
+* ROS2 humble
+* CMake ???
 
 
 ## Getting started
@@ -42,54 +41,86 @@ cd .. && colcon build
 source install/setup.bash
 ```
 
-### Installation (without an internet connection)
+## Installation (without an internet connection)
 
-#### Install the oculus_driver library
+### Install the oculus_driver library
 
-If you don't have an internet connection available on the system on which you
-want to use this node, your have to install the
-[oculus_driver](https://github.com/ENSTABretagneRobotics/oculus_driver.git)
-library beforehand.
+github : https://github.com/ENSTABretagneRobotics/oculus_driver
 
-Clone or copy the oculus_driver library :
+This library follows a standard CMake compilation procedure. To use oculus_driver you have two pssibility :
+
+#### Let colcon handle the dependancy
+In the packages CMakeList.txt the lines:
+```cmake
+if(NOT TARGET oculus_driver)
+    include(FetchContent)
+    FetchContent_Declare(oculus_driver
+        GIT_REPOSITORY https://github.com/ENSTABretagneRobotics/oculus_driver.git
+        GIT_TAG master # tag for developpement : TODO handle the good version
+    )
+    FetchContent_MakeAvailable(oculus_driver)
+endif()
 ```
+clone the github repository during the `colcon build` compilation.
+
+#### Clone your self the oculus_driver library
+
+In your install directory in `<your install location>`(for exemple: `~/work/my_user`) clone the repository:
+```bash
 git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
+cd oculus_driver
+git switch master # for developement
+```
+handle the git branch as you want. Please keep in mind you have to pull the reposetory yourself to keep up to date.
+
+Create a build directory in the root of the reposetory :
+```bash
+mkdir build && cd build
+```
+Make sure the CMAKE_PREFIX_PATH environment variable contains your install
+location :
+```bash
+echo $CMAKE_PREFIX_PATH
 ```
 
-This library follows a standard CMake compilation procedure. cd into the repo
-and create a build directory :
-
-```
-cd oculus_driver && mkdir build && cd build
+If not, put this at the end your `$HOME/.bashrc` file:
+```bash
+export CMAKE_PREFIX_PATH=<your install location>:$CMAKE_PREFIX_PATH
 ```
 
 Generate your build system with CMake, compile and install :
-```
+```bash
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=<your install location> ..
 make -j4 install
 ```
 
-Make sure the CMAKE_PREFIX_PATH environment variable contains your install
-location :
-```
-echo $CMAKE_PREFIX_PATH
+
+#### install the python package
+Install `pybind11` with `pip` :
+```bash
+cd ../python # if you are in oculus_driver/build
+pip3 install --upgrade pip
+pip3 install --upgrade "pybind11[global]"
 ```
 
-If not, put this at the end your $HOME/.bashrc file:
+Go in `/oculus_driver/python`, make sure ROS is NOT sourced and run
+```bash
+echo $ROS_DISTRO # Must be empty
+rm -r build/ oculus_python.egg-info/ oculus_python.*.so # if needed
 ```
-export CMAKE_PREFIX_PATH=<your install location>:$CMAKE_PREFIX_PATH
+```bash
+pip3 install --user -e . # make takes few seconds
 ```
-
-Now follow the oculus_ros2 node installation procedure normally. If the
-oculus_driver is properly installed **at a location included in the
-CMAKE_PREFIX_PATH environment variable**. The node should compile properly.
-
+To use the library you will need to export before building with colcon :
+```bash
+export LD_LIBRARY_PATH=<your install location>:$LD_LIBRARY_PATH
+```
 
 ## Using the oculus_ros2 node
 
 Launch ROS2 node with your listening port for sonar data (default 52102):
 ```
-ros2 launch oculus_ros2 default.launch.py -port <your port>
+ros2 launch oculus_ros2 default.launch.py
 ```
 
 **N.B.** Remap topics to change their name in the launch file.

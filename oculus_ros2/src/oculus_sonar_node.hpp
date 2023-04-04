@@ -21,6 +21,9 @@ public:
   OculusSonarNode();
   ~OculusSonarNode();
 
+protected:
+  oculus::SonarDriver::PingConfig currentConfig;
+
 private:
   std::shared_ptr<oculus::SonarDriver> sonar_driver_;
   oculus::AsyncService io_service_;

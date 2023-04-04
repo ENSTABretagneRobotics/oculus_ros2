@@ -8,6 +8,8 @@ using SonarDriver = oculus::SonarDriver;
 
 OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
 {
+    
+
     if (!this->has_parameter("frame_id"))
     {
         this->declare_parameter<string>("frame_id", "sonar");
@@ -139,7 +141,6 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     this->get_parameter("status_topic", status_topic_);
 
     this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, std::placeholders::_1));
-
     this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(ping_topic_, 100);
     this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(status_topic_, 100);
 
@@ -150,11 +151,14 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
         std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
                   << "Is it properly connected ?" << std::endl;
     }
+    currentConfig = this->sonar_driver_->current_ping_config();
+    const std::vector<std::string> parameters_names{"frame_id", "frequency_mode", "ping_rate", "data_depth", "nbeams", "send_gain", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity"};
+    set_config_callback(this->get_parameters(parameters_names));
+
     this->sonar_driver_->add_status_callback(std::bind(&OculusSonarNode::publish_status, this, std::placeholders::_1));
     this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publish_ping, this, std::placeholders::_1));
     // callback on dummy messages to reactivate the pings as needed
     this->sonar_driver_->add_dummy_callback(std::bind(&OculusSonarNode::handle_dummy, this));
-
 }
 
 OculusSonarNode::~OculusSonarNode()
@@ -193,6 +197,42 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
 
     oculus::copy_to_ros(msg, ping);
     this->ping_publisher_->publish(msg);
+
+
+// [oculus_sonar_node-1] - header :
+// [oculus_sonar_node-1]   - oculusId    : 20307
+// [oculus_sonar_node-1]   - srcDeviceId : 33156
+// [oculus_sonar_node-1]   - dstDeviceId : 0
+// [oculus_sonar_node-1]   - msgId       : 35
+// [oculus_sonar_node-1]   - msgVersion  : 0
+// [oculus_sonar_node-1]   - payloadSize : 15032
+// [oculus_sonar_node-1]   - spare2      : 0
+// [oculus_sonar_node-1] - simple fire :
+// [oculus_sonar_node-1]   - masterMode      : 0
+// [oculus_sonar_node-1]   - pingRate        : 0
+// [oculus_sonar_node-1]   - networkSpeed    : 20
+// [oculus_sonar_node-1]   - gammaCorrection : 0
+// [oculus_sonar_node-1]   - flags           : d
+// [oculus_sonar_node-1]   - range           : 0
+// [oculus_sonar_node-1]   - gainPercent     : 0.5
+// [oculus_sonar_node-1]   - speedOfSound    : 1478.93
+// [oculus_sonar_node-1]   - salinity        : 0
+
+
+//     currentConfig.range = ping->range();
+//     currentConfig.gainPercent = ping->gain_percent();
+//     currentConfig.masterMode = ping->frequency();
+//     currentConfig.speedOfSound = ping->speed_of_sound_used();
+//     currentConfig.range_resolution = ping->range_resolution();
+//     currentConfig.temperature = ping->temperature();
+//     currentConfig.pressure = ping->pressure();
+//     currentConfig.master_mode = ping->master_mode();
+//     currentConfig.has_gains = ping->has_gains();
+//     currentConfig.n_ranges = ping->range_count();
+//     currentConfig.n_beams = ping->bearing_count();
+//     currentConfig.step = ping->step();
+//     currentConfig.sample_size = ping->sample_size();
+//     currentConfig.bearings.assign(ping->bearing_data(), ping->bearing_data() + ping->bearing_count());
 }
 
 void OculusSonarNode::handle_dummy()
@@ -207,10 +247,17 @@ void OculusSonarNode::handle_dummy()
 
 rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(const std::vector<rclcpp::Parameter> &parameters)
 {
-    SonarDriver::PingConfig currentConfig;
-    std::memset(&currentConfig, 0, sizeof(currentConfig));
+    RCLCPP_INFO_STREAM(this->get_logger(), "Begining OculusSonarNode::set_config_callback");
+    // std::cout << "OculusSonarNode::set_config_callback" << "  parameters = " << parameters << std::endl;
+
+    SonarDriver::PingConfig newConfig = currentConfig;
+    // std::cout << "(1) OculusSonarNode::set_config_callback" << "  newConfig = " << newConfig << std::endl;
+    // std::cout << "(1) OculusSonarNode::set_config_callback" << "  currentConfig = " << currentConfig << std::endl;
+
+    // std::memset(&newConfig, 0, sizeof(newConfig));
+    // std::cout << "(2) OculusSonarNode::set_config_callback" << "  newConfig = " << newConfig << std::endl;
     // flags
-    currentConfig.flags = 0x09; // always in meters, simple ping
+    newConfig.flags = 0x09; // always in meters, simple ping
 
     bool use_salinity;
     for (const rclcpp::Parameter &param : parameters)
@@ -219,7 +266,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         if (param.get_name() == "frequency_mode")
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating frequency_mode to " << param.as_int() << " (1: 1.2MHz, 2: 2.1MHz).");
-            currentConfig.masterMode = param.as_int();
+            newConfig.masterMode = param.as_int();
         }
         else if (param.get_name() == "ping_rate")
         {
@@ -227,22 +274,22 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
             switch (param.as_int())
             {
             case 0:
-                currentConfig.pingRate = pingRateNormal;
+                newConfig.pingRate = pingRateNormal;
                 break; // 10Hz
             case 1:
-                currentConfig.pingRate = pingRateHigh;
+                newConfig.pingRate = pingRateHigh;
                 break; // 15Hz
             case 2:
-                currentConfig.pingRate = pingRateHighest;
+                newConfig.pingRate = pingRateHighest;
                 break; // 40Hz
             case 3:
-                currentConfig.pingRate = pingRateLow;
+                newConfig.pingRate = pingRateLow;
                 break; // 5Hz
             case 4:
-                currentConfig.pingRate = pingRateLowest;
+                newConfig.pingRate = pingRateLowest;
                 break; // 2Hz
             case 5:
-                currentConfig.pingRate = pingRateStandby;
+                newConfig.pingRate = pingRateStandby;
                 break; // standby mode
             default:
                 break;
@@ -256,7 +303,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
             case 0: // 8 bits
                 break;
             case 1: // 16 bits
-                currentConfig.flags |= 0x02;
+                newConfig.flags |= 0x02;
                 break;
             default:
                 break;
@@ -270,7 +317,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
             case 0: // 256 beams
                 break;
             case 1: // 512 beams
-                currentConfig.flags |= 0x40;
+                newConfig.flags |= 0x40;
                 break;
             default:
                 break;
@@ -280,35 +327,35 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating send_gain to " << param.as_bool());
             if (param.as_bool())
-                currentConfig.flags |= 0x04;
+                newConfig.flags |= 0x04;
         }
         else if (param.get_name() == "gain_assist")
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating gain_assist to " << param.as_bool());
             if (param.as_bool())
-                currentConfig.flags |= 0x10;
+                newConfig.flags |= 0x10;
         }
         else if (param.get_name() == "range")
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating range to " << param.as_double() << "m.");
-            currentConfig.range = param.as_double();
+            newConfig.range = param.as_double();
         }
         else if (param.get_name() == "gamma_correction")
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating gamma_correction to " << param.as_int());
-            currentConfig.gammaCorrection = param.as_int();
+            newConfig.gammaCorrection = param.as_int();
         }
         else if (param.get_name() == "gain_percent")
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating gain_percent to " << param.as_double() << "%.");
-            currentConfig.gainPercent = param.as_double();
+            newConfig.gainPercent = param.as_double();
         }
         else if (param.get_name() == "use_salinity")
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating use_salinity to " << param.as_bool());
             use_salinity = param.as_bool();
             if (use_salinity)
-                currentConfig.speedOfSound = 0.0;
+                newConfig.speedOfSound = 0.0;
         }
         else if (param.get_name() == "sound_speed")
         {
@@ -316,7 +363,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
             if (!use_salinity)
             {
                 if (param.as_double() >= 1400.0 && param.as_double() <= 1600.0)
-                    currentConfig.speedOfSound = param.as_double();
+                    newConfig.speedOfSound = param.as_double();
                 else
                     RCLCPP_INFO_STREAM(this->get_logger(), "Speed of sound must be between 1400.0 and 1600.0.");
             }
@@ -324,7 +371,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         else if (param.get_name() == "salinity")
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating salinity to " << param.as_double() << " parts per thousand (ppt,ppm,g/kg).");
-            currentConfig.salinity = param.as_double();
+            newConfig.salinity = param.as_double();
         }
         // } catch (const std::runtime_error & e) {
         // result.successful = false;
@@ -332,68 +379,79 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         // }
     }
     // send config to Oculus sonar and wait for feedback
-    auto feedback = this->sonar_driver_->request_ping_config(currentConfig);
+    // std::cout << "(3) OculusSonarNode::set_config_callback" << "  newConfig = " << newConfig << std::endl;
+    // std::cout << "(3) OculusSonarNode::set_config_callback" << "  currentConfig = " << currentConfig << std::endl;
+
+    // std::cout << "OculusSonarNode::set_config_callback" << "  auto feedback = this->sonar_driver_->request_ping_config(newConfig);" << std::endl;
+    auto feedback = this->sonar_driver_->request_ping_config(newConfig);
+    
+    currentConfig = feedback;
+    // std::cout << "(4) OculusSonarNode::set_config_callback" << "  newConfig = " << newConfig << std::endl;
+    // std::cout << "(4) OculusSonarNode::set_config_callback" << "  currentConfig = " << currentConfig << std::endl;
+    // std::cout << "OculusSonarNode::set_config_callback" << "  feedback = " << feedback << std::endl;
 
     rcl_interfaces::msg::SetParametersResult result;
     result.successful = true;
     result.reason = "";
 
-    if (currentConfig.masterMode != feedback.masterMode)
+    if (newConfig.masterMode != feedback.masterMode)
     {
         result.successful = false;
         result.reason.append("Could not update frequency_mode.\n");
     }
-    // currentConfig.pingRate      != feedback.pingRate // is broken (?) sonar side
-    if ((currentConfig.flags & 0x02) ? 1 : 0 != (feedback.flags & 0x02) ? 1
-                                                                        : 0)
+    // newConfig.pingRate      != feedback.pingRate // is broken (?) sonar side TODO
+    if ((newConfig.flags & 0x02) ? 1 : 0 != (feedback.flags & 0x02) ? 1
+                                                                    : 0)
     {
         result.successful = false;
         result.reason.append("Could not update data_depth.\n");
     }
-    if ((currentConfig.flags & 0x04) ? 1 : 0 != (feedback.flags & 0x04) ? 1
-                                                                        : 0)
+    if ((newConfig.flags & 0x04) ? 1 : 0 != (feedback.flags & 0x04) ? 1
+                                                                    : 0)
     {
         result.successful = false;
         result.reason.append("Could not update send_gain.\n");
     }
-    if ((currentConfig.flags & 0x10) ? 1 : 0 != (feedback.flags & 0x10) ? 1
-                                                                        : 0)
+    if ((newConfig.flags & 0x10) ? 1 : 0 != (feedback.flags & 0x10) ? 1
+                                                                    : 0)
     {
         result.successful = false;
         result.reason.append("Could not update gain_assist.\n");
     }
-    if ((currentConfig.flags & 0x40) ? 1 : 0 != (feedback.flags & 0x40) ? 1
-                                                                        : 0)
+    if ((newConfig.flags & 0x40) ? 1 : 0 != (feedback.flags & 0x40) ? 1
+                                                                    : 0)
     {
         result.successful = false;
         result.reason.append("Could not update nbeams.\n");
     }
-    if (currentConfig.range != feedback.range)
+    if (newConfig.range != feedback.range)
     {
         result.successful = false;
         result.reason.append("Could not update range.\n");
     }
-    if (currentConfig.gammaCorrection != feedback.gammaCorrection)
+    if (newConfig.gammaCorrection != feedback.gammaCorrection)
     {
         result.successful = false;
         result.reason.append("Could not update gamma_correction.\n");
     }
-    if (currentConfig.gainPercent != feedback.gainPercent)
+    if (newConfig.gainPercent != feedback.gainPercent)
     {
         result.successful = false;
         result.reason.append("Could not update gain_percent.\n");
     }
-    if (currentConfig.speedOfSound != feedback.speedOfSound)
+    if (newConfig.speedOfSound != feedback.speedOfSound)
     {
         result.successful = false;
         result.reason.append("Could not update sound_speed.\n");
     }
-    if (currentConfig.salinity != feedback.salinity)
+    if (newConfig.salinity != feedback.salinity)
     {
         result.successful = false;
         result.reason.append("Could not update salinity.\n");
     }
-    //(currentConfig.flags & 0x08) ? 1 : 0 != (feedback.flags & 0x08) ? 1 : 0
+    //(newConfig.flags & 0x08) ? 1 : 0 != (feedback.flags & 0x08) ? 1 : 0
+    // std::cout << "OculusSonarNode::set_config_callback" << "  result = " << "result" << std::endl;
+    RCLCPP_INFO_STREAM(this->get_logger(), "Ending OculusSonarNode::set_config_callback");
 
     return result;
 }

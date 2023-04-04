@@ -24,6 +24,7 @@
 
   <depend>Boost</depend>
   <depend>oculus_interfaces</depend>
+  <!-- <depend>rqt_reconfigure</depend> -->
   <depend>rcl_interfaces</depend>
 
   <test_depend>ament_lint_auto</test_depend>

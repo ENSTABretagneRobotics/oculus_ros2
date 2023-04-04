@@ -37,7 +37,7 @@ oculus_sonar:
     gain_assist: false # Enable auto gain.
     # full_ping: false # Send full ping message.
 
-    range: 3.0 # Sonar range (in meters), min=0.3, max=40.0.
+    range: 20.0 # Sonar range (in meters), min=0.3, max=40.0.
 
     # These parameters are for scaling data (investigate)
     gamma_correction: 127 # Gamma correction, min=0, max=255

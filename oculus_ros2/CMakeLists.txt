@@ -7,6 +7,7 @@ find_package(oculus_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
+# find_package(rqt_reconfigure REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 
 find_package(oculus_driver QUIET)
@@ -39,10 +40,6 @@ ament_target_dependencies(oculus_sonar_node PUBLIC
     rcl_interfaces
 )
 
-install(PROGRAMS
-    scripts/bag_to_oculus # not working
-    DESTINATION bin
-)
 
 install(PROGRAMS
     dev/oculus_subscriber_to_image.py
