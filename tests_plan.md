@@ -44,6 +44,12 @@ The parameters are :
 ### Network
 ???
 
+### Topics
+publishing
+freq
+time stamp
+data variation
+
 
 ### Pool Tests
 #### Parameters

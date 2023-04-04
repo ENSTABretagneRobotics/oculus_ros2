@@ -8,7 +8,6 @@ using SonarDriver = oculus::SonarDriver;
 
 OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
 {
-    
 
     if (!this->has_parameter("frame_id"))
     {
@@ -141,6 +140,7 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     this->get_parameter("status_topic", status_topic_);
 
     this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, std::placeholders::_1));
+
     this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(ping_topic_, 100);
     this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(status_topic_, 100);
 
@@ -159,6 +159,7 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publish_ping, this, std::placeholders::_1));
     // callback on dummy messages to reactivate the pings as needed
     this->sonar_driver_->add_dummy_callback(std::bind(&OculusSonarNode::handle_dummy, this));
+
 }
 
 OculusSonarNode::~OculusSonarNode()
@@ -192,47 +193,11 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
     {
         cout << "Going to standby mode" << endl;
         this->sonar_driver_->standby();
-        // return;
+        return;
     }
 
     oculus::copy_to_ros(msg, ping);
     this->ping_publisher_->publish(msg);
-
-
-// [oculus_sonar_node-1] - header :
-// [oculus_sonar_node-1]   - oculusId    : 20307
-// [oculus_sonar_node-1]   - srcDeviceId : 33156
-// [oculus_sonar_node-1]   - dstDeviceId : 0
-// [oculus_sonar_node-1]   - msgId       : 35
-// [oculus_sonar_node-1]   - msgVersion  : 0
-// [oculus_sonar_node-1]   - payloadSize : 15032
-// [oculus_sonar_node-1]   - spare2      : 0
-// [oculus_sonar_node-1] - simple fire :
-// [oculus_sonar_node-1]   - masterMode      : 0
-// [oculus_sonar_node-1]   - pingRate        : 0
-// [oculus_sonar_node-1]   - networkSpeed    : 20
-// [oculus_sonar_node-1]   - gammaCorrection : 0
-// [oculus_sonar_node-1]   - flags           : d
-// [oculus_sonar_node-1]   - range           : 0
-// [oculus_sonar_node-1]   - gainPercent     : 0.5
-// [oculus_sonar_node-1]   - speedOfSound    : 1478.93
-// [oculus_sonar_node-1]   - salinity        : 0
-
-
-//     currentConfig.range = ping->range();
-//     currentConfig.gainPercent = ping->gain_percent();
-//     currentConfig.masterMode = ping->frequency();
-//     currentConfig.speedOfSound = ping->speed_of_sound_used();
-//     currentConfig.range_resolution = ping->range_resolution();
-//     currentConfig.temperature = ping->temperature();
-//     currentConfig.pressure = ping->pressure();
-//     currentConfig.master_mode = ping->master_mode();
-//     currentConfig.has_gains = ping->has_gains();
-//     currentConfig.n_ranges = ping->range_count();
-//     currentConfig.n_beams = ping->bearing_count();
-//     currentConfig.step = ping->step();
-//     currentConfig.sample_size = ping->sample_size();
-//     currentConfig.bearings.assign(ping->bearing_data(), ping->bearing_data() + ping->bearing_count());
 }
 
 void OculusSonarNode::handle_dummy()
@@ -248,21 +213,14 @@ void OculusSonarNode::handle_dummy()
 rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(const std::vector<rclcpp::Parameter> &parameters)
 {
     RCLCPP_INFO_STREAM(this->get_logger(), "Begining OculusSonarNode::set_config_callback");
-    // std::cout << "OculusSonarNode::set_config_callback" << "  parameters = " << parameters << std::endl;
-
+    
     SonarDriver::PingConfig newConfig = currentConfig;
-    // std::cout << "(1) OculusSonarNode::set_config_callback" << "  newConfig = " << newConfig << std::endl;
-    // std::cout << "(1) OculusSonarNode::set_config_callback" << "  currentConfig = " << currentConfig << std::endl;
-
-    // std::memset(&newConfig, 0, sizeof(newConfig));
-    // std::cout << "(2) OculusSonarNode::set_config_callback" << "  newConfig = " << newConfig << std::endl;
     // flags
     newConfig.flags = 0x09; // always in meters, simple ping
 
     bool use_salinity;
     for (const rclcpp::Parameter &param : parameters)
     {
-        // try {
         if (param.get_name() == "frequency_mode")
         {
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating frequency_mode to " << param.as_int() << " (1: 1.2MHz, 2: 2.1MHz).");
@@ -373,22 +331,11 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
             RCLCPP_INFO_STREAM(this->get_logger(), "Updating salinity to " << param.as_double() << " parts per thousand (ppt,ppm,g/kg).");
             newConfig.salinity = param.as_double();
         }
-        // } catch (const std::runtime_error & e) {
-        // result.successful = false;
-        // RCLCPP_WARN(get_node()->get_logger(), "%s", e.what());
-        // }
     }
     // send config to Oculus sonar and wait for feedback
-    // std::cout << "(3) OculusSonarNode::set_config_callback" << "  newConfig = " << newConfig << std::endl;
-    // std::cout << "(3) OculusSonarNode::set_config_callback" << "  currentConfig = " << currentConfig << std::endl;
-
-    // std::cout << "OculusSonarNode::set_config_callback" << "  auto feedback = this->sonar_driver_->request_ping_config(newConfig);" << std::endl;
     auto feedback = this->sonar_driver_->request_ping_config(newConfig);
-    
+
     currentConfig = feedback;
-    // std::cout << "(4) OculusSonarNode::set_config_callback" << "  newConfig = " << newConfig << std::endl;
-    // std::cout << "(4) OculusSonarNode::set_config_callback" << "  currentConfig = " << currentConfig << std::endl;
-    // std::cout << "OculusSonarNode::set_config_callback" << "  feedback = " << feedback << std::endl;
 
     rcl_interfaces::msg::SetParametersResult result;
     result.successful = true;
@@ -449,8 +396,6 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         result.successful = false;
         result.reason.append("Could not update salinity.\n");
     }
-    //(newConfig.flags & 0x08) ? 1 : 0 != (feedback.flags & 0x08) ? 1 : 0
-    // std::cout << "OculusSonarNode::set_config_callback" << "  result = " << "result" << std::endl;
     RCLCPP_INFO_STREAM(this->get_logger(), "Ending OculusSonarNode::set_config_callback");
 
     return result;

@@ -42,17 +42,17 @@ ament_target_dependencies(oculus_sonar_node PUBLIC
 
 
 install(PROGRAMS
-    dev/oculus_subscriber_to_image.py
+    scripts/oculus_subscriber_to_image.py
     DESTINATION  lib/${PROJECT_NAME}
 )
 
 install(PROGRAMS
-    dev/display_oculus_file.py
+    scripts/display_oculus_file.py
     RENAME display_oculus_file
     DESTINATION bin
 )
 install(PROGRAMS
-    dev/oculus_to_rosbag.py
+    scripts/oculus_to_rosbag.py
     RENAME oculus_to_rosbag
     DESTINATION bin
 )
