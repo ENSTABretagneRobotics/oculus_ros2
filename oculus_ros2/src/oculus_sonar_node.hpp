@@ -22,6 +22,7 @@ public:
   ~OculusSonarNode();
 
 protected:
+  const std::vector<std::string> parameters_names{"frame_id", "frequency_mode", "ping_rate", "data_depth", "nbeams", "send_gain", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity"};
   oculus::SonarDriver::PingConfig currentConfig;
 
 private:

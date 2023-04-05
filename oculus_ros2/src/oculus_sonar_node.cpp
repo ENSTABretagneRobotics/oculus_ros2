@@ -82,7 +82,7 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
         param_desc.type = rclcpp::ParameterType::PARAMETER_DOUBLE;
         param_desc.description = "Sonar range (in meters), min=0.3, max=40.0.";
         param_desc.floating_point_range = {range};
-        this->declare_parameter<double>("range", 3.0, param_desc);
+        this->declare_parameter<double>("range", 40., param_desc);
     }
     if (!this->has_parameter("gamma_correction"))
     {
@@ -152,14 +152,12 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
                   << "Is it properly connected ?" << std::endl;
     }
     currentConfig = this->sonar_driver_->current_ping_config();
-    const std::vector<std::string> parameters_names{"frame_id", "frequency_mode", "ping_rate", "data_depth", "nbeams", "send_gain", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity"};
     set_config_callback(this->get_parameters(parameters_names));
 
     this->sonar_driver_->add_status_callback(std::bind(&OculusSonarNode::publish_status, this, std::placeholders::_1));
     this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publish_ping, this, std::placeholders::_1));
     // callback on dummy messages to reactivate the pings as needed
     this->sonar_driver_->add_dummy_callback(std::bind(&OculusSonarNode::handle_dummy, this));
-
 }
 
 OculusSonarNode::~OculusSonarNode()
@@ -212,8 +210,7 @@ void OculusSonarNode::handle_dummy()
 
 rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(const std::vector<rclcpp::Parameter> &parameters)
 {
-    RCLCPP_INFO_STREAM(this->get_logger(), "Begining OculusSonarNode::set_config_callback");
-    
+   std::cout << '[set_config_callback] parameters = ' << parameters << std::endl;
     SonarDriver::PingConfig newConfig = currentConfig;
     // flags
     newConfig.flags = 0x09; // always in meters, simple ping
@@ -333,9 +330,28 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         }
     }
     // send config to Oculus sonar and wait for feedback
-    auto feedback = this->sonar_driver_->request_ping_config(newConfig);
+    SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
 
     currentConfig = feedback;
+
+    // std::vector<rclcpp::Parameter> feedback_parameters = this->get_parameters(parameters_names);
+    // for (const rclcpp::Parameter &param_feedback : feedback)
+    // {
+    //     this->set_parameter(rclcpp::Parameter(param_feedback.name, param_feedback.value));
+    // }
+    // // this->set_parameter(rclcpp::Parameter("frame_id", feedback.frameId));
+    // this->set_parameter(rclcpp::Parameter("frequency_mode", feedback.masterMode));
+    // // this->set_parameter(rclcpp::Parameter("data_depth", feedback.dataDepth));
+    // // this->set_parameter(rclcpp::Parameter("nbeams", feedback.nBeams));
+    // // this->set_parameter(rclcpp::Parameter("send_gain", feedback.sendGain));
+    // // this->set_parameter(rclcpp::Parameter("gain_assist", feedback.gainAssist));
+    // this->set_parameter(rclcpp::Parameter("range", feedback.range));
+    // this->set_parameter(rclcpp::Parameter("gamma_correction", feedback.gammaCorrection));
+    // // this->set_parameter(rclcpp::Parameter("gain_percent", feedback.gainPercent));
+    // // this->set_parameter(rclcpp::Parameter("sound_speed", feedback.soundSpeed));
+    // // this->set_parameter(rclcpp::Parameter("use_salinity", feedback.useSalinity));
+    // this->set_parameter(rclcpp::Parameter("salinity", 50.1));
+
 
     rcl_interfaces::msg::SetParametersResult result;
     result.successful = true;
@@ -343,60 +359,69 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
 
     if (newConfig.masterMode != feedback.masterMode)
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update frequency_mode")
         result.reason.append("Could not update frequency_mode.\n");
     }
     // newConfig.pingRate      != feedback.pingRate // is broken (?) sonar side TODO
     if ((newConfig.flags & 0x02) ? 1 : 0 != (feedback.flags & 0x02) ? 1
                                                                     : 0)
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update data_depth")
         result.reason.append("Could not update data_depth.\n");
     }
     if ((newConfig.flags & 0x04) ? 1 : 0 != (feedback.flags & 0x04) ? 1
-                                                                    : 0)
+                                                                    : 0) // TODO
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update send_gain")
         result.reason.append("Could not update send_gain.\n");
     }
     if ((newConfig.flags & 0x10) ? 1 : 0 != (feedback.flags & 0x10) ? 1
                                                                     : 0)
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update gain_assist")
         result.reason.append("Could not update gain_assist.\n");
     }
     if ((newConfig.flags & 0x40) ? 1 : 0 != (feedback.flags & 0x40) ? 1
                                                                     : 0)
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update nbeams")
         result.reason.append("Could not update nbeams.\n");
     }
     if (newConfig.range != feedback.range)
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update range")
         result.reason.append("Could not update range.\n");
     }
     if (newConfig.gammaCorrection != feedback.gammaCorrection)
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update gamma_correction")
         result.reason.append("Could not update gamma_correction.\n");
     }
     if (newConfig.gainPercent != feedback.gainPercent)
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update gain_percent")
         result.reason.append("Could not update gain_percent.\n");
     }
     if (newConfig.speedOfSound != feedback.speedOfSound)
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update sound_speed")
         result.reason.append("Could not update sound_speed.\n");
     }
     if (newConfig.salinity != feedback.salinity)
     {
-        result.successful = false;
+        // result.successful = false;
+        RCLCPP_WARN("Could not update salinity")
         result.reason.append("Could not update salinity.\n");
     }
-    RCLCPP_INFO_STREAM(this->get_logger(), "Ending OculusSonarNode::set_config_callback");
 
     return result;
 }

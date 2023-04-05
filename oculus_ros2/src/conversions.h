@@ -115,43 +115,6 @@ namespace oculus
         msg.message_size = ping.messageSize;
     }
 
-    // inline void copy_to_ros(oculus_interfaces::msg::Ping &ros_msg, const oculus::PingMessage::ConstPtr &ping)
-    // {
-    //     // copy_to_ros(msg.fire_message, ping.fireMessage);
-    //     // msg.ping_id            = ping.pingId;
-    //     // msg.status            = ping.status;
-    //     // msg.frequency         = ping.frequency;
-    //     // msg.temperature       = ping.temperature;
-    //     // msg.pressure          = ping.pressure;
-    //     // msg.speeed_of_sound_used = ping.speeedOfSoundUsed;
-    //     // msg.ping_start_time     = ping.pingStartTime;
-    //     // msg.data_size          = ping.dataSize;
-    //     // msg.range_resolution   = ping.rangeResolution;
-    //     // msg.n_ranges           = ping.nRanges;
-    //     // msg.n_beams            = ping.nBeams;
-    //     // msg.image_offset       = ping.imageOffset;
-    //     // msg.image_size         = ping.imageSize;
-    //     // msg.message_size       = ping.messageSize;
-    //     ros_msg.header.stamp.sec = 0;
-    //     ros_msg.header.stamp.nanosec = 0;
-    //     ros_msg.header.frame_id = "sonar";
-    //     ros_msg.range = ping->range() ;
-    //     ros_msg.gain_percent = ping->gain_percent() ;
-    //     ros_msg.frequency = ping->frequency() ;
-    //     ros_msg.speed_of_sound_used = ping->speed_of_sound_used() ;
-    //     ros_msg.range_resolution = ping->range_resolution() ;
-    //     ros_msg.temperature = ping->temperature() ;
-    //     ros_msg.pressure = ping->pressure() ;
-    //     ros_msg.master_mode = ping->master_mode() ;
-    //     ros_msg.has_gains = ping->has_gains() ;
-    //     ros_msg.n_ranges = ping->range_count() ;
-    //     ros_msg.n_beams = ping->bearing_count() ;
-    //     ros_msg.step = ping->step() ;
-    //     ros_msg.sample_size = ping->sample_size() ;
-    //     ros_msg.bearings = (int16_t*)(ping->bearing_data()) ;
-    //     ros_msg.ping_data = ping->data() ;
-    // }
-
     inline void copy_to_ros(oculus_interfaces::msg::Ping &msg, const oculus::PingMessage::ConstPtr &ping)
     {
         msg.header.stamp = to_ros_stamp(ping->timestamp());
