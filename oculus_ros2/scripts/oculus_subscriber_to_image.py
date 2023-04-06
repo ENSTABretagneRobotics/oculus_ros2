@@ -24,10 +24,11 @@ class OculusDisplayer(Node):
         self.image_publisher = self.create_publisher(
             Image, 'oculus_sonar/image', 10)
 
-        self.declare_parameter(name='freq', value="0.", descriptor=ParameterDescriptor(name="TODO", description="TODO", additional_constraints= "freq>=0"))
+        self.declare_parameter(name='freq', value="0.", descriptor=ParameterDescriptor(
+            name="TODO", description="TODO", additional_constraints="freq>=0"))
         self.freq = self.get_parameter(
             'freq').get_parameter_value().double_value
-        self.get_logger().info("type(self.freq) = %s" % type(self.freq) )
+        # self.get_logger().info("type(self.freq) = %s" % type(self.freq) )
 
         if self.freq > 0:
             self.timer = self.create_timer(1/self.freq, self.timer_callback)
