@@ -146,14 +146,16 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
 
     this->sonar_driver_ = std::make_shared<SonarDriver>(this->io_service_.io_service());
     this->io_service_.start();
-    while (!this->sonar_driver_->wait_next_message())
+    if (!this->sonar_driver_->wait_next_message()) 
     {
         std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
                   << "Is it properly connected ?" << std::endl;
     }
-    currentConfig = this->sonar_driver_->current_ping_config();
-    set_config_callback(this->get_parameters(parameters_names));
-
+    else //TODO(hugoyvrn, Not working if the sonar is not connected at startup)
+    {
+        currentConfig = this->sonar_driver_->current_ping_config();
+        set_config_callback(this->get_parameters(parameters_names));
+    }
     this->sonar_driver_->add_status_callback(std::bind(&OculusSonarNode::publish_status, this, std::placeholders::_1));
     this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publish_ping, this, std::placeholders::_1));
     // callback on dummy messages to reactivate the pings as needed
@@ -163,6 +165,12 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
 OculusSonarNode::~OculusSonarNode()
 {
     this->io_service_.stop();
+}
+
+bool OculusSonarNode::temperature_is_hight()
+{
+    // TODO(hugoyvrn)
+    return false;
 }
 
 void OculusSonarNode::publish_status(const OculusStatusMsg &status)
@@ -187,7 +195,7 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
 {
     static oculus_interfaces::msg::Ping msg;
 
-    if (this->ping_publisher_->get_subscription_count() == 0)
+    if (this->ping_publisher_->get_subscription_count() == 0 || this->temperature_is_hight())
     {
         cout << "Going to standby mode" << endl;
         this->sonar_driver_->standby();
@@ -210,7 +218,9 @@ void OculusSonarNode::handle_dummy()
 
 rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(const std::vector<rclcpp::Parameter> &parameters)
 {
-//    std::cout << '[set_config_callback] parameters = ' << parameters << std::endl;
+
+    // TODO(hugoyvrn, 1 param par 1 param)
+    //    std::cout << '[set_config_callback] parameters = ' << parameters << std::endl;
     SonarDriver::PingConfig newConfig = currentConfig;
     // flags
     newConfig.flags = 0x09; // always in meters, simple ping
@@ -339,14 +349,13 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         RCLCPP_WARN(this->get_logger(), "gain_assit parameter is inable. To record data make sur to desable it. \n\tros2 set /oculus_sonar /gain_assist False");
     }
 
-
     rcl_interfaces::msg::SetParametersResult result;
     result.successful = true;
     result.reason = "";
 
     if (newConfig.masterMode != feedback.masterMode)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update frequency_mode");
         result.reason.append("Could not update frequency_mode.\n");
     }
@@ -354,58 +363,58 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
     if ((newConfig.flags & 0x02) ? 1 : 0 != (feedback.flags & 0x02) ? 1
                                                                     : 0)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update data_depth");
         result.reason.append("Could not update data_depth.\n");
     }
     if ((newConfig.flags & 0x04) ? 1 : 0 != (feedback.flags & 0x04) ? 1
-                                                                    : 0) // TODO
+                                                                    : 0) // TODO(hugoyvrn)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update send_gain");
         result.reason.append("Could not update send_gain.\n");
     }
     if ((newConfig.flags & 0x10) ? 1 : 0 != (feedback.flags & 0x10) ? 1
                                                                     : 0)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update gain_assist");
         result.reason.append("Could not update gain_assist.\n");
     }
     if ((newConfig.flags & 0x40) ? 1 : 0 != (feedback.flags & 0x40) ? 1
                                                                     : 0)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update nbeams");
         result.reason.append("Could not update nbeams.\n");
     }
     if (newConfig.range != feedback.range)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update range");
         result.reason.append("Could not update range.\n");
     }
     if (newConfig.gammaCorrection != feedback.gammaCorrection)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update gamma_correction");
         result.reason.append("Could not update gamma_correction.\n");
     }
     if (newConfig.gainPercent != feedback.gainPercent)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update gain_percent");
         result.reason.append("Could not update gain_percent.\n");
     }
     if (newConfig.speedOfSound != feedback.speedOfSound)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update sound_speed");
         result.reason.append("Could not update sound_speed.\n");
     }
     if (newConfig.salinity != feedback.salinity)
     {
-        // result.successful = false;
+        result.successful = false;
         RCLCPP_WARN(this->get_logger(), "Could not update salinity");
         result.reason.append("Could not update salinity.\n");
     }

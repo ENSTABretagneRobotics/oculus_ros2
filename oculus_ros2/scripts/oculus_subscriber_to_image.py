@@ -28,7 +28,6 @@ class OculusDisplayer(Node):
             name="TODO", description="TODO", additional_constraints="freq>=0"))
         self.freq = self.get_parameter(
             'freq').get_parameter_value().double_value
-        # self.get_logger().info("type(self.freq) = %s" % type(self.freq) )
 
         if self.freq > 0:
             self.timer = self.create_timer(1/self.freq, self.timer_callback)
