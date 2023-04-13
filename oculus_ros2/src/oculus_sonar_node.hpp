@@ -22,8 +22,9 @@ public:
   ~OculusSonarNode();
 
 protected:
-  const std::vector<std::string> parameters_names{"frame_id", "frequency_mode", "ping_rate", "data_depth", "nbeams", "send_gain", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity"};
+  const std::vector<std::string> parameters_names{"frame_id", "frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity"};
   oculus::SonarDriver::PingConfig currentConfig;
+  mutable std::shared_mutex param_mutex; ///< multithreading protection
 
 private:
   std::shared_ptr<oculus::SonarDriver> sonar_driver_;
@@ -33,10 +34,14 @@ private:
   std::string status_topic_ = "status";
   rclcpp::Publisher<oculus_interfaces::msg::OculusStatus>::SharedPtr status_publisher_{nullptr};
   rclcpp::Publisher<oculus_interfaces::msg::Ping>::SharedPtr ping_publisher_{nullptr};
-  bool temperature_is_hight();
+  const double temperature_stop_limit = 35.; // TODO(hugoyvrn, paramètre static)
+  const double temperature_warn_limit = 30.; // TODO(hugoyvrn, paramètre static)
 
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_{nullptr};
 
+  void update_ros_param_from_ping_msg(auto &currentConfig_param, const auto &msg_param, const std::string &ros_param_name, const std::string &param_name);
+  void update_ros_config_from_ping_msg(const oculus_interfaces::msg::Ping &msg);
+  void handle_feedback_for_param(rcl_interfaces::msg::SetParametersResult &result, const rclcpp::Parameter &param, const auto &old_val, const auto &new_val, const std::string &param_name, const std::string &param_name_to_display = std::string()) const;
   rcl_interfaces::msg::SetParametersResult set_config_callback(const std::vector<rclcpp::Parameter> &parameters);
 
   void publish_status(const OculusStatusMsg &status);

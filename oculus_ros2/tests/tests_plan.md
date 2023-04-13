@@ -2,7 +2,7 @@
 
 
 ## ADVERTISMENTS
-**Do not power up the sonar outside water**. Water is necessary to cold the sonar, it can heat up if it is pinging in the air. Even in standby mode ou can't be sur that the sonar will not heat up.
+**Do not power up the sonar outside water**. Water is necessary to cold the sonar, it can heat up if it is pluged in the air. Even in standby mode we can't be sur that the sonar will not heat up.
 
 ## Before starting
 Flolow the [`README`](../../README.md) to install and build the package. Put the soanr under water before powwer it. Run `ros2 launch oculus_ros2 default.launch.py` to make the tests.
@@ -94,13 +94,13 @@ The parameters are :
     - `data_depth` :
         1. Check the type of data on the topic `/oculus_sonar/ping`. TODO(@hugoyvrn, expalin more)
         1. Check the type of data on the topic `/oculus_sonar/image`. TODO(@hugoyvrn, expalin more)
-    - `send_gain`
+    <!-- - `send_gain`
         1. Set send_gain to false `ros2 set /oculus_sonar /send_gain fasle`.
         1. Check that you get a warning that advice you to set it to true.
         1. Set an orther parameter (for example `ros2 param set /oculus_sonar frequency_mode 1`)
         1. Check that the previous warning is dispalys again.
         1. Follow the warning to get back with non gain assit.
-        1. Check the the previous warning is not dispalyed again.
+        1. Check the the previous warning is not dispalyed again. -->
     - `gain_assist`
         1. Set gain assit to true `ros2 set /oculus_sonar /gain_assist True`.
         1. Check that you get a warning that advice you to set it to false.
@@ -208,15 +208,15 @@ TODO(hugoyvrn)
 #### Range Gain Correction
 *What are range gain and witch artefacts they cause*
 TODO @hugoyvrn
-1. Set the parameter `send_gain` is set to **false**.
+<!-- 1. Set the parameter `send_gain` is set to **false**. -->
 1. Make a pole move in front of the sonar.
 1. Check there are artefacts visible on the image on the topic `/oculus_sonar/image`. If there not any aterfact, change the sonar and pole configuration in order to see some. Once you can see some artefacts continue the test.
-1. Set the parameter `send_gain` is set to **true**.
+<!-- 1. Set the parameter `send_gain` is set to **true**. -->
 1. Put the sonar horizontaly.
 1. Make a pole move in front of the sonar.
 1. Check they are not any artefacts visible on the image on the topic `/oculus_sonar/image`.
 
-*Make sur the parameter `send_gain` is set to true before doing other tests.*
+<!-- *Make sur the parameter `send_gain` is set to true before doing other tests.* -->
 
 
 

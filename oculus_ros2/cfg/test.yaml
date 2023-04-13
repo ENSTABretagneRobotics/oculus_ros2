@@ -33,7 +33,7 @@ oculus_sonar:
     #  0: Oculus outputs 256 beams.
     #  1: Oculus outputs 512 beams.
 
-    send_gain: false # Send range gain with data.
+    # send_gain: false # Send range gain with data.
     gain_assist: false # Enable auto gain.
     # full_ping: false # Send full ping message.
 
