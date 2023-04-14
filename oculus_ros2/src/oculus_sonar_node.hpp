@@ -15,6 +15,22 @@
 
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 
+typedef struct
+{
+  std::string frame_id;
+  int frequency_mode;
+  int ping_rate;
+  int data_depth;
+  int nbeams;
+  bool gain_assist;
+  double range;
+  int gamma_correction;
+  double gain_percent;
+  double sound_speed;
+  bool use_salinity;
+  double salinity;
+} rosParameters;
+
 class OculusSonarNode : public rclcpp::Node
 {
 public:
@@ -23,7 +39,10 @@ public:
 
 protected:
   const std::vector<std::string> parameters_names{"frame_id", "frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity"};
+  rosParameters currentSonarParameters;
+  rosParameters currentRosParameters;
   oculus::SonarDriver::PingConfig currentConfig;
+
   mutable std::shared_mutex param_mutex; ///< multithreading protection
 
 private:
@@ -39,9 +58,12 @@ private:
 
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_{nullptr};
 
-  void update_ros_param_from_ping_msg(auto &currentConfig_param, const auto &msg_param, const std::string &ros_param_name, const std::string &param_name);
-  void update_ros_config_from_ping_msg(const oculus_interfaces::msg::Ping &msg);
+  void update_ros_config_for_param(auto &currentSonar_param, const auto &new_param, const std::string &ros_param_name, const std::string &param_name);
+  void update_ros_config_for_param(auto &currentSonar_param, const auto &new_param, const std::string &param_name);
+  void update_ros_config();
   void handle_feedback_for_param(rcl_interfaces::msg::SetParametersResult &result, const rclcpp::Parameter &param, const auto &old_val, const auto &new_val, const std::string &param_name, const std::string &param_name_to_display = std::string()) const;
+  void update_parameters(rosParameters &parameters, const std::vector<rclcpp::Parameter> &new_parameters);
+  void update_parameters(rosParameters &parameters, oculus::SonarDriver::PingConfig feedback);
   rcl_interfaces::msg::SetParametersResult set_config_callback(const std::vector<rclcpp::Parameter> &parameters);
 
   void publish_status(const OculusStatusMsg &status);

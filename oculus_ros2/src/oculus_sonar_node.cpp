@@ -150,15 +150,13 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
         std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
                   << "Is it properly connected ?" << std::endl;
     }
-    while (!this->sonar_driver_->connected()) // TODO(hugoyvrn, Not working if the sonar is not connected at startup)
-    {
+
+    while (!this->sonar_driver_->connected()) // wait the sonar to connected
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
+
+    update_parameters(currentSonarParameters, this->sonar_driver_->current_ping_config());
     for (const std::string &param_name : parameters_names)
-    {
-        currentConfig = this->sonar_driver_->current_ping_config();
         set_config_callback(this->get_parameters(std::vector{param_name}));
-    }
 
     this->sonar_driver_->add_status_callback(std::bind(&OculusSonarNode::publish_status, this, std::placeholders::_1));
     this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publish_ping, this, std::placeholders::_1));
@@ -188,32 +186,37 @@ inline rclcpp::Time to_ros_stamp(const SonarDriver::TimePoint &stamp)
     return rclcpp::Time(seconds, nano - 1000000000 * seconds);
 }
 
-void OculusSonarNode::update_ros_param_from_ping_msg(auto &currentConfig_param, const auto &msg_param, const std::string &ros_param_name, const std::string &param_name)
+void OculusSonarNode::update_ros_config_for_param(auto &currentSonar_param, const auto &new_param, const std::string &param_name)
 {
-    if (currentConfig_param != msg_param)
+    update_ros_config_for_param(currentSonar_param, new_param, param_name, param_name);
+}
+
+void OculusSonarNode::update_ros_config_for_param(auto &currentSonar_param, const auto &new_param, const std::string &ros_param_name, const std::string &param_name)
+{
+    if (currentSonar_param != new_param)
     {
         this->remove_on_set_parameters_callback(this->param_cb_.get());
-        RCLCPP_INFO_STREAM(this->get_logger(), "coucou " << param_name << " : ros = " << currentConfig_param << " topic = " << msg_param);
-        currentConfig_param = msg_param;
-        this->set_parameter(rclcpp::Parameter(ros_param_name, msg_param));
+        RCLCPP_INFO_STREAM(this->get_logger(), "coucou " << param_name << " : ros = " << currentSonar_param << " topic = " << new_param);
+        currentSonar_param = new_param;
+        this->set_parameter(rclcpp::Parameter(ros_param_name, new_param));
         this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, std::placeholders::_1));
     }
 }
 
-void OculusSonarNode::update_ros_config_from_ping_msg(const oculus_interfaces::msg::Ping &msg)
+void OculusSonarNode::update_ros_config()
 {
     std::shared_lock l(param_mutex);
 
-    update_ros_param_from_ping_msg(currentConfig.masterMode, msg.master_mode, "frequency_mode", "master_mode");
-    update_ros_param_from_ping_msg(currentConfig.range, msg.range, "range", "range");
-    update_ros_param_from_ping_msg(currentConfig.gainPercent, msg.gain_percent, "gain_percent", "gain_percent");
-    update_ros_param_from_ping_msg(currentConfig.speedOfSound, msg.speed_of_sound_used, "sound_speed", "speed_of_sound_used");
-    // update_ros_param_from_ping_msg(currentConfig.pingRate, msg.ping_rate, "ping_rate", "ping_rate");
-    // update_ros_param_from_ping_msg(currentConfig.dataDepth, msg.data_depth, "data_depth", "data_depth");
-    // update_ros_param_from_ping_msg(currentConfig.gainAssist, msg.gain_assist, "gain_assist", "gain_assist");
-    // update_ros_param_from_ping_msg(currentConfig.gammaCorrection, msg.gamma_correction, "gamma_correction", "gamma_correction");
-    // update_ros_param_from_ping_msg(currentConfig.use_salinity, msg.use_salinity, "use_salinity", "use_salinity");
-    // update_ros_param_from_ping_msg(currentConfig.salinity, msg.salinity, "salinity", "salinity");
+    update_ros_config_for_param(currentRosParameters.frequency_mode, currentSonarParameters.frequency_mode, "frequency_mode", "master_mode");
+    update_ros_config_for_param(currentRosParameters.range, currentSonarParameters.range, "range");
+    update_ros_config_for_param(currentRosParameters.gain_percent, currentSonarParameters.gain_percent, "gain_percent");
+    update_ros_config_for_param(currentRosParameters.sound_speed, currentSonarParameters.sound_speed, "sound_speed", "speed_of_sound_used");
+    update_ros_config_for_param(currentRosParameters.ping_rate, currentSonarParameters.ping_rate, "ping_rate");
+    update_ros_config_for_param(currentRosParameters.data_depth, currentSonarParameters.data_depth, "data_depth");
+    update_ros_config_for_param(currentRosParameters.gain_assist, currentSonarParameters.gain_assist, "gain_assist");
+    update_ros_config_for_param(currentRosParameters.gamma_correction, currentSonarParameters.gamma_correction, "gamma_correction");
+    update_ros_config_for_param(currentRosParameters.use_salinity, currentSonarParameters.use_salinity, "use_salinity");
+    update_ros_config_for_param(currentRosParameters.salinity, currentSonarParameters.salinity, "salinity");
 }
 
 void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
@@ -228,7 +231,17 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
     }
 
     oculus::copy_to_ros(msg, ping);
-    update_ros_config_from_ping_msg(msg);
+
+    this->ping_publisher_->publish(msg);
+
+    // Update current config with ping informations
+    currentSonarParameters.frequency_mode = msg.master_mode;
+    currentSonarParameters.range = msg.range;
+    currentSonarParameters.gain_percent = msg.gain_percent;
+    currentSonarParameters.sound_speed = msg.speed_of_sound_used;
+
+    update_ros_config();
+
     if (msg.temperature >= temperature_stop_limit)
     {
         RCLCPP_ERROR_STREAM(this->get_logger(), "Temperature of sonar is to high (" << msg.temperature << "°C). Make sur the sonar is underwatter. Security limit set at " << temperature_stop_limit << "°C");
@@ -238,7 +251,6 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
     }
     else if (msg.temperature >= temperature_warn_limit)
         RCLCPP_WARN_STREAM(this->get_logger(), "Temperature of sonar is to high (" << msg.temperature << "°C). Make sur the sonar is underwatter. Security limit set at " << temperature_stop_limit << "°C");
-    this->ping_publisher_->publish(msg);
 }
 
 void OculusSonarNode::handle_dummy()
@@ -270,6 +282,152 @@ void OculusSonarNode::handle_feedback_for_param(rcl_interfaces::msg::SetParamete
         }
     }
 }
+
+void OculusSonarNode::update_parameters(rosParameters &parameters, const std::vector<rclcpp::Parameter> &new_parameters)
+{
+    for (const rclcpp::Parameter &new_param : new_parameters)
+    {
+
+        if (new_param.get_name() == "frame_id")
+            parameters.frame_id = new_param.as_string();
+        else if (new_param.get_name() == "frequency_mode")
+            parameters.frequency_mode = new_param.as_int();
+        else if (new_param.get_name() == "ping_rate")
+            parameters.ping_rate = new_param.as_int();
+        else if (new_param.get_name() == "data_depth")
+            parameters.data_depth = new_param.as_int();
+        else if (new_param.get_name() == "nbeams")
+            parameters.nbeams = new_param.as_int();
+        else if (new_param.get_name() == "gain_assist")
+            parameters.gain_assist = new_param.as_bool();
+        else if (new_param.get_name() == "range")
+            parameters.range = new_param.as_double();
+        else if (new_param.get_name() == "gamma_correction")
+            parameters.gamma_correction = new_param.as_int();
+        else if (new_param.get_name() == "gain_percent")
+            parameters.gain_percent = new_param.as_double();
+        else if (new_param.get_name() == "sound_speed")
+            parameters.sound_speed = new_param.as_double();
+        else if (new_param.get_name() == "use_salinity")
+            parameters.use_salinity = new_param.as_bool();
+        else if (new_param.get_name() == "salinity")
+            parameters.salinity = new_param.as_double();
+        else
+            RCLCPP_WARN_STREAM(get_logger(), "Wrong parameter to set : new_param = " << new_param << ". Not seted");
+    }
+    RCLCPP_INFO_STREAM(get_logger(), "new_parameters = " << new_parameters);
+}
+
+void OculusSonarNode::update_parameters(rosParameters &parameters, SonarDriver::PingConfig feedback)
+{
+    std::vector<rclcpp::Parameter> new_parameters;
+    // OculusMessageHeader head;     // The standard message header
+    // uint16_t oculusId;         // Fixed ID 0x4f53
+    // uint16_t srcDeviceId;      // The device id of the source
+    // uint16_t dstDeviceId;      // The device id of the destination
+    // uint16_t msgId;            // Message identifier
+    // uint16_t msgVersion;
+    // uint32_t payloadSize;      // The size of the message payload (header not included)
+    // uint16_t spare2;
+    // uint8_t masterMode;           // mode 0 is flexi mode, needs full fire message (not available for third party developers)
+    //                               // mode 1 - Low Frequency Mode (wide aperture, navigation)
+    //                               // mode 2 - High Frequency Mode (narrow aperture, target identification)
+    // uint8_t pingRate;             // Sets the maximum ping rate. was PingRateType
+    // uint8_t networkSpeed;         // Used to reduce the network comms speed (useful for high latency shared links)
+    // uint8_t gammaCorrection;      // 0 and 0xff = gamma correction = 1.0
+    //                               // Set to 127 for gamma correction = 0.5
+    // uint8_t flags;                // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
+    //                               // bit 1: 0 = 8 bit data, 1 = 16 bit data // inverted ?
+    //                               // bit 2: 0 = wont send gain, 1 = send gain
+    //                               // bit 3: 0 = send full return message, 1 = send simple return message
+    //                               // bit 4: gain assist ?
+    //                               // bit 5: ?
+    //                               // bit 6: enable 512 beams
+    //                               // bit 7: ?
+    // double range;                 // The range demand in percent or m depending on flags
+    // double gainPercent;           // The gain demand
+    // double speedOfSound;          // ms-1, if set to zero then internal calc will apply using salinity
+    // double salinity;              // ppt, set to zero if we are in fresh water
+
+    // Checks
+    if (!(feedback.flags |= 0x01))
+    {
+        RCLCPP_ERROR(get_logger(), "Range is attepreted as percent while ros driver assume range is interpreted as meters.");
+    }
+    if (!(feedback.flags |= 0x04))
+    {
+        RCLCPP_ERROR(get_logger(), "The sonar don't send gain while ros driver assume gains are sended. Data is uncomplete.");
+    }
+    if (!(feedback.flags |= 0x08))
+    {
+        RCLCPP_ERROR(get_logger(), "The sonar don't use simple ping message while ros driver assume simple ping are used.");
+    }
+    {
+        // TODO(hugoyvrn)
+        // feedback.flags |= 0x20  // What for ?
+    } {
+        // TODO(hugoyvrn)
+        // feedback.flags |= 0x40  // What for ?
+    }
+
+    // "frequency_mode"
+    {
+        rclcpp::Parameter param("frequency_mode", feedback.masterMode);
+        new_parameters.push_back(param);
+    }
+    // pingRate
+    {
+        rclcpp::Parameter param("ping_rate", feedback.pingRate);
+        new_parameters.push_back(param);
+    }
+    // data_depth
+    {
+        rclcpp::Parameter param("data_depth", int(feedback.flags |= 0x02));
+        new_parameters.push_back(param);
+    }
+    // nbeams
+    {
+        rclcpp::Parameter param("nbeams", int(feedback.flags |= 0x30));
+        new_parameters.push_back(param);
+    }
+
+    // gain_assist
+    {
+        rclcpp::Parameter param("gain_assist", bool(feedback.flags |= 0x10));
+        new_parameters.push_back(param);
+    }
+    // range
+    {
+        rclcpp::Parameter param("range", feedback.range);
+        new_parameters.push_back(param);
+    }
+    // gammaCorrection
+    {
+        rclcpp::Parameter param("gamma_correction", feedback.gammaCorrection);
+        new_parameters.push_back(param);
+    }
+    // gain_percent
+    {
+        rclcpp::Parameter param("gain_percent", feedback.gainPercent);
+        new_parameters.push_back(param);
+    }
+    // sound_speed
+    {
+        rclcpp::Parameter param("sound_speed", feedback.speedOfSound);
+        new_parameters.push_back(param);
+    }
+    // // use_salinity // TODO(hugoyvrn)
+    // {
+    //     rclcpp::Parameter param("use_salinity", );
+    //     new_parameters.push_back(param);
+    // }
+    {
+        rclcpp::Parameter param("salinity", feedback.salinity);
+        new_parameters.push_back(param);
+    }
+    update_parameters(parameters, new_parameters);
+}
+
 rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(const std::vector<rclcpp::Parameter> &parameters)
 {
     std::shared_lock l(param_mutex);
@@ -285,7 +443,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         RCLCPP_INFO_STREAM(get_logger(), "parameters = " << parameters);
     }
 
-    SonarDriver::PingConfig newConfig = currentConfig;
+    SonarDriver::PingConfig newConfig = currentConfig; // To avoid to creat a new SonarDriver::PingConfig from ros parameters
     // flags
     newConfig.flags = 0x01    // always in meters
                       | 0x04  // force send gain to true
@@ -401,21 +559,19 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
 
         // send config to Oculus sonar and wait for feedback
         SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
+        currentConfig = feedback;
+        update_parameters(currentSonarParameters, feedback);
+
         if (feedback.flags != newConfig.flags)
         {
             RCLCPP_INFO_STREAM(get_logger(), "newConfig.flags = " << std::bitset<8>(newConfig.flags));
             RCLCPP_INFO_STREAM(get_logger(), "feedback.flags = " << std::bitset<8>(feedback.flags));
         }
-        currentConfig = feedback;
 
         // Advertissements
-        if (feedback.flags & 0x10)
+        if (!(feedback.flags & 0x04))
         {
-            RCLCPP_WARN(this->get_logger(), "gain_assit parameter is inable. To record data make sur to desable it. \n\tros2 param set /oculus_sonar gain_assist false");
-        }
-        if (!(feedback.flags & 0x04)) // TODO(hugoyvrn, to move elsewhere)
-        {
-            RCLCPP_WARN(this->get_logger(), "The oculus do not send gains. There is an error. The data is not complete.");
+            RCLCPP_ERROR(this->get_logger(), "The oculus do not send gains. There is an error. Data is not complete.");
         }
 
         handle_feedback_for_param(result, param, newConfig.masterMode, feedback.masterMode, "masterMode", "frequency_mode");
@@ -431,6 +587,11 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         handle_feedback_for_param(result, param, newConfig.gainPercent, feedback.gainPercent, "gain_percent");
         handle_feedback_for_param(result, param, newConfig.speedOfSound, feedback.speedOfSound, "sound_speed"); // TODO(hugoyvrn)
         handle_feedback_for_param(result, param, newConfig.salinity, feedback.salinity, "salinity");
+    }
+
+    if (result.successful)
+    {
+        update_parameters(currentRosParameters, parameters);
     }
     return result;
 }
