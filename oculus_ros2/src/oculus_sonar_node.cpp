@@ -216,7 +216,6 @@ void OculusSonarNode::update_ros_config_from_ping_msg(const oculus_interfaces::m
     // update_ros_param_from_ping_msg(currentConfig.salinity, msg.salinity, "salinity", "salinity");
 }
 
-
 void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
 {
     static oculus_interfaces::msg::Ping msg;
@@ -412,7 +411,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         // Advertissements
         if (feedback.flags & 0x10)
         {
-            RCLCPP_WARN(this->get_logger(), "gain_assit parameter is inable. To record data make sur to desable it. \n\tros2 set /oculus_sonar /gain_assist False");
+            RCLCPP_WARN(this->get_logger(), "gain_assit parameter is inable. To record data make sur to desable it. \n\tros2 param set /oculus_sonar gain_assist false");
         }
         if (!(feedback.flags & 0x04)) // TODO(hugoyvrn, to move elsewhere)
         {
