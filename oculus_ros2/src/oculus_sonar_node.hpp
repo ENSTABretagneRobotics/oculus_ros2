@@ -38,10 +38,12 @@ public:
   ~OculusSonarNode();
 
 protected:
-  const std::vector<std::string> parameters_names{"frame_id", "frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity"};
+  const std::vector<std::string> parameters_names{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity"};
   rosParameters currentSonarParameters;
   rosParameters currentRosParameters;
   oculus::SonarDriver::PingConfig currentConfig;
+
+  bool is_in_standby_mode = false; // Same value as ros paramater "standby"
 
   mutable std::shared_mutex param_mutex; ///< multithreading protection
 
@@ -64,6 +66,7 @@ private:
   void handle_feedback_for_param(rcl_interfaces::msg::SetParametersResult &result, const rclcpp::Parameter &param, const auto &old_val, const auto &new_val, const std::string &param_name, const std::string &param_name_to_display = std::string()) const;
   void update_parameters(rosParameters &parameters, const std::vector<rclcpp::Parameter> &new_parameters);
   void update_parameters(rosParameters &parameters, oculus::SonarDriver::PingConfig feedback);
+  void send_param_to_sonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result);
   rcl_interfaces::msg::SetParametersResult set_config_callback(const std::vector<rclcpp::Parameter> &parameters);
 
   void publish_status(const OculusStatusMsg &status);

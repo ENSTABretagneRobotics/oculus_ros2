@@ -1,41 +1,42 @@
 # Tests plan
 
 
-## ADVERTISMENTS
-**Do not power up the sonar outside water**. Water is necessary to cold the sonar, it can heat up if it is pluged in the air. Even in standby mode we can't be sur that the sonar will not heat up.
+## PRIOR WARNING
+**Do not turn on the sonar unit when not under water.** Water is needed to cool the sonar; it can heat up if it's plugged into the air. Even in standby mode, we can't be sure the sonar won't heat up.
 
-## Before starting
-Flolow the [`README`](../../README.md) to install and build the package. Put the soanr under water before powwer it. Run `ros2 launch oculus_ros2 default.launch.py` to make the tests.
-If you are using RQT, make sure to have sourced your workspace (in order to read oculus_interfaces massages).
+## Before Starting
+Read the [`README`](https://github.com/hugoyvrn/oculus_ros2/blob/master/README.md) to install and build the package. Put the sonar under water before powering it up. Run `ros2 launch oculus_ros2 default.launch.py` to run the code for testing.
+If you are using RQT, make sure you have sourced your workspace (in order to read the oculus_interfaces messages).
+
 ## Integration Tests
-### Without Soanar Test
-1. Check that the driver ask to if the soanr is properly connected.
-1. Wait 30 seconds. 
-1. Check you don't have any warning or error in addition `Timeout reached while waiting for a connection to the Oculus sonar. Is it properly connected ?`.
+### ~~Without Soanar Test~~
+1. ~~Check that the driver asks if the sonar is properly connected.~~
+1. ~~Wait 30 seconds. ~~
+1. ~~Check you don't have any warning nor error in addition to `Timeout reached while waiting for a connection to the Oculus sonar. Is it properly ~~connected ?`.
 
 ### Underwater Tests
 
-#### Standby Mode
-The sonar must go to stanby mode when the the is not any subscrber to `/oculus_sonar/ping` topic. In order to test this fonctionnality you must not run `default.launch.py` launch file but you must start on the node on alown with `ros2 launch oculus_ros2 pings_only.launch.py`.
-1. Launch the oculus_sonar_node with `ros2 launch oculus_ros2 pings_only.launch.py`.
-1. Make sur there is no subscriber on `/oculus_sonar/ping` by running `ros2 topic info /oculus_sonar/ping`.
-1. Set the frenquency to 750 kHz (`ros2 param set /oculus_sonar frequency_mode 1` in ROS CLI). 
-1. Set the ping rate to 40 Hz (mode 2) (`ros2 param set /oculus_sonar ping_rate 2` in ROS CLI). 
-1. Check you get a warning telling you are in standby mode.
-1. Check that there is status messages send by the sonar on `/oculus_sonar/status` with a 1 Hz fréquency (you may use RQT).
-1. If you are in a quiet environement you can take the sonar out of the water **WARNING DO NOT KEEP THE SONAR OUT OF WATER. IF THE SONAR START TO HEAT UP PUT IT BACK ON WATER** and chek that can not hear any ping sound. Put back the sonar under water.
-1. Run a subscriber of the topic `/oculus_sonar/ping` (`ros2 topic echo /oculus_sonar/ping` in ROS CLI).
-1. Check that you're infrome that sonar sonar quit standby mode.
-1. Check that there is status messages send by the sonar on `/oculus_sonar/status` ***TODO with a 1 Hz fréquency (you may use RQT)***.
-1. Check that there is ping messages send by the sonar on `/oculus_sonar/ping`  ***TODO with a 40 Hz fréquency (you may use RQT)***.
-1. If you are in a quiet environement you can take the sonar out of the water **WARNING DO NOT KEEP THE SONAR OUT OF WATER. IF THE SONAR START TO HEAT UP PUT IT BACK ON WATER** and chek that hear the pings sound. Put back the sonar under water.
-1. Stopt to subscriber the topic `/oculus_sonar/ping`.
-1. Make sur there is no subscriber on `/oculus_sonar/ping` by running `ros2 topic info /oculus_sonar/ping`.
-1. Check you get a warning telling you are in standby mode.
-1. Check that there is status messages send by the sonar on `/oculus_sonar/status` ***TODO with a 1 Hz fréquency (you may use RQT)***.
-1. If you are in a quiet environement you can take the sonar out of the water **WARNING DO NOT KEEP THE SONAR OUT OF WATER. IF THE SONAR START TO HEAT UP PUT IT BACK ON WATER** and chek that can not hear any ping sound. Put back the sonar under water.
+#### ~~Standby Mode~~
+~~The sonar must go to stanby mode when the the is not any subscrber to `/oculus_sonar/ping` topic. In order to test this fonctionnality you must not run `default.launch.py` launch file but you must start on the node on alown with `ros2 launch oculus_ros2 pings_only.launch.py`.~~
+1. ~~Launch the oculus_sonar_node with `ros2 launch oculus_ros2 pings_only.launch.py`.~~
+1. ~~Make sur there is no subscriber on `/oculus_sonar/ping` by running `ros2 topic info /oculus_sonar/ping`.~~
+1. ~~Set the frenquency to 750 kHz (`ros2 param set /oculus_sonar frequency_mode 1` in ROS CLI). ~~
+1. ~~Set the ping rate to 40 Hz (mode 2) (`ros2 param set /oculus_sonar ping_rate 2` in ROS CLI). ~~
+1. ~~Check you get a warning telling you are in standby mode.~~
+1. ~~Check that there is status messages send by the sonar on `/oculus_sonar/status` with a 1 Hz fréquency (you may use RQT).~~
+1. ~~If you are in a quiet environement you can take the sonar out of the water **WARNING DO NOT KEEP THE SONAR OUT OF WATER. IF THE SONAR START TO ~~HEAT UP PUT IT BACK ON WATER** and chek that can not hear any ping sound. Put back the sonar under water.
+1. ~~Run a subscriber of the topic `/oculus_sonar/ping` (`ros2 topic echo /oculus_sonar/ping` in ROS CLI).~~
+1. ~~Check that you're infrome that sonar sonar quit standby mode.~~
+1. ~~Check that there is status messages send by the sonar on `/oculus_sonar/status` ***TODO with a 1 Hz fréquency (you may use RQT)***.~~
+1. ~~Check that there is ping messages send by the sonar on `/oculus_sonar/ping`  ***TODO with a 40 Hz fréquency (you may use RQT)***.~~
+1. ~~If you are in a quiet environement you can take the sonar out of the water **WARNING DO NOT KEEP THE SONAR OUT OF WATER. IF THE SONAR START TO ~~HEAT UP PUT IT BACK ON WATER** and chek that hear the pings sound. Put back the sonar under water.
+1. ~~Stopt to subscriber the topic `/oculus_sonar/ping`.~~
+1. ~~Make sur there is no subscriber on `/oculus_sonar/ping` by running `ros2 topic info /oculus_sonar/ping`.~~
+1. ~~Check you get a warning telling you are in standby mode.~~
+1. ~~Check that there is status messages send by the sonar on `/oculus_sonar/status` ***TODO with a 1 Hz fréquency (you may use RQT)***.~~
+1. ~~If you are in a quiet environement you can take the sonar out of the water **WARNING DO NOT KEEP THE SONAR OUT OF WATER. IF THE SONAR START TO ~~HEAT UP PUT IT BACK ON WATER** and chek that can not hear any ping sound. Put back the sonar under water.
 
-*Do not forget to launch with `ros2 launch oculus_ros2 default.launch.py` again for the next tests.*
+~~*Do not forget to launch with `ros2 launch oculus_ros2 default.launch.py` again for the next tests.*~~
 #### Parameters
 The parameters are :
 - `frame_id`
@@ -89,12 +90,12 @@ The parameters are :
             1. Check that the image on the topic `/oculus_sonar/image` is still coherent
 
 1. Specific parameter test
-    - `frame_id`
-        1. Make sur the frame id is to`oculus_sonar`
-    - `frequency_mode`
+    - ~~`frame_id`~~
+        1. ~~Make sur the frame id is to`oculus_sonar`~~
+    - `frequency_mode` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-825)
         1. Change the frenquency between 750 kHz and 1200 kHZ (for example `ros2 param set /oculus_sonar frequency_mode 1` and `ros2 param set /oculus_sonar frequency_mode 2` in ROS CLI).
             1. If you are in a quiet environement you can take the sonar out of the water **WARNING DO NOT KEEP THE SONAR OUT OF WATER. IF THE SONAR START TO HEAT UP PUT IT BACK ON WATER** and chek that the sonar ping make more audible noise in in 750 kHz (mode 1) than in 1200 kHz (mode 2). Put back the sonar to the water.
-    - `ping_rate`
+    - `ping_rate` TODO(hugyvrn, https://forssea-robotics.atlassian.net/browse/ROB-822)
         1. Set the frenquency to 750 kHZ (for example `ros2 param set /oculus_sonar frequency_mode 1` in ROS CLI).
         1. Open RTQ (make sur to sur your workspace is sourced).
         1. For all ping_rate possible (mode 0, 1, 2, 3 and 4) (This could be usefull to use rqt parameter configure rather than ROS CLI)
@@ -107,7 +108,7 @@ The parameters are :
             1. Check that you have an output on your terminal to warn you than the sonar is on standby mode.
             1. Check that the driver is still publishing on the topic `/oculus_sonar/status`.
             1. Check that the driver is NOT publishing on the topic `/oculus_sonar/ping`.
-    - `data_depth` :
+    - `data_depth` : TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-832)
         1. Check the type of data on the topic `/oculus_sonar/ping`. TODO(@hugoyvrn, expalin more)
         1. Check the type of data on the topic `/oculus_sonar/image`. TODO(@hugoyvrn, expalin more)
     <!-- - `send_gain`
@@ -118,18 +119,15 @@ The parameters are :
         1. Follow the warning to get back with non gain assit.
         1. Check the the previous warning is not dispalyed again. -->
     - `gain_assist`
-        1. Set gain assit to true `ros2 param set /oculus_sonar gain_assist false`.
-        1. Check that you get a warning that advice you to set it to false.
+        1. Set gain assit to true `ros2 param set /oculus_sonar gain_assist true`.
         1. Set an orther parameter (for example `ros2 param set /oculus_sonar frequency_mode 1`)
-        1. Check that the previous warning is dispalys again.
         1. Check that the image has change of aspect compare with out gain assist.
-        1. Follow the warning to get back with non gain assit.
-        1. Check the the previous warning is not dispalyed again.
+        1. Set gain assit to false `ros2 param set /oculus_sonar gain_assist false`.
         1. Check that the image has change of aspect compare with gain assist.
-    - `range`
+    - `range` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-824)
         - Change `range` to multiple values. For each value:
             1. Check that the size of the image and `nbeams` and `nrange` are still coherent. TODO(@hugoyvrn, expalin more)
-    - `gamma_correction`
+    - `gamma_correction` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-825)
         1. Make sur `gain_assist` is set to false. (You can run  `ros2 param set /oculus_sonar gain_assist false`).
         1. Make sur `gain_percent` is correctly set (you can use the default value `ros2 param set /oculus_sonar gain_percent 50.`)
         1. Set `gamma_correction` to 0 (For example run  `ros2 param set /oculus_sonar gamma_correction 0`)
@@ -137,7 +135,7 @@ The parameters are :
         1. Set `gamma_correction` to 100 (For example run  `ros2 param set /oculus_sonar gamma_correction 100`)
         1. Check that the image is more wite.
         1. Set `gamma_correction` to 100 (For example run  `ros2 param set /oculus_sonar gamma_correction 50`)
-    - `gain_percent`
+    - `gain_percent` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-825)
         1. Make sur `gain_assist` is set to false. (You can run  `ros2 param set /oculus_sonar gain_assist false`).
         1. Make sur `gamma_correction` is correctly set (you can use the default value `ros2 param set /oculus_sonar gamma_correction 70`)
         1. Set `gain_percent` to 0.1 (For example run  `ros2 param set /oculus_sonar gain_percent 0.1`)
@@ -145,60 +143,60 @@ The parameters are :
         1. Set `gain_percent` to 100 (For example run  `ros2 param set /oculus_sonar gain_percent 100.`)
         1. Check that there is less wite and more black in the image
         1. Set `gain_percent` to 50 (For example run  `ros2 param set /oculus_sonar gain_percent 50.`)
-    - `sound_speed`
+    - `sound_speed` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-826)
         1. TODO(@hugoyvrn)
-    - `use_salinity`
+    - `use_salinity` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-826)
         1. TODO(@hugoyvrn)
-    - `salinity`
+    - `salinity` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-826)
         1. TODO(@hugoyvrn)
 
 
-### Network
-1. Power down the sonar
-1. Check that the driver tells "connection lost".
-1. Check you don't have any warning or error in addition of "connection lost"
-1. Power up the sonar.
-1. Check that the driver manage to connect to the sonar again (this may take a dozen of seconds).
+### ~~Network~~
+1. ~~Power down the sonar~~
+1. ~~Check that the driver dispalys "connection lost".~~
+1. ~~Check you don't have any warning or error in addition of "connection lost"~~
+1. ~~Power up the sonar.~~
+1. ~~Check that the driver manage to connect to the sonar again (this may take a dozen of seconds).~~
 
-### Topics
-1. Echo the topics  `/oculus_sonar/status`, `/oculus_sonar/ping` and `/oculus_sonar/image`.
-    - Check the coherence of the three time stamp with current time TODO(hugoyvrn, UTC? local ?)
-1. Echo the `/oculus_sonar/status`.
-    1. Check the data coherence TODO(hugoyvrn, Explain more)
-    1. Check the data variation TODO(hugoyvrn, Explain more)
+### ~~Topics~~
+1. ~~Echo the topics  `/oculus_sonar/status`, `/oculus_sonar/ping` and `/oculus_sonar/image`.~~
+    - ~~Check the coherence of the three time stamp with current time TODO(hugoyvrn, UTC? local ?)~~
+1. ~~Echo the `/oculus_sonar/status`.~~
+    1. ~~Check the data coherence TODO(hugoyvrn, Explain more)~~
+    1. ~~Check the data variation TODO(hugoyvrn, Explain more)~~
 
 
 ### Pool Tests
 #### Parameters
 1. Specific parameter test
-    - `frequency_mode`
+    - `frequency_mode`  TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-825)
         1. Change frequency and make sur the out put image aspect change.
-    - `gain_assist`
+    - `gain_assist` 
         1. Set gain assit to true `ros2 param set /oculus_sonar gain_assist True`.
         1. Check that the image has change of aspect compare with out gain assist.
         1. Make some movoment in front of the sonar to see the influence of gain assitant.
         1. Follow the warning to get back with non gain assit.
         1. Check that the image has change of aspect compare with gain assist.
-    - `range`
+    - `range` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-824)
         - Change `range` to multiple values. For each value:
             1. Check that this coherent with the size of the pool.
-    - `gamma_correction`
+    - `gamma_correction` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-825)
         1. Make sur `gain_assist` is set to false. (You can run  `ros2 param set /oculus_sonar gain_assist false`).
         1. Make sur `gain_percent` is correctly set (you can use the default value `ros2 param set /oculus_sonar gain_percent 50.`)
         1. Put the sonar in a position you can see some remacalbe shape
         1. Change `gamma_correction` to multiple values. For each value:
             1. Check that the image has change of aspect as expected TODO(@hugoyvrn, expalin more. What is expected)
-    - `gain_percent`
+    - `gain_percent` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-825)
         1. Make sur `gain_assist` is set to false. (You can run  `ros2 param set /oculus_sonar gain_assist false`).
         1. Make sur `gamma_correction` is correctly set (you can use the default value `ros2 param set /oculus_sonar gamma_correction 50`)
         1. Put the sonar in a position you can see some remacalbe shape
         1. Change `gain_percent` to multiple values. For each value:
             1. Check that the image has change of aspect as expected TODO(@hugoyvrn, expalin more. What is expected)
-    - `sound_speed`
+    - `sound_speed` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-826)
         1. TODO(@hugoyvrn)
-    - `use_salinity`
+    - `use_salinity` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-826)
         1. TODO(@hugoyvrn)
-    - `salinity`
+    - `salinity` TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-826)
         1. TODO(@hugoyvrn)
 
 
@@ -206,7 +204,7 @@ The parameters are :
 ### Field Test
 #### Parameters
 1. Specific parameter test
-    - `frequency_mode`
+    - `frequency_mode`  TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-825)
         1. Make sur to have enought range, to have the gain_percent and the gamma_coorection corectly set, to have the gain_assist to false. You can use the default configuration (you can found in in [cfg/default.yaml](../cfg/default.yaml)).
         1. CHange the frenquency between 750 kHz and 1200 kHZ (`ros2 param set /oculus_sonar frequency_mode 1` and `ros2 param set /oculus_sonar frequency_mode 2` in ROS CLI).
             1. Check that there is less noise in 750 kHz (mode 1) than in 1200 kHz (mode 2).
