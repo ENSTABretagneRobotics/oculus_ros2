@@ -175,8 +175,11 @@ OculusSonarNode::~OculusSonarNode()
 
 void OculusSonarNode::publish_status(const OculusStatusMsg &status)
 {
-    static oculus_interfaces::msg::OculusStatus msg;
 
+    if (status.partNumber != 1042) // TODO(handle other versions).
+        RCLCPP_ERROR_STREAM(get_logger(), "The sonar version seems to be different than M1200d. This driver is not suppose to work with your sonar.");
+
+    static oculus_interfaces::msg::OculusStatus msg;
     oculus::copy_to_ros(msg, status);
     this->status_publisher_->publish(msg);
 }
