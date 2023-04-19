@@ -284,7 +284,7 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
 
 void OculusSonarNode::handle_dummy()
 {
-    if (!is_in_standby_mode && this->ping_publisher_->get_subscription_count() > 0 && currentSonarParameters.ping_rate == 5)
+    if (!is_in_standby_mode && this->ping_publisher_->get_subscription_count() > 0 && currentSonarParameters.ping_rate != 5)
     {
         RCLCPP_INFO(this->get_logger(), "Exiting standby mode");
         this->sonar_driver_->resume();
@@ -458,9 +458,6 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
 {
     SonarDriver::PingConfig newConfig = currentConfig; // To avoid to creat a new SonarDriver::PingConfig from ros parameters
     // flags
-    newConfig.flags = 0x01    // always in meters
-                      | 0x04  // force send gain to true
-                      | 0x08; // use simple ping
 
     bool use_salinity;
 
@@ -502,7 +499,7 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
         switch (param.as_int())
         {
         case 0: // 8 bits
-            newConfig.flags -= 0x02;
+            newConfig.flags &= ~0x02;
             break;
         case 1: // 16 bits
             newConfig.flags |= 0x02;
@@ -517,7 +514,7 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
         switch (param.as_int())
         {
         case 0: // 256 beams
-            newConfig.flags &= 0x40;
+            newConfig.flags &= ~0x40;
             break;
         case 1: // 512 beams
             newConfig.flags |= 0x40;
@@ -532,7 +529,7 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
         if (param.as_bool())
             newConfig.flags |= 0x10;
         else
-            newConfig.flags &= 0x10;
+            newConfig.flags &= ~0x10;
     }
     else if (param.get_name() == "range")
     {
@@ -572,6 +569,10 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
         RCLCPP_INFO_STREAM(this->get_logger(), "Updating salinity to " << param.as_double() << " parts per thousand (ppt,ppm,g/kg).");
         newConfig.salinity = param.as_double();
     }
+
+    newConfig.flags |= 0x01    // always in meters
+                      | 0x04  // force send gain to true
+                      | 0x08; // use simple ping
 
     // send config to Oculus sonar and wait for feedback
     SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);

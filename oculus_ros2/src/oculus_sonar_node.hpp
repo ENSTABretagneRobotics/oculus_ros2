@@ -13,7 +13,7 @@
 #include "oculus_interfaces/msg/oculus_status.hpp"
 #include "oculus_interfaces/msg/ping.hpp"
 
-#include "sonar_viewer.h"
+// #include "sonar_viewer.h"
 
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 
