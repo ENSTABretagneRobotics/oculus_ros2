@@ -1,53 +1,23 @@
-#include <iostream>
-#include <chrono>
+#include "sonar_viewer.h"
 
-#include "rclcpp/rclcpp.hpp"
-#include "oculus_sonar_msgs/msg/oculus_ping.hpp"
-#include "sensor_msgs/msg/image.hpp"
-#include "cv_bridge/cv_bridge.h"
-#include "image_transport/image_transport.hpp"
+SonarViewer::SonarViewer() {}
+SonarViewer::~SonarViewer() {}
 
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/core.hpp>
-
-#include <rosbag/bag.h>
-#include <fstream>
-#include <numeric>
-
-class SonarPublisher
+void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr &ping)
 {
-public:
-    SonarPublisher()
-    {
-        pub_ = n_.advertise<sensor_msgs::Image>("/oculus_sonar/image", 1);
-        sub_ = n_.subscribe("/oculus_sonar/ping", 1, &SonarPublisher::ping_callback, this);
-    }
-    void ping_callback(const oculus_sonar::OculusPing &ping);
-
-private:
-    sensor_msgs::ImagePtr msg;
-    cv::Mat data;
-    ros::NodeHandle n_;
-    ros::Publisher pub_;
-    ros::Subscriber sub_;
-};
-
-int image_i = 0;
-void SonarPublisher::ping_callback(const oculus_sonar::OculusPing &ping)
-{
-    int width = ping.nBeams;
-    int height = ping.nRanges;
-    int offset = ping.imageOffset;
+    int width = ping->bearing_count();
+    int height = ping->range_count();
+    int offset = 0; // TODO(hugoyvrn)
+    // int offset = ping->imageOffset();
 
     cv::Mat rawDataMat = cv::Mat(height, (width + 4), CV_8U);
     // #pragma omp parallel for collapse(2)
     for (int i = 0, k = offset; i < height; i++)
         for (int j = 0; j < (width + 4); j++)
-            rawDataMat.at<uint8_t>(i, j) = ping.data[k++];
+            rawDataMat.at<uint8_t>(i, j) = ping->data()[k++]; // TODO(hugoyvrn) Seems wrong for me 
 
     data = cv::Mat(height, width, CV_64F);
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2) // TODO(hugoyvrn)
     for (int i = 0; i < height; i++)
         for (int j = 4; j < width + 4; j++)
             data.at<double>(i, j - 4) = rawDataMat.at<uint8_t>(i, j);
@@ -129,20 +99,4 @@ void SonarPublisher::ping_callback(const oculus_sonar::OculusPing &ping)
     file_name2 << "/home/jaouadros/catkin_ws/src/Sonar_processing_display/tests/results/after/image_" << image_i << ".jpg";
     cv::imwrite(file_name2.str(), result);
     image_i++;*/
-}
-
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "oculus_viewer", ros::init_options::NoSigintHandler);
-    SonarPublisher pub;
-
-    // Display display;
-    ros::Rate loopRate(10);
-    while (1)
-    {
-        ros::spinOnce();
-        loopRate.sleep();
-    }
-
-    return 0;
 }

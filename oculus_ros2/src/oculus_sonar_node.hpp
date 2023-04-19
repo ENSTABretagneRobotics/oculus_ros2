@@ -13,6 +13,8 @@
 #include "oculus_interfaces/msg/oculus_status.hpp"
 #include "oculus_interfaces/msg/ping.hpp"
 
+#include "sonar_viewer.h"
+
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 
 typedef struct
@@ -50,6 +52,7 @@ protected:
 private:
   std::shared_ptr<oculus::SonarDriver> sonar_driver_;
   oculus::AsyncService io_service_;
+  SonarViewer sonar_viewer;
 
   std::string ping_topic_ = "ping";
   std::string status_topic_ = "status";

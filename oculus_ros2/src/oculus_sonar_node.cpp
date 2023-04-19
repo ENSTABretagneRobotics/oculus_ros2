@@ -154,9 +154,15 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
         std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
                   << "Is it properly connected ?" << std::endl;
     }
+    // const oculus::PingMessage::ConstPtr ping;
+    // sonar_viewer.publish_fan(ping);
 
     while (!this->sonar_driver_->connected()) // wait the sonar to connected
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    {
+        // std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
+        //           << "Is it properly connected ?" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
 
     update_parameters(currentSonarParameters, this->sonar_driver_->current_ping_config());
     for (const std::string &param_name : parameters_names)
@@ -262,6 +268,7 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
     oculus::copy_to_ros(msg, ping);
 
     this->ping_publisher_->publish(msg);
+    sonar_viewer.publish_fan(ping);
 
     // Update current config with ping informations
     currentSonarParameters.frequency_mode = msg.master_mode;
