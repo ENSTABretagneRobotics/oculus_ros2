@@ -7,6 +7,7 @@ find_package(oculus_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 # find_package(rqt_reconfigure REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 
@@ -50,6 +51,7 @@ ament_target_dependencies(oculus_sonar_node PUBLIC
     rclcpp
     oculus_interfaces
     rcl_interfaces
+    sensor_msgs
 )
 
 

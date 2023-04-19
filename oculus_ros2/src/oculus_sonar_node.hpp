@@ -52,7 +52,10 @@ protected:
 private:
   std::shared_ptr<oculus::SonarDriver> sonar_driver_;
   oculus::AsyncService io_service_;
-  SonarViewer sonar_viewer;
+  
+  // SonarViewer sonar_viewer;
+  // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
+  // SonarViewer sonar_viewer(this);
 
   std::string ping_topic_ = "ping";
   std::string status_topic_ = "status";

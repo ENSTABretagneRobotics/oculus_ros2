@@ -1,27 +1,36 @@
-#ifndef SONAR_VIEWER_H
-#define SONAR_VIEWER_H
+// #ifndef SONAR_VIEWER_H
+// #define SONAR_VIEWER_H
 
-#include <iostream>
+// #include <iostream>
 
-#include "rclcpp/rclcpp.hpp"
+// #include "rclcpp/rclcpp.hpp"
 
-#include <oculus_driver/AsyncService.h>
-#include <oculus_driver/SonarDriver.h>
-#include "oculus_interfaces/msg/ping.hpp"
+// #include <oculus_driver/AsyncService.h>
+// #include <oculus_driver/SonarDriver.h>
+// #include "oculus_interfaces/msg/ping.hpp"
+// #include "sensor_msgs/msg/image.hpp"
 
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/core.hpp>
+// #include <opencv2/highgui/highgui.hpp>
+// #include <opencv2/imgproc/imgproc.hpp>
+// #include <opencv2/core.hpp>
 
-class SonarViewer
-{
-public:
-    SonarViewer();
-    ~SonarViewer();
-    void publish_fan(const oculus::PingMessage::ConstPtr &ping);
+// #include "oculus_sonar_node.hpp"
 
-private:
-    cv::Mat data;
-};
+// class SonarViewer
+// {
+// public:
+//     SonarViewer();
+//     // SonarViewer(OculusSonarNode::SharedPtr node);
+//     ~SonarViewer();
+//     void stream_and_filter(const oculus::PingMessage::ConstPtr &ping);
+//     sensor_msgs::msg::Image publish_fan(const oculus::PingMessage::ConstPtr &ping);
 
-#endif /* SONAR_VIEWER_H */
+// private:
+//     //   sensor_msgs::ImagePtr msg;
+//     cv::Mat data;
+
+//     // OculusSonarNode::SharedPtr node_;
+//     // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_;
+// };
+
+// #endif /* SONAR_VIEWER_H */

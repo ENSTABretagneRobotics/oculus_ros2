@@ -147,6 +147,8 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(ping_topic_, 100);
     this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(status_topic_, 100);
 
+    // image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
+
     this->sonar_driver_ = std::make_shared<SonarDriver>(this->io_service_.io_service());
     this->io_service_.start();
     if (!this->sonar_driver_->wait_next_message())
@@ -268,7 +270,8 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
     oculus::copy_to_ros(msg, ping);
 
     this->ping_publisher_->publish(msg);
-    sonar_viewer.publish_fan(ping);
+    // this->image_publisher_->publish(sonar_viewer.publish_fan(ping));
+    // sonar_viewer.publish_fan(ping);
 
     // Update current config with ping informations
     currentSonarParameters.frequency_mode = msg.master_mode;
