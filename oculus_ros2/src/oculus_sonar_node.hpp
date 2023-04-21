@@ -1,3 +1,6 @@
+#ifndef OCULUS_SONAR_NODE_H
+#define OCULUS_SONAR_NODE_H
+
 #include <iostream>
 #include <sstream>
 #include <thread>
@@ -13,7 +16,7 @@
 #include "oculus_interfaces/msg/oculus_status.hpp"
 #include "oculus_interfaces/msg/ping.hpp"
 
-// #include "sonar_viewer.h"
+#include "sonar_viewer.h"
 
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 
@@ -53,7 +56,7 @@ private:
   std::shared_ptr<oculus::SonarDriver> sonar_driver_;
   oculus::AsyncService io_service_;
   
-  // SonarViewer sonar_viewer;
+  // SonarViewer sonar_viewer(*this);
   // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
   // SonarViewer sonar_viewer(this);
 
@@ -79,3 +82,6 @@ private:
   void publish_ping(const oculus::PingMessage::ConstPtr &pingMetadata);
   void handle_dummy();
 };
+
+
+#endif /* OCULUS_SONAR_NODE_H */

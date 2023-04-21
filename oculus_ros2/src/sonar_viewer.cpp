@@ -1,13 +1,13 @@
-// #include "sonar_viewer.h"
+#include "sonar_viewer.h"
 
-// SonarViewer::SonarViewer()
+// SonarViewer::SonarViewer(bool &node)
 // {
 // }
-// // SonarViewer::SonarViewer(OculusSonarNode::SharedPtr node) : node_(node)
-// // {
-// //     publisher_ = node->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
-// // }
-// SonarViewer::~SonarViewer() {}
+SonarViewer::SonarViewer(rclcpp::Node::SharedPtr &node) : node_(node)
+{
+    publisher_ = node->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
+}
+SonarViewer::~SonarViewer() {}
 
 // void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping)
 // {
