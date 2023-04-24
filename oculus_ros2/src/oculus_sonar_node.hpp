@@ -43,12 +43,12 @@ public:
   ~OculusSonarNode();
 
 protected:
-  const std::vector<std::string> parameters_names{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity"};
+  const std::vector<std::string> parameters_names{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "standby"};
   rosParameters currentSonarParameters;
   rosParameters currentRosParameters;
   oculus::SonarDriver::PingConfig currentConfig;
 
-  bool is_in_standby_mode = false; // Same value as ros paramater "standby"
+  bool is_in_standby_mode; // Same value as ros paramater "standby"
 
   mutable std::shared_mutex param_mutex; ///< multithreading protection
 

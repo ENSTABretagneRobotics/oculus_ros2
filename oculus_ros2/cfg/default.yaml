@@ -1,5 +1,7 @@
 oculus_sonar:
   ros__parameters:
+    standby: false 
+
     frame_id: "sonar" # Frame of reference for the ping messages.
 
     frequency_mode: 1 # Sonar beam frequency mode.

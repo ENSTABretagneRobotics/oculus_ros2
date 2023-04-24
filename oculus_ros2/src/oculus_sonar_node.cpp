@@ -18,7 +18,7 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
 
     if (!this->has_parameter("standby"))
     {
-        this->declare_parameter<bool>("standby", "sonar");
+        this->declare_parameter<bool>("standby", false);
     }
     if (!this->has_parameter("frame_id"))
     {
@@ -571,8 +571,8 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
     }
 
     newConfig.flags |= 0x01    // always in meters
-                      | 0x04  // force send gain to true
-                      | 0x08; // use simple ping
+                       | 0x04  // force send gain to true
+                       | 0x08; // use simple ping
 
     // send config to Oculus sonar and wait for feedback
     SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
@@ -625,10 +625,10 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
 
     for (const rclcpp::Parameter &param : parameters)
     {
-        if (!(param.get_name() == "frame_id") && !(param.get_name() == "standby"))
-            send_param_to_sonar(param, result);
-        else if (param.get_name() == "standby")
+        if (param.get_name() == "standby")
             is_in_standby_mode = param.as_bool();
+        else if (!(param.get_name() == "frame_id"))
+            send_param_to_sonar(param, result);
     }
 
     if (result.successful) // If the parameters will be updated to ros
