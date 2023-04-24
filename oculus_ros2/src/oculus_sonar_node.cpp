@@ -144,8 +144,10 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
 
     this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, std::placeholders::_1));
 
-    this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(ping_topic_, 100);
     this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(status_topic_, 100);
+    this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(ping_topic_, 100);
+    this->temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>("temperature", 100); // TODO(hugoyvrn, size of the queue?)
+    this->pressure_publisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("pressure", 100); // TODO(hugoyvrn, size of the queue?)
 
     // image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
 
@@ -265,19 +267,32 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
         return;
     }
 
+
+    // Update current config with ping informations
+    currentSonarParameters.frequency_mode = ping->master_mode();
+    currentSonarParameters.range = ping->range();
+    currentSonarParameters.gain_percent = ping->gain_percent();
+    currentSonarParameters.sound_speed =  ping->speed_of_sound_used();
+
     static oculus_interfaces::msg::Ping msg;
-
     oculus::copy_to_ros(msg, ping);
-
     this->ping_publisher_->publish(msg);
+
+    sensor_msgs::msg::Temperature temperature_ros_msg;
+    temperature_ros_msg.header = msg.header;
+    temperature_ros_msg.temperature = msg.temperature; // Measurement of the Temperature in Degrees Celsius
+    temperature_ros_msg.variance = 0; // 0 is interpreted as variance unknown
+    this->temperature_publisher_->publish(temperature_ros_msg);
+
+    sensor_msgs::msg::FluidPressure pressure_ros_msg;
+    pressure_ros_msg.header = msg.header;
+    pressure_ros_msg.fluid_pressure = msg.pressure; // Absolute pressure reading in Pascals.
+    pressure_ros_msg.variance = 0; // 0 is interpreted as variance unknown
+    this->pressure_publisher_->publish(pressure_ros_msg);
+
     // this->image_publisher_->publish(sonar_viewer.publish_fan(ping));
     // sonar_viewer.publish_fan(ping);
 
-    // Update current config with ping informations
-    currentSonarParameters.frequency_mode = msg.master_mode;
-    currentSonarParameters.range = msg.range;
-    currentSonarParameters.gain_percent = msg.gain_percent;
-    currentSonarParameters.sound_speed = msg.speed_of_sound_used;
 
     update_ros_config();
 }

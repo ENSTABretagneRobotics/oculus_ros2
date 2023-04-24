@@ -15,6 +15,8 @@
 
 #include "oculus_interfaces/msg/oculus_status.hpp"
 #include "oculus_interfaces/msg/ping.hpp"
+#include "sensor_msgs/msg/temperature.hpp"
+#include "sensor_msgs/msg/fluid_pressure.hpp"
 
 #include "sonar_viewer.h"
 
@@ -64,6 +66,8 @@ private:
   std::string status_topic_ = "status";
   rclcpp::Publisher<oculus_interfaces::msg::OculusStatus>::SharedPtr status_publisher_{nullptr};
   rclcpp::Publisher<oculus_interfaces::msg::Ping>::SharedPtr ping_publisher_{nullptr};
+  rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr temperature_publisher_{nullptr};
+  rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pressure_publisher_{nullptr};
   const double temperature_stop_limit = 35.; // TODO(hugoyvrn, paramètre static)
   const double temperature_warn_limit = 30.; // TODO(hugoyvrn, paramètre static)
 
