@@ -1,8 +1,16 @@
 oculus_sonar:
   ros__parameters:
-    standby: false 
+    frame_id: "e" # Frame of reference for the ping messages. Default value is "oculus_sonar".
 
-    frame_id: "sonar" # Frame of reference for the ping messages.
+    status_topic: "a" # Name of the temperatur topic. Default value is "status".
+    ping_topic: "b" # Name of the temperatur topic. Default value is "ping".
+    temperature_topic: "c" # Name of the temperatur topic. Default value is "temperature".
+    pressure_topic: "s" # Name of the temperatur topic. Default value is "pressure".
+
+
+    temperature_warn: 30.5
+    temperature_stop: 35.5
+
 
     frequency_mode: 1 # Sonar beam frequency mode.
     # 1: Low frequency (1.2MHz, wide aperture).
@@ -17,14 +25,7 @@ oculus_sonar:
     # 5: Standby mode (no ping fire).
 
     # # Hint on available network speed (no feedback, sonar seems to ignore it)
-    # network_speed: 0 # Hint on network available speed ? min=0, max=255
-
-    # Set to non-configurable (by choice)
-    # # the next 3 parameters are used to fill the OculusFireMessage.flags parameter
-    # # For now only compatible with SimplePingResult
-    # range_type: 1 # Range unit type.
-    # 0: Interpret range in percents.
-    # 1: Interpret range in meters.
+    # network_speed: 0 # Hint on network available speed ? min=0, max=255 # TODO (hugoyvrn, what is it ?)
 
 
     data_depth: 0 # Ping data encoding bit count.
@@ -48,3 +49,6 @@ oculus_sonar:
     sound_speed: 0.0 # Sound speed (in m/s, set to 0 for it to be calculated using salinity), min=1400.0, max=1600.0
     use_salinity: true # Use salinity to calculate sound_speed.
     salinity: 0.0 # Salinity (in parts per thousand (ppt,ppm,g/kg), used to calculate sound speed if needed), min=0.0, max=100
+
+    standby: false # Force standby mode
+

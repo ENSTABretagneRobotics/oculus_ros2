@@ -26,7 +26,7 @@ def generate_launch_description():
          package='oculus_ros2',
          executable='oculus_sonar_node',
          name='oculus_sonar',
-        #  parameters=[config],
+         parameters=[config],
          remappings=[
                  ('ping', '/oculus_sonar/ping'), # Topic name where ping messages are published (cf Oculus.h).
                  ('status', '/oculus_sonar/status') # Topic name where status messages are published (cf Oculus.h).

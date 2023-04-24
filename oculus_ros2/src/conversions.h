@@ -118,7 +118,6 @@ namespace oculus
     inline void copy_to_ros(oculus_interfaces::msg::Ping &msg, const oculus::PingMessage::ConstPtr &ping)
     {
         msg.header.stamp = to_ros_stamp(ping->timestamp());
-        msg.header.frame_id = "oculus_sonar";
 
         msg.ping_id = ping->ping_index();
         msg.ping_firing_date = ping->ping_firing_date();

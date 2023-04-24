@@ -45,7 +45,7 @@ public:
   ~OculusSonarNode();
 
 protected:
-  const std::vector<std::string> parameters_names{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "standby"};
+  const std::vector<std::string> dynamic_parameters_names{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "standby"};
   rosParameters currentSonarParameters;
   rosParameters currentRosParameters;
   oculus::SonarDriver::PingConfig currentConfig;
@@ -61,15 +61,13 @@ private:
   // SonarViewer sonar_viewer(*this);
   // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
   // SonarViewer sonar_viewer(this);
-
-  std::string ping_topic_ = "ping";
-  std::string status_topic_ = "status";
+  const std::string frame_id;
+  double temperature_warn_limit; 
+  const double temperature_stop_limit; 
   rclcpp::Publisher<oculus_interfaces::msg::OculusStatus>::SharedPtr status_publisher_{nullptr};
   rclcpp::Publisher<oculus_interfaces::msg::Ping>::SharedPtr ping_publisher_{nullptr};
   rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr temperature_publisher_{nullptr};
   rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pressure_publisher_{nullptr};
-  const double temperature_stop_limit = 35.; // TODO(hugoyvrn, paramètre static)
-  const double temperature_warn_limit = 30.; // TODO(hugoyvrn, paramètre static)
 
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_{nullptr};
 

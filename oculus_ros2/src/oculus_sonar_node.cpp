@@ -1,4 +1,3 @@
-using namespace std;
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 
@@ -13,16 +12,16 @@ using namespace std;
 
 using SonarDriver = oculus::SonarDriver;
 
-OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
+OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
+                                     frame_id((this->declare_parameter<std::string>("frame_id"), "sonar")),
+                                     temperature_warn_limit(this->declare_parameter<double>("temperature_warn", 30.)),
+                                     temperature_stop_limit(this->declare_parameter<double>("temperature_stop", 35.))
 {
+    RCLCPP_INFO_STREAM(get_logger(), "temperature_warn_limit = " << temperature_warn_limit);
 
     if (!this->has_parameter("standby"))
     {
         this->declare_parameter<bool>("standby", false);
-    }
-    if (!this->has_parameter("frame_id"))
-    {
-        this->declare_parameter<string>("frame_id", "sonar");
     }
     if (!this->has_parameter("frequency_mode"))
     {
@@ -60,6 +59,7 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     if (!this->has_parameter("nbeams"))
     {
         rcl_interfaces::msg::ParameterDescriptor param_desc;
+
         rcl_interfaces::msg::IntegerRange range;
         range.set__from_value(0).set__to_value(1).set__step(1);
         param_desc.name = "nbeams";
@@ -139,15 +139,13 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
         param_desc.floating_point_range = {range};
         this->declare_parameter<double>("salinity", 0.0, param_desc);
     }
-    this->get_parameter("ping_topic", ping_topic_);
-    this->get_parameter("status_topic", status_topic_);
 
     this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, std::placeholders::_1));
 
-    this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(status_topic_, 100);
-    this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(ping_topic_, 100);
-    this->temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>("temperature", 100); // TODO(hugoyvrn, size of the queue?)
-    this->pressure_publisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("pressure", 100); // TODO(hugoyvrn, size of the queue?)
+    this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(get_parameter_or("status_topic", std::string("zzzz")), 100);
+    this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(get_parameter_or("ping_topic", std::string("eeee")), 100);
+    this->temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>(get_parameter_or("temperature_topic", std::string("rrrr")), 100); // TODO(hugoyvrn, size of the queue?)
+    this->pressure_publisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>(get_parameter_or("pressure_topic", std::string("tttt")), 100);     // TODO(hugoyvrn, size of the queue?)
 
     // image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
 
@@ -169,7 +167,7 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar")
     }
 
     update_parameters(currentSonarParameters, this->sonar_driver_->current_ping_config());
-    for (const std::string &param_name : parameters_names)
+    for (const std::string &param_name : dynamic_parameters_names)
         set_config_callback(this->get_parameters(std::vector{param_name}));
 
     this->sonar_driver_->add_status_callback(std::bind(&OculusSonarNode::publish_status, this, std::placeholders::_1));
@@ -267,32 +265,31 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
         return;
     }
 
-
     // Update current config with ping informations
     currentSonarParameters.frequency_mode = ping->master_mode();
     currentSonarParameters.range = ping->range();
     currentSonarParameters.gain_percent = ping->gain_percent();
-    currentSonarParameters.sound_speed =  ping->speed_of_sound_used();
+    currentSonarParameters.sound_speed = ping->speed_of_sound_used();
 
     static oculus_interfaces::msg::Ping msg;
+    msg.header.frame_id = frame_id;
     oculus::copy_to_ros(msg, ping);
     this->ping_publisher_->publish(msg);
 
     sensor_msgs::msg::Temperature temperature_ros_msg;
     temperature_ros_msg.header = msg.header;
     temperature_ros_msg.temperature = msg.temperature; // Measurement of the Temperature in Degrees Celsius
-    temperature_ros_msg.variance = 0; // 0 is interpreted as variance unknown
+    temperature_ros_msg.variance = 0;                  // 0 is interpreted as variance unknown
     this->temperature_publisher_->publish(temperature_ros_msg);
 
     sensor_msgs::msg::FluidPressure pressure_ros_msg;
     pressure_ros_msg.header = msg.header;
     pressure_ros_msg.fluid_pressure = msg.pressure; // Absolute pressure reading in Pascals.
-    pressure_ros_msg.variance = 0; // 0 is interpreted as variance unknown
+    pressure_ros_msg.variance = 0;                  // 0 is interpreted as variance unknown
     this->pressure_publisher_->publish(pressure_ros_msg);
 
     // this->image_publisher_->publish(sonar_viewer.publish_fan(ping));
     // sonar_viewer.publish_fan(ping);
-
 
     update_ros_config();
 }
@@ -353,7 +350,7 @@ void OculusSonarNode::update_parameters(rosParameters &parameters, const std::ve
             parameters.use_salinity = new_param.as_bool();
         else if (new_param.get_name() == "salinity")
             parameters.salinity = new_param.as_double();
-        else if (!(new_param.get_name() == "frame_id") && !(new_param.get_name() == "standby"))
+        else if (!(new_param.get_name() == "standby"))
             RCLCPP_WARN_STREAM(get_logger(), "Wrong parameter to set : new_param = " << new_param << ". Not seted");
     }
     // RCLCPP_INFO_STREAM(get_logger(), "new_parameters = " << new_parameters);
@@ -642,8 +639,14 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
     {
         if (param.get_name() == "standby")
             is_in_standby_mode = param.as_bool();
-        else if (!(param.get_name() == "frame_id"))
+        else if (std::find(dynamic_parameters_names.begin(), dynamic_parameters_names.end(), param.get_name()) != dynamic_parameters_names.end())
             send_param_to_sonar(param, result);
+        else
+        {
+            RCLCPP_WARN_STREAM(get_logger(), "Wrong dynamic parameter to set : param = " << param << ". Not seted");
+            result.successful = true; // TODO(hugoyvrn, true or false ?)
+            result.reason = "TODO(hugoyvrn)";
+        }
     }
 
     if (result.successful) // If the parameters will be updated to ros
