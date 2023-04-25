@@ -35,6 +35,7 @@ add_executable(oculus_sonar_node
 # target_include_directories(oculus_sonar_node PRIVATE
 #   ${CMAKE_CURRENT_SOURCE_DIR}/include
 #   ${OpenCV_INCLUDE_DIRS})
+include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 target_link_libraries(oculus_sonar_node PRIVATE
   ${OpenCV_LIBRARIES}
@@ -52,6 +53,8 @@ ament_target_dependencies(oculus_sonar_node PUBLIC
     oculus_interfaces
     rcl_interfaces
     sensor_msgs
+    OpenCV
+    cv_bridge
 )
 
 

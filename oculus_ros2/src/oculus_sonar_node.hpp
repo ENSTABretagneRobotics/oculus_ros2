@@ -55,12 +55,13 @@ protected:
   mutable std::shared_mutex param_mutex; ///< multithreading protection
 
 private:
-  const std::shared_ptr<oculus::SonarDriver> sonar_driver_;
+  std::shared_ptr<oculus::SonarDriver> sonar_driver_;
   oculus::AsyncService io_service_;
   // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
-  const SonarViewer sonar_viewer;
+  SonarViewer sonar_viewer;
   const std::string frame_id;
-  double temperature_warn_limit;
+  const std::string topics_prefix;
+  const double temperature_warn_limit;
   const double temperature_stop_limit;
   rclcpp::Publisher<oculus_interfaces::msg::OculusStatus>::SharedPtr status_publisher_{nullptr};
   rclcpp::Publisher<oculus_interfaces::msg::Ping>::SharedPtr ping_publisher_{nullptr};

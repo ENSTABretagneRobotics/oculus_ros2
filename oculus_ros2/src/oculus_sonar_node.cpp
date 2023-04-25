@@ -13,14 +13,13 @@
 using SonarDriver = oculus::SonarDriver;
 
 OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
-                                     sonar_driver_(std::make_shared<SonarDriver>(this->io_service_.io_service())),
+                                     //  sonar_driver_(std::make_shared<SonarDriver>(this->io_service_.io_service())),
                                      sonar_viewer(static_cast<rclcpp::Node *>(this)),
                                      frame_id((this->declare_parameter<std::string>("frame_id"), "sonar")),
+                                     topics_prefix(this->declare_parameter<std::string>("topics_prefix", "")),
                                      temperature_warn_limit(this->declare_parameter<double>("temperature_warn", 30.)),
                                      temperature_stop_limit(this->declare_parameter<double>("temperature_stop", 35.))
 {
-    RCLCPP_INFO_STREAM(get_logger(), "temperature_warn_limit = " << temperature_warn_limit);
-
     if (!this->has_parameter("standby"))
     {
         this->declare_parameter<bool>("standby", false);
@@ -144,13 +143,22 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
 
     this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, std::placeholders::_1));
 
-    this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(get_parameter_or("status_topic", std::string("zzzz")), 100);
-    this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(get_parameter_or("ping_topic", std::string("eeee")), 100);
-    this->temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>(get_parameter_or("temperature_topic", std::string("rrrr")), 100); // TODO(hugoyvrn, size of the queue?)
-    this->pressure_publisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>(get_parameter_or("pressure_topic", std::string("tttt")), 100);     // TODO(hugoyvrn, size of the queue?)
+    this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(
+        topics_prefix + declare_parameter<std::string>("status_topic", std::string("status")),
+        100);
+    this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(
+        topics_prefix + declare_parameter<std::string>("ping_topic", std::string("ping")),
+        100);
+    this->temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>(
+        topics_prefix + declare_parameter<std::string>("temperature_topic", std::string("temperature")),
+        100); // TODO(hugoyvrn, size of the queue?)
+    this->pressure_publisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>(
+        topics_prefix + declare_parameter<std::string>("pressure_topic", std::string("pressure")),
+        100); // TODO(hugoyvrn, size of the queue?)
 
     // image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
 
+    this->sonar_driver_ = std::make_shared<SonarDriver>(this->io_service_.io_service());
     this->io_service_.start();
     if (!this->sonar_driver_->wait_next_message())
     {
@@ -166,6 +174,8 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
         //           << "Is it properly connected ?" << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
+
+    // sonar_viewer = SonarViewer(static_cast<rclcpp::Node *>(this));
 
     update_parameters(currentSonarParameters, this->sonar_driver_->current_ping_config());
     for (const std::string &param_name : dynamic_parameters_names)
@@ -273,7 +283,7 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
     this->pressure_publisher_->publish(pressure_ros_msg);
 
     // this->image_publisher_->publish(sonar_viewer.publish_fan(ping));
-    // sonar_viewer.publish_fan(ping);
+    sonar_viewer.publish_fan(ping);
 
     update_ros_config();
 }
@@ -482,7 +492,7 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
     else if (param.get_name() == "sound_speed")
     {
         RCLCPP_INFO_STREAM(this->get_logger(), "Updating sound_speed to " << param.as_double() << " m/s.");
-        if (!param.as_bool())
+        if (!get_parameter_or("use_salinity", rclcpp::Parameter("use_salinity", true)).as_bool())
         {
             if (param.as_double() >= 1400.0 && param.as_double() <= 1600.0)
                 newConfig.speedOfSound = param.as_double();
