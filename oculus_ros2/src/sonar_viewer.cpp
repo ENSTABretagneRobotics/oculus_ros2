@@ -1,9 +1,9 @@
 #include "sonar_viewer.h"
 
-// SonarViewer::SonarViewer(bool &node)
+// SonarViewer::SonarViewer(bool *arg)
 // {
 // }
-SonarViewer::SonarViewer(rclcpp::Node::SharedPtr &node) : node_(node)
+SonarViewer::SonarViewer(rclcpp::Node *node) : node_(node)
 {
     publisher_ = node->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
 }

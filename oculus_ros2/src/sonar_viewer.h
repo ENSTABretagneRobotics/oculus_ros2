@@ -19,17 +19,17 @@
 class SonarViewer
 {
 public:
-    // SonarViewer();
-    SonarViewer(rclcpp::Node::SharedPtr &node);
+    // SonarViewer(bool *arg);
+    SonarViewer(rclcpp::Node *node);
     ~SonarViewer();
     // void stream_and_filter(const oculus::PingMessage::ConstPtr &ping);
     // sensor_msgs::msg::Image publish_fan(const oculus::PingMessage::ConstPtr &ping);
 
-    private:
+private:
     //     //   sensor_msgs::ImagePtr msg;
     //     cv::Mat data;
-        const rclcpp::Node::SharedPtr node_;
-        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_;
+    const rclcpp::Node *node_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_;
 };
 
 #endif /* SONAR_VIEWER_H */
