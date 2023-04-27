@@ -5,16 +5,16 @@
 // }
 SonarViewer::SonarViewer(rclcpp::Node *node) : node_(node)
 {
-    publisher_ = node->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
+    image_publisher_ = node->create_publisher<sensor_msgs::msg::Image>("image", 10);
 }
 SonarViewer::~SonarViewer() {}
 
-void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping)
+// void SonarViewer::stream_and_filter(const int &width, const int &height, const int &offset, const std::vector<uint8_t> &ping_data, cv::Mat &data)
+void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping, cv::Mat &data)
 {
     int width = ping->bearing_count();
     int height = ping->range_count();
-    int offset = 0; // TODO(hugoyvrn)
-    // int offset = ping->imageOffset();
+    int offset = ping->ping_data_offset();
 
     cv::Mat rawDataMat = cv::Mat(height, (width + 4), CV_8U);
 #pragma omp parallel for collapse(2)
@@ -166,18 +166,27 @@ int grid_presence_counter[36][25] = {0};
 int grid_absence_counter[36][25] = {0};
 int frames_counter = 0;
 
-void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr &ping)
+void SonarViewer::publish_fan(const oculus_interfaces::msg::Ping &ros_ping_msg) const
 {
-    int width = ping->bearing_count();
-    int height = ping->range_count();
-    int offset = 0; // TODO(hugoyvrn)
-    // int offset = ping->imageOffset();
+    // const int offset = ping->ping_data_offset();
+    const int offset = 0; // TODO(hugoyvrn)
+    publish_fan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode, ros_ping_msg.range);
+}
+
+void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr &ping) const
+{
+    publish_fan(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(), ping->range());
+}
+
+void SonarViewer::publish_fan(const int &width, const int &height, const int &offset, const std::vector<uint8_t> &ping_data, const int &master_mode, const double &ping_range) const
+{
+    cv::Mat data;
 
     cv::Mat rawDataMat = cv::Mat(height, (width + 4), CV_8U); // 413 256+4
 #pragma omp parallel for collapse(2)
     for (int i = 0, k = offset; i < height; i++)
         for (int j = 0; j < (width + 4); j++)
-            rawDataMat.at<uint8_t>(i, j) = ping->data()[k++]; // TODO(hugoyvrn, seams wront to me)
+            rawDataMat.at<uint8_t>(i, j) = ping_data[k++]; // TODO(hugoyvrn, seams wront to me)
 
     data = cv::Mat(height, width, CV_32F); // 413 256
 #pragma omp parallel for collapse(2)
@@ -240,15 +249,11 @@ void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr &ping)
     cv::resize(data, data_resized, data.size()*3);
     cv::imshow("data", data_resized);*/
 
-    // Publish sonar image
-    sensor_msgs::msg::Image msg;
-    // msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono8", data).toImageMsg(); // TODO(hugoyvrn, "mono8"? Really?)
-    std_msgs::msg::Header _header;
-    cv_bridge::CvImage _cv_bridge = cv_bridge::CvImage(_header, sensor_msgs::image_encodings::MONO8, data);
-    _cv_bridge.toImageMsg(msg);
-    RCLCPP_INFO_STREAM(node_->get_logger(), "I am going to publish" );
-    publisher_->publish(msg);
-    RCLCPP_INFO_STREAM(node_->get_logger(), "Published");
+    // // Publish sonar cartesian image
+    // sensor_msgs::msg::Image msg;
+    // cv_bridge::CvImage(std_msgs::msg::Header(), "mono8", data).toImageMsg(msg); // TODO(hugoyvrn, "mono8"? Really?)
+    // std_msgs::msg::Header _header;
+    // image_publisher_->publish(msg);
 
     /*cv::Mat mat_threshold;
     cv::adaptiveThreshold(data, mat_threshold, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 9, 3);
@@ -304,14 +309,22 @@ void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr &ping)
     cv::imshow("obstacles_mat resize", obstacles_mat_resized);*/
 
     int bearing = 40;
-    if (ping->master_mode() == 1)
+    if (master_mode == 1)
         bearing = 65;
     else
         bearing = 40;
 
-    std::vector<double> ranges = linspace(0., (double)ping->range(), height);
+    std::vector<double> ranges = linspace(0., (double)ping_range, height);
     int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
     cv::Mat mat = cv::Mat::zeros(cv::Size(image_width, ranges.size()), CV_8UC3);
+
+    // for (int i = 0; i < image_width; i++)
+    // {
+    //     for (int j = 0; j < ranges.size(); j++)
+    //     {
+    //         mat.at<cv::Vec3b>(j, i) = cv::Vec3b(0, 0, 255);
+    //     }
+    // }
 
     const float ThetaShift = 1.5 * 180;
     const cv::Point origin(image_width / 2, ranges.size());
@@ -350,6 +363,13 @@ void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr &ping)
             for (int d = 0; d < arc_points.size(); d++)
                 mat.at<cv::Vec3b>(arc_points[d]) = cv::Vec3b(0, 0, 255);
     }
+
+    // Publish sonar conic image
+    sensor_msgs::msg::Image msg;
+    cv_bridge::CvImage(std_msgs::msg::Header(), "rgb8", mat).toImageMsg(msg); // TODO(hugoyvrn, "mono8"? Really?)
+    std_msgs::msg::Header _header;
+    image_publisher_->publish(msg);
+
     // concatenate - saving video
     /*cv::Mat concatenate;
     cv::hconcat(datav0_resized, data, concatenate);

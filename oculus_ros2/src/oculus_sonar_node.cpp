@@ -145,16 +145,16 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
 
     this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(
         topics_prefix + declare_parameter<std::string>("status_topic", std::string("status")),
-        100);
+        1);
     this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>(
         topics_prefix + declare_parameter<std::string>("ping_topic", std::string("ping")),
-        100);
+        1);
     this->temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>(
         topics_prefix + declare_parameter<std::string>("temperature_topic", std::string("temperature")),
-        100); // TODO(hugoyvrn, size of the queue?)
+        1); // TODO(hugoyvrn, size of the queue?)
     this->pressure_publisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>(
         topics_prefix + declare_parameter<std::string>("pressure_topic", std::string("pressure")),
-        100); // TODO(hugoyvrn, size of the queue?)
+        1); // TODO(hugoyvrn, size of the queue?)
 
     // image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
 
@@ -282,7 +282,7 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
     pressure_ros_msg.variance = 0;                  // 0 is interpreted as variance unknown
     this->pressure_publisher_->publish(pressure_ros_msg);
 
-    // this->image_publisher_->publish(sonar_viewer.publish_fan(ping));
+    // this->image_publisher_->publish(sonar_viewer.fan_image(ping));
     sonar_viewer.publish_fan(ping);
 
     update_ros_config();

@@ -31,6 +31,10 @@ add_executable(oculus_sonar_node
     src/oculus_sonar_node.cpp
     src/sonar_viewer.cpp
 )
+add_executable(oculus_viewer_node
+    src/oculus_viewer_node.cpp
+    src/sonar_viewer.cpp
+)
 
 # target_include_directories(oculus_sonar_node PRIVATE
 #   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -42,13 +46,28 @@ target_link_libraries(oculus_sonar_node PRIVATE
   ${ament_LIBRARIES}
     oculus_driver
 )
+target_link_libraries(oculus_viewer_node PRIVATE
+  ${OpenCV_LIBRARIES}
+  ${ament_LIBRARIES}
+    oculus_driver
+)
 target_compile_features(oculus_sonar_node PRIVATE cxx_std_17)
+target_compile_features(oculus_viewer_node PRIVATE cxx_std_17)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(oculus_sonar_node PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(oculus_viewer_node PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 ament_target_dependencies(oculus_sonar_node PUBLIC
+    rclcpp
+    oculus_interfaces
+    rcl_interfaces
+    sensor_msgs
+    OpenCV
+    cv_bridge
+)
+ament_target_dependencies(oculus_viewer_node PUBLIC
     rclcpp
     oculus_interfaces
     rcl_interfaces
@@ -82,6 +101,7 @@ install(DIRECTORY
 
 install(TARGETS
     oculus_sonar_node
+    oculus_viewer_node
     DESTINATION lib/${PROJECT_NAME}
 )
 

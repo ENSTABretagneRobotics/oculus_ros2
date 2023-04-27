@@ -22,16 +22,17 @@ public:
     // SonarViewer(bool *arg);
     SonarViewer(rclcpp::Node *node);
     ~SonarViewer();
-    void publish_fan(const oculus::PingMessage::ConstPtr &ping);
-    void stream_and_filter(const oculus::PingMessage::ConstPtr &ping);
+    void publish_fan(const oculus::PingMessage::ConstPtr &ping) const;
+    void publish_fan(const oculus_interfaces::msg::Ping &ros_ping_msg) const;
+    void publish_fan(const int &width, const int &height, const int &offset, const std::vector<uint8_t> &ping_data, const int &master_mode, const double &ping_rage) const;
+    void stream_and_filter(const oculus::PingMessage::ConstPtr &ping, cv::Mat &data);
     // void stream_and_filter(const oculus::PingMessage::ConstPtr &ping);
     // sensor_msgs::msg::Image publish_fan(const oculus::PingMessage::ConstPtr &ping);
 
 private:
     //     //   sensor_msgs::ImagePtr msg;
-    cv::Mat data;
     const rclcpp::Node *node_;
-    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
 };
 
 template <typename T>
