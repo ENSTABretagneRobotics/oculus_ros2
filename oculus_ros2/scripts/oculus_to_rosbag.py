@@ -86,8 +86,8 @@ class RosBagCreator:
     def custom_clock(self, nanoseconds=None):
         """
         Return a ros time (rclpy.time.Time) with a custom time.
-        Clock().now() or custom_clock(nanoseconds=None) retrun a ros
-        time (rclpy.time.Time) with the current time while runing the
+        Clock().now() or custom_clock(nanoseconds=None) return a ros
+        time (rclpy.time.Time) with the current time while running the
         script.
 
         Args:
@@ -136,7 +136,7 @@ class Oculus_parser(RosBagCreator):
             "--secondsoffset",
             type=float,
             default=0,
-            help="Set a time offset in seconds. Useful to handle time lignes to utc. A secondsoffset of 1 will write the rosbag 1s later that writen in the .oculus file. Default to 0",
+            help="Set a time offset in seconds. Useful to handle time lignes to utc. A secondsoffset of 1 will write the rosbag 1s later that written in the .oculus file. Default to 0",
         )
         # TODO
         parser.add_argument(
@@ -144,7 +144,7 @@ class Oculus_parser(RosBagCreator):
             "--startingtime",
             type=float,
             default=0,
-            help="Nombre of seconds since the Epoch for the rosbag startingtime. No data timestamped before startingtime will be taken into acount. Default to None.",
+            help="Nombre of seconds since the Epoch for the rosbag startingtime. No data timestamped before startingtime will be taken into account. Default to None.",
         )
         # TODO
         parser.add_argument(
@@ -152,7 +152,7 @@ class Oculus_parser(RosBagCreator):
             "--endingtime",
             type=float,
             default=0,
-            help="Nombre of seconds since the Epoch for the rosbag endingtime. No data timestamped after endingtime will be taken into acount. Default to None.",
+            help="Nombre of seconds since the Epoch for the rosbag endingtime. No data timestamped after endingtime will be taken into account. Default to None.",
         )
         parser.add_argument(
             "--topicname",

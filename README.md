@@ -47,16 +47,16 @@ source install/setup.bash
 
 github : https://github.com/ENSTABretagneRobotics/oculus_driver
 
-This library follows a standard CMake compilation procedure. To use oculus_driver you have two pssibility :
+This library follows a standard CMake compilation procedure. To use oculus_driver you have two possibility :
 
-#### Let colcon handle the dependancy
+#### Let colcon handle the dependency
 In the packages CMakeList.txt the lines:
 ```cmake
 if(NOT TARGET oculus_driver)
     include(FetchContent)
     FetchContent_Declare(oculus_driver
         GIT_REPOSITORY https://github.com/ENSTABretagneRobotics/oculus_driver.git
-        GIT_TAG master # tag for developpement : TODO handle the good version
+        GIT_TAG master # tag for development : TODO handle the good version
     )
     FetchContent_MakeAvailable(oculus_driver)
 endif()
@@ -65,11 +65,11 @@ clone the github repository during the `colcon build` compilation.
 
 #### Clone your self the oculus_driver library
 
-In your install directory in `<your install location>`(for exemple: `~/work/my_user`) clone the repository:
+In your install directory in `<your install location>`(for example: `~/work/my_user`) clone the repository:
 ```bash
 git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
 cd oculus_driver
-git switch master # for developement
+git switch master # for development
 ```
 handle the git branch as you want. Please keep in mind you have to pull the reposetory yourself to keep up to date.
 

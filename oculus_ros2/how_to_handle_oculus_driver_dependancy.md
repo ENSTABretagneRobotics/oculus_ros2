@@ -84,7 +84,7 @@ install(PROGRAMS
 
 If you specify the RENAME option directly after the file without separating them with a newline or semicolon, CMake will interpret it as part of the file name, which will result in an error.
 hugo.yverneau@gmail.com
-To run my script I have to get those dependecy :
+To run my script I have to get those dependency :
 ```bash
 git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
 ```
@@ -93,7 +93,7 @@ In /oculus_driver/python
 cd oculus_driver/python
 pip3 install --user -e .
 ```
-How can I automatise thi in a `CMakeList.txt` in order to not have to clone my self the git repo
+How can I automatise this in a `CMakeList.txt` in order to not have to clone my self the git repo
 
 To automate the process of installing dependencies for your script, you can use the FetchContent module in CMake. The FetchContent module allows you to download and install external dependencies as part of your CMake build process.
 

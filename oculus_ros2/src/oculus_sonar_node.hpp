@@ -1,10 +1,13 @@
-#ifndef OCULUS_SONAR_NODE_H
-#define OCULUS_SONAR_NODE_H
+#ifndef OCULUS_SONAR_NODE_HPP_
+#define OCULUS_SONAR_NODE_HPP_
 
 #include <iostream>
 #include <sstream>
 #include <thread>
 #include <future>
+#include <memory>
+#include <vector>
+#include <string>
 
 #include "rclcpp/rclcpp.hpp"
 
@@ -18,13 +21,13 @@
 #include "sensor_msgs/msg/temperature.hpp"
 #include "sensor_msgs/msg/fluid_pressure.hpp"
 
-#include "sonar_viewer.h"
+#include "sonar_viewer.hpp"
 
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 
 typedef struct
 {
-  std::string frame_id;
+  std::string frame_id;  // TODO(hugyvrn)
   int frequency_mode;
   int ping_rate;
   int data_depth;
@@ -45,19 +48,31 @@ public:
   ~OculusSonarNode();
 
 protected:
-  const std::vector<std::string> dynamic_parameters_names{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist", "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "standby"};
+  const std::vector<std::string> dynamic_parameters_names{
+      "frequency_mode",
+      "ping_rate",
+      "data_depth",
+      "nbeams",
+      "gain_assist",
+      "range ",
+      "gamma_correction",
+      "gain_percent",
+      "sound_speed",
+      "use_salinity",
+      "salinity",
+      "standby"};
   rosParameters currentSonarParameters;
   rosParameters currentRosParameters;
   oculus::SonarDriver::PingConfig currentConfig;
 
-  bool is_in_standby_mode; // Same value as ros paramater "standby"
+  bool is_in_standby_mode;  // Same value as ros parameter "standby"
 
-  mutable std::shared_mutex param_mutex; ///< multithreading protection
+  mutable std::shared_mutex param_mutex;  ///< multithreading protection
 
 private:
   std::shared_ptr<oculus::SonarDriver> sonar_driver_;
   oculus::AsyncService io_service_;
-  // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
+   // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
   SonarViewer sonar_viewer;
   const std::string frame_id;
   const std::string topics_prefix;
@@ -71,12 +86,19 @@ private:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_{nullptr};
 
   template <class T>
-  void update_ros_config_for_param(T &currentSonar_param, const T &new_param, const std::string &ros_param_name, const std::string &param_name);
+  void update_ros_config_for_param(T &currentSonar_param,
+                                   const T &new_param,
+                                   const std::string &ros_param_name,
+                                   const std::string &param_name);
   template <class T>
   void update_ros_config_for_param(T &currentSonar_param, const T &new_param, const std::string &param_name);
   void update_ros_config();
   template <class T>
-  void handle_feedback_for_param(rcl_interfaces::msg::SetParametersResult &result, const rclcpp::Parameter &param, const T &old_val, const T &new_val, const std::string &param_name, const std::string &param_name_to_display = std::string()) const;
+  void handle_feedback_for_param(rcl_interfaces::msg::SetParametersResult &result,
+                                 const rclcpp::Parameter &param,
+                                 const T &old_val,
+                                 const T &new_val, const std::string &param_name,
+                                 const std::string &param_name_to_display = std::string()) const;
   void update_parameters(rosParameters &parameters, const std::vector<rclcpp::Parameter> &new_parameters);
   void update_parameters(rosParameters &parameters, oculus::SonarDriver::PingConfig feedback);
   void send_param_to_sonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result);
@@ -94,7 +116,10 @@ void OculusSonarNode::update_ros_config_for_param(T &currentSonar_param, const T
 }
 
 template <class T>
-void OculusSonarNode::update_ros_config_for_param(T &currentSonar_param, const T &new_param, const std::string &ros_param_name, const std::string &param_name)
+void OculusSonarNode::update_ros_config_for_param(T &currentSonar_param,
+                                                  const T &new_param,
+                                                  const std::string &ros_param_name,
+                                                  const std::string &param_name)
 {
   if (currentSonar_param != new_param)
   {
@@ -107,25 +132,31 @@ void OculusSonarNode::update_ros_config_for_param(T &currentSonar_param, const T
 }
 
 template <class T>
-void OculusSonarNode::handle_feedback_for_param(rcl_interfaces::msg::SetParametersResult &result, const rclcpp::Parameter &param, const T &old_val, const T &new_val, const std::string &param_name, const std::string &param_name_to_display) const
+void OculusSonarNode::handle_feedback_for_param(rcl_interfaces::msg::SetParametersResult &result,
+                                                const rclcpp::Parameter &param,
+                                                const T &old_val,
+                                                const T &new_val,
+                                                const std::string &param_name,
+                                                const std::string &param_name_to_display) const
 {
-
   if (old_val != new_val)
   {
     std::string param_name_to_display_ = param_name_to_display == "" ? param_name : param_name_to_display;
     if (param.get_name() == param_name)
     {
-      // if (parameters.size() == 1)
+       // if (parameters.size() == 1)
       result.successful = false;
       RCLCPP_WARN_STREAM(this->get_logger(), "Could not update " << param_name_to_display_);
       result.reason.append("Could not update " + param_name_to_display_ + ".\n");
     }
     else
     {
-      RCLCPP_WARN_STREAM(this->get_logger(), param_name_to_display_ << " change from " << old_val << " to " << new_val << " when updating the parameter " << param.get_name());
+      RCLCPP_WARN_STREAM(this->get_logger(), param_name_to_display_ << " change from "
+                                                                    << old_val << " to " << new_val
+                                                                    << " when updating the parameter " << param.get_name());
       result.reason.append(param_name_to_display_ + " change.\n");
     }
   }
 }
 
-#endif /* OCULUS_SONAR_NODE_H */
+#endif  // OCULUS_SONAR_NODE_HPP_

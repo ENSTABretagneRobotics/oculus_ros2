@@ -41,7 +41,7 @@ void SonarPublisher::ping_callback(const oculus_sonar::OculusPing &ping)
     int offset = ping.imageOffset;
 
     cv::Mat rawDataMat = cv::Mat(height, (width + 4), CV_8U);
-    // #pragma omp parallel for collapse(2)
+     // #pragma omp parallel for collapse(2)
     for (int i = 0, k = offset; i < height; i++)
         for (int j = 0; j < (width + 4); j++)
             rawDataMat.at<uint8_t>(i, j) = ping.data[k++];
@@ -61,7 +61,7 @@ void SonarPublisher::ping_callback(const oculus_sonar::OculusPing &ping)
 
     cv::Mat beam(1, img.cols, CV_64F, cv::Scalar::all(0));
 
-    // set the values of the beam
+     // set the values of the beam
     int num_values = img.cols / 20;
     double values[num_values];
     for (int i = 0; i < num_values / 2; i++)
@@ -72,7 +72,7 @@ void SonarPublisher::ping_callback(const oculus_sonar::OculusPing &ping)
     for (int i = 0; i < num_values; i++)
         beam.at<double>(0, i * img.cols / num_values) = values[i];
 
-    // normalize the beam
+     // normalize the beam
     cv::Mat psf = (1.0 / cv::sum(beam)[0]) * beam;
 
     int kw = psf.rows;
@@ -80,7 +80,7 @@ void SonarPublisher::ping_callback(const oculus_sonar::OculusPing &ping)
     cv::Mat psf_padded = cv::Mat::zeros(img.size(), img.type());
     psf.copyTo(psf_padded(cv::Rect(0, 0, kh, kw)));
 
-    // compute (padded) psf's DFT
+     // compute (padded) psf's DFT
     cv::Mat psf_f;
     cv::dft(psf_padded, psf_f, cv::DFT_COMPLEX_OUTPUT, kh);
 
@@ -94,9 +94,9 @@ void SonarPublisher::ping_callback(const oculus_sonar::OculusPing &ping)
     {
         for (int j = 0; j < psf_f.cols; j++)
         {
-            // compute element-wise division
+             // compute element-wise division
             cv::Vec2d val = psf_f.at<cv::Vec2d>(i, j) / (psf_f_2.at<double>(i, j) + noise);
-            // store result in ipsf_f
+             // store result in ipsf_f
             ipsf_f.at<cv::Vec2d>(i, j) = val;
         }
     }
@@ -108,7 +108,7 @@ void SonarPublisher::ping_callback(const oculus_sonar::OculusPing &ping)
 
     cv::Mat result_shifted_rows(result.size(), result.type());
     int shift = ceil(kw / 2.0);
-    // similar to roll with shift = -1
+     // similar to roll with shift = -1
     for (int i = 0; i < result.rows; i++)
         result.row(i).copyTo(result_shifted_rows.row((i + shift) % result_shifted_rows.rows));
 
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "oculus_viewer", ros::init_options::NoSigintHandler);
     SonarPublisher pub;
 
-    // Display display;
+     // Display display;
     ros::Rate loopRate(10);
     while (1)
     {

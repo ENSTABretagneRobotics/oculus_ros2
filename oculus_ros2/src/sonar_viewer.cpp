@@ -1,4 +1,4 @@
-#include "sonar_viewer.h"
+#include "sonar_viewer.hpp"
 
 // SonarViewer::SonarViewer(bool *arg)
 // {
@@ -9,7 +9,11 @@ SonarViewer::SonarViewer(rclcpp::Node *node) : node_(node)
 }
 SonarViewer::~SonarViewer() {}
 
-// void SonarViewer::stream_and_filter(const int &width, const int &height, const int &offset, const std::vector<uint8_t> &ping_data, cv::Mat &data)
+// void SonarViewer::stream_and_filter(const int &width,
+//                                     const int &height,
+//                                     const int &offset,
+//                                     const std::vector<uint8_t> &ping_data,
+//                                     cv::Mat &data)
 void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping, cv::Mat &data)
 {
     int width = ping->bearing_count();
@@ -20,10 +24,10 @@ void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping, c
 #pragma omp parallel for collapse(2)
     for (int i = 0, k = offset; i < height; i++)
         for (int j = 0; j < (width + 4); j++)
-            rawDataMat.at<uint8_t>(i, j) = ping->data()[k++]; // TODO(hugoyvrn) Seems wrong for me
+            rawDataMat.at<uint8_t>(i, j) = ping->data()[k++];  // TODO(hugoyvrn) Seems wrong for me
 
     data = cv::Mat(height, width, CV_64F);
-#pragma omp parallel for collapse(2) // TODO(hugoyvrn)
+#pragma omp parallel for collapse(2)  // TODO(hugoyvrn)
     for (int i = 0; i < height; i++)
         for (int j = 4; j < width + 4; j++)
             data.at<double>(i, j - 4) = rawDataMat.at<uint8_t>(i, j);
@@ -37,7 +41,7 @@ void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping, c
 
     cv::Mat beam(1, img.cols, CV_64F, cv::Scalar::all(0));
 
-    // set the values of the beam
+     // set the values of the beam
     int num_values = img.cols / 20;
     double values[num_values];
     for (int i = 0; i < num_values / 2; i++)
@@ -48,7 +52,7 @@ void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping, c
     for (int i = 0; i < num_values; i++)
         beam.at<double>(0, i * img.cols / num_values) = values[i];
 
-    // normalize the beam
+     // normalize the beam
     cv::Mat psf = (1.0 / cv::sum(beam)[0]) * beam;
 
     int kw = psf.rows;
@@ -56,7 +60,7 @@ void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping, c
     cv::Mat psf_padded = cv::Mat::zeros(img.size(), img.type());
     psf.copyTo(psf_padded(cv::Rect(0, 0, kh, kw)));
 
-    // compute (padded) psf's DFT
+     // compute (padded) psf's DFT
     cv::Mat psf_f;
     cv::dft(psf_padded, psf_f, cv::DFT_COMPLEX_OUTPUT, kh);
 
@@ -70,9 +74,9 @@ void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping, c
     {
         for (int j = 0; j < psf_f.cols; j++)
         {
-            // compute element-wise division
+             // compute element-wise division
             cv::Vec2d val = psf_f.at<cv::Vec2d>(i, j) / (psf_f_2.at<double>(i, j) + noise);
-            // store result in ipsf_f
+             // store result in ipsf_f
             ipsf_f.at<cv::Vec2d>(i, j) = val;
         }
     }
@@ -84,7 +88,7 @@ void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr &ping, c
 
     cv::Mat result_shifted_rows(result.size(), result.type());
     int shift = ceil(kw / 2.0);
-    // similar to roll with shift = -1
+     // similar to roll with shift = -1
     for (int i = 0; i < result.rows; i++)
         result.row(i).copyTo(result_shifted_rows.row((i + shift) % result_shifted_rows.rows));
 
@@ -169,7 +173,7 @@ int frames_counter = 0;
 void SonarViewer::publish_fan(const oculus_interfaces::msg::Ping &ros_ping_msg) const
 {
     // const int offset = ping->ping_data_offset();
-    const int offset = 229; // TODO(hugoyvrn)
+    const int offset = 229;  // TODO(hugoyvrn)
     publish_fan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode, ros_ping_msg.range);
 }
 
@@ -178,7 +182,12 @@ void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr &ping) const
     publish_fan(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(), ping->range());
 }
 
-void SonarViewer::publish_fan(const int &width, const int &height, const int &offset, const std::vector<uint8_t> &ping_data, const int &master_mode, const double &ping_range) const
+void SonarViewer::publish_fan(const int &width,
+                              const int &height,
+                              const int &offset,
+                              const std::vector<uint8_t> &ping_data,
+                              const int &master_mode,
+                              const double &ping_range) const
 {
     // Create rawDataMat from ping_data
     cv::Mat rawDataMat(height, (width + 4), CV_8U);
@@ -215,15 +224,17 @@ void SonarViewer::publish_fan(const int &width, const int &height, const int &of
         for (size_t k = 0; k < arc_points.size(); k++)
             mat.at<cv::Vec3b>(arc_points[k])[1] = data_rows_resized.at<uint8_t>(1, k);
 
-        // Draw cone contours
+         // Draw cone contours
         mat.at<cv::Vec3b>(arc_points[0]) = cv::Vec3b(0, 0, 255);
         mat.at<cv::Vec3b>(*(arc_points.end() - 1)) = cv::Vec3b(0, 0, 255);
         if (r == (ranges.size() - 1))
+        {
             for (size_t d = 0; d < arc_points.size(); d++)
                 mat.at<cv::Vec3b>(arc_points[d]) = cv::Vec3b(0, 0, 255);
+        }
     }
 
-    // Publish sonar conic image
+     // Publish sonar conic image
     sensor_msgs::msg::Image msg;
     cv_bridge::CvImage(std_msgs::msg::Header(), "rgb8", mat).toImageMsg(msg);
     image_publisher_->publish(msg);

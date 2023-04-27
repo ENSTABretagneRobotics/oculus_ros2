@@ -2,7 +2,7 @@ std_msgs/Header header
 
 uint32  ping_id              # incrementing counter inside the sonar
 uint32  ping_firing_date      # Ping firing date (sonar internal clock, microseconds)
-                            # /!\ Will overlap in a bit more than 1h. Ths sonar
+                            # /!\ Will overlap in a bit more than 1h. The sonar
                             # itself gives this value in 32bits. Maximum
                             # number of usec in 32bits gives ~ 1h.
 

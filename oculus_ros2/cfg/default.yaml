@@ -3,11 +3,11 @@ oculus_sonar:
     frame_id: "e" # Frame of reference for the ping messages. Default value is "oculus_sonar".
 
 
-    topics_prefix: "sonar/" # Name of the temperatur topic. Default value is "".
-    status_topic: "status" # Name of the temperatur topic. Default value is "status".
-    ping_topic: "ping" # Name of the temperatur topic. Default value is "ping".
-    temperature_topic: "temperature" # Name of the temperatur topic. Default value is "temperature".
-    pressure_topic: "pressure" # Name of the temperatur topic. Default value is "pressure".
+    topics_prefix: "sonar/" # Name of the temperature topic. Default value is "".
+    status_topic: "status" # Name of the temperature topic. Default value is "status".
+    ping_topic: "ping" # Name of the temperature topic. Default value is "ping".
+    temperature_topic: "temperature" # Name of the temperature topic. Default value is "temperature".
+    pressure_topic: "pressure" # Name of the temperature topic. Default value is "pressure".
 
 
     temperature_warn: 30.5

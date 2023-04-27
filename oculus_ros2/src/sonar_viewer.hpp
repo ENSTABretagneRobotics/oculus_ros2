@@ -1,7 +1,10 @@
-#ifndef SONAR_VIEWER_H
-#define SONAR_VIEWER_H
+#ifndef SONAR_VIEWER_HPP_
+#define SONAR_VIEWER_HPP_
 
 #include <iostream>
+#include <vector>
+#include <algorithm>
+#include <string>
 
 #include "rclcpp/rclcpp.hpp"
 
@@ -19,18 +22,23 @@
 class SonarViewer
 {
 public:
-    // SonarViewer(bool *arg);
-    SonarViewer(rclcpp::Node *node);
+     // SonarViewer(bool *arg);
+    explicit SonarViewer(rclcpp::Node *node);
     ~SonarViewer();
     void publish_fan(const oculus::PingMessage::ConstPtr &ping) const;
     void publish_fan(const oculus_interfaces::msg::Ping &ros_ping_msg) const;
-    void publish_fan(const int &width, const int &height, const int &offset, const std::vector<uint8_t> &ping_data, const int &master_mode, const double &ping_rage) const;
+    void publish_fan(const int &width,
+                     const int &height,
+                     const int &offset,
+                     const std::vector<uint8_t> &ping_data,
+                     const int &master_mode,
+                     const double &ping_rage) const;
     void stream_and_filter(const oculus::PingMessage::ConstPtr &ping, cv::Mat &data);
-    // void stream_and_filter(const oculus::PingMessage::ConstPtr &ping);
-    // sensor_msgs::msg::Image publish_fan(const oculus::PingMessage::ConstPtr &ping);
+     // void stream_and_filter(const oculus::PingMessage::ConstPtr &ping);
+     // sensor_msgs::msg::Image publish_fan(const oculus::PingMessage::ConstPtr &ping);
 
 private:
-    //     //   sensor_msgs::ImagePtr msg;
+     //      //   sensor_msgs::ImagePtr msg;
     const rclcpp::Node *node_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
 };
@@ -60,9 +68,9 @@ std::vector<double> linspace(T start_in, T end_in, int num_in)
     {
         linspaced.push_back(start + delta * i);
     }
-    linspaced.push_back(end); // I want to ensure that start and end
-                              // are exactly the same as the input
+    linspaced.push_back(end);  // I want to ensure that start and end
+                               // are exactly the same as the input
     return linspaced;
 }
 
-#endif /* SONAR_VIEWER_H */
+#endif  // SONAR_VIEWER_HPP_

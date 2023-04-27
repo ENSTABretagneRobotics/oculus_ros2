@@ -1,5 +1,5 @@
-#ifndef _DEF_OCULUS_ROS_CONVERSIONS_H_
-#define _DEF_OCULUS_ROS_CONVERSIONS_H_
+#ifndef CONVERSIONS_H_
+#define CONVERSIONS_H_
 
 #include <oculus_driver/Oculus.h>
 #include <oculus_driver/OculusMessage.h>
@@ -13,7 +13,6 @@
 
 #include <rclcpp/rclcpp.hpp>
 // #include <sensor_msgs/Image.h>
-
 
 namespace oculus
 {
@@ -140,6 +139,6 @@ namespace oculus
         msg.ping_data = ping->data();
     }
 
-} // namespace oculus
+}  // namespace oculus
 
-#endif //_DEF_OCULUS_ROS_CONVERSIONS_H_
+#endif  // CONVERSIONS_H_
