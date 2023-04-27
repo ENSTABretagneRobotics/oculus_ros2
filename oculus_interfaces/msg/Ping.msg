@@ -33,7 +33,7 @@ int16[] bearings            # Bearing angle of each column of the sonar data
                             # The sonar image is not sampled uniformly in the
                             # bearing direction.
 
-uint8[] ping_data            # Ping data (is a row major image in little-endian). 
+uint8[] ping_data            # Ping data (is a row major image in little-endian).
                             # Size in bytes of each pixel is given in the
                             # sampleSize field. The size in bytes of each line
                             # is given in the step field.  If the hasGains

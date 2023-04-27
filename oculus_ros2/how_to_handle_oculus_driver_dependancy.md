@@ -1,6 +1,6 @@
 # Question to chatGPT on https://chat.openai.com/chat
 
-I have 
+I have
 ```cmake
 install(PROGRAMS
     src/my_python_script.py
@@ -33,7 +33,7 @@ install(PROGRAMS
 
 This will cause CMake to install script1.py as new_script1.py and script2.py with its original name in the bin directory. Note that the RENAME option only applies to the file immediately preceding it, so you should specify the RENAME option immediately after the file you want to rename.
 hugo.yverneau@gmail.com
-Can I do  
+Can I do
 ```cmake
 install(PROGRAMS
     src/script2.py
@@ -84,7 +84,7 @@ install(PROGRAMS
 
 If you specify the RENAME option directly after the file without separating them with a newline or semicolon, CMake will interpret it as part of the file name, which will result in an error.
 hugo.yverneau@gmail.com
-To run my script I have to get those dependecy : 
+To run my script I have to get those dependecy :
 ```bash
 git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
 ```
@@ -127,7 +127,7 @@ In this example, the FetchContent_Declare command declares the oculus_driver rep
 
 When you build your project, CMake will automatically download and install the oculus_driver repository as a dependency for your script, so you don't have to clone it manually.
 hugo.yverneau@gmail.com
-But where you are doing the 
+But where you are doing the
 ```bash
 pip3 install --user -e .
 ```
@@ -249,7 +249,7 @@ cmake -DMODIFY_PIP=OFF ..
 
 Using the `message()
 hugo.yverneau@gmail.com
-I don't want to ask any thing to the user if the `pip3 install --user -e .` command is already done, can I verify it before asking ? 
+I don't want to ask any thing to the user if the `pip3 install --user -e .` command is already done, can I verify it before asking ?
 
 Yes, you can verify if the pip3 install --user -e . command has already been executed before asking the user for permission to modify their pip installation. To do this, you can use the find_package() command in CMake to check if the oculus_driver package is already installed, and only ask the user for permission to modify their pip installation if the package is not found.
 

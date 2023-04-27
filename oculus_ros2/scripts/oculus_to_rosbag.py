@@ -53,7 +53,7 @@ class RosBagCreator:
     RosBagCreator allow to create rosbags.
     """
 
-    def __init__(self, output_pass='bag_test'):
+    def __init__(self, output_pass="bag_test"):
         """
         Create a write for rosbag writing.
 
@@ -64,12 +64,12 @@ class RosBagCreator:
         self.writer = rosbag2_py.SequentialWriter()
 
         storage_options = rosbag2_py._storage.StorageOptions(
-            uri=output_pass,
-            storage_id='sqlite3')
-        converter_options = rosbag2_py._storage.ConverterOptions('', '')
+            uri=output_pass, storage_id="sqlite3"
+        )
+        converter_options = rosbag2_py._storage.ConverterOptions("", "")
         self.writer.open(storage_options, converter_options)
 
-    def new_topic(self, name, type, serialization_format='cdr'):
+    def new_topic(self, name, type, serialization_format="cdr"):
         """
         Initialize a new topic.
 
@@ -79,9 +79,8 @@ class RosBagCreator:
             serialization_format (str, optional): _description_. Defaults to 'cdr'.
         """
         topic_info = rosbag2_py._storage.TopicMetadata(
-            name=name,
-            type=type,
-            serialization_format=serialization_format)
+            name=name, type=type, serialization_format=serialization_format
+        )
         self.writer.create_topic(topic_info)
 
     def custom_clock(self, nanoseconds=None):
@@ -104,8 +103,7 @@ class RosBagCreator:
         __clock = _rclpy.Clock(clock_type)
         with Clock().handle:
             rcl_time = __clock.get_now()
-        return Time(nanoseconds=nanoseconds,
-                    clock_type=Clock().clock_type)
+        return Time(nanoseconds=nanoseconds, clock_type=Clock().clock_type)
 
     def publish(self, topic_name, msg, nanoseconds=None):
         """
@@ -119,40 +117,60 @@ class RosBagCreator:
         self.writer.write(
             topic_name,
             serialize_message(msg),
-            self.custom_clock(nanoseconds).nanoseconds
+            self.custom_clock(nanoseconds).nanoseconds,
         )
 
 
 class Oculus_parser(RosBagCreator):
     def __init__(self):
         parser = argparse.ArgumentParser(
-            prog='oculus_to_bag',
-            description='.oculus file parser to rosbag.')
-        parser.add_argument('filename', type=str,
-                            help='Path to a .oculus file to display')
-        parser.add_argument('destination', type=str,
-                            help='Path to the folder to save the rosbag.')
-        parser.add_argument('--secondsoffset', type=float, default=0,
-                            help="Set a time offset in seconds. Useful to handle time lignes to utc. A secondsoffset of 1 will write the rosbag 1s later that writen in the .oculus file. Default to 0")
+            prog="oculus_to_bag", description=".oculus file parser to rosbag."
+        )
+        parser.add_argument(
+            "filename", type=str, help="Path to a .oculus file to display"
+        )
+        parser.add_argument(
+            "destination", type=str, help="Path to the folder to save the rosbag."
+        )
+        parser.add_argument(
+            "--secondsoffset",
+            type=float,
+            default=0,
+            help="Set a time offset in seconds. Useful to handle time lignes to utc. A secondsoffset of 1 will write the rosbag 1s later that writen in the .oculus file. Default to 0",
+        )
         # TODO
-        parser.add_argument('-st', '--startingtime', type=float, default=0,
-                            help='Nombre of seconds since the Epoch for the rosbag startingtime. No data timestamped before startingtime will be taken into acount. Default to None.')
+        parser.add_argument(
+            "-st",
+            "--startingtime",
+            type=float,
+            default=0,
+            help="Nombre of seconds since the Epoch for the rosbag startingtime. No data timestamped before startingtime will be taken into acount. Default to None.",
+        )
         # TODO
-        parser.add_argument('-et', '--endingtime',  type=float, default=0,
-                            help='Nombre of seconds since the Epoch for the rosbag endingtime. No data timestamped after endingtime will be taken into acount. Default to None.')
-        parser.add_argument('--topicname', type=str, default='/sonar/oculus',
-                            help="Set the topic name for oculus message. Default to '/sonar/oculus'")
+        parser.add_argument(
+            "-et",
+            "--endingtime",
+            type=float,
+            default=0,
+            help="Nombre of seconds since the Epoch for the rosbag endingtime. No data timestamped after endingtime will be taken into acount. Default to None.",
+        )
+        parser.add_argument(
+            "--topicname",
+            type=str,
+            default="/sonar/oculus",
+            help="Set the topic name for oculus message. Default to '/sonar/oculus'",
+        )
         self.args = parser.parse_args()
-        self.output_pass = self.args.destination + "/" + \
-            self.args.filename.split("/")[-1][:-7]
+        self.output_pass = (
+            self.args.destination + "/" + self.args.filename.split("/")[-1][:-7]
+        )
         self.output_pass.replace("//", "/")
         self.output_pass.replace("/./", "/")
         super().__init__(self.output_pass)
 
-        print('[oculus_to_bag] Opening', self.args.filename)
+        print("[oculus_to_bag] Opening", self.args.filename)
 
-        self.new_topic(name=self.args.topicname,
-                       type='oculus_interfaces/msg/Ping')
+        self.new_topic(name=self.args.topicname, type="oculus_interfaces/msg/Ping")
 
     def create_ros_oculus_msg(self, ping_msg):
         # print("timestamp",           ping_msg.timestamp())
@@ -192,11 +210,11 @@ class Oculus_parser(RosBagCreator):
 
         ros_msg = Ping()
 
-        seconds = ping_msg.timestamp_micros()*1e-6 + self.args.secondsoffset
+        seconds = ping_msg.timestamp_micros() * 1e-6 + self.args.secondsoffset
         ros_msg.header.stamp.sec = int(seconds)
-        ros_msg.header.stamp.nanosec = int((seconds % 1)*1e9)
+        ros_msg.header.stamp.nanosec = int((seconds % 1) * 1e9)
 
-        ros_msg.header.frame_id = 'sonar'
+        ros_msg.header.frame_id = "sonar"
 
         ros_msg.range = ping_msg.range_resolution()
         ros_msg.gain_percent = ping_msg.gain_percent()
@@ -209,7 +227,9 @@ class Oculus_parser(RosBagCreator):
         ros_msg.has_gains = ping_msg.has_gains()
         ros_msg.n_ranges = ping_msg.range_count()
         ros_msg.n_beams = ping_msg.bearing_count()
-        ros_msg.step = ping_msg.bearing_count()*ping_msg.sample_size() + 4*ping_msg.has_gains()
+        ros_msg.step = (
+            ping_msg.bearing_count() * ping_msg.sample_size() + 4 * ping_msg.has_gains()
+        )
         ros_msg.sample_size = ping_msg.sample_size()
         ros_msg.bearings = ping_msg.bearing_data()
         ros_msg.ping_data = ping_msg.message().data().tolist()
@@ -220,15 +240,18 @@ class Oculus_parser(RosBagCreator):
 
     def parse(self):
 
-        print("[oculus_to_bag] Parsing {} to {}. This may take few seconds.".format(
-            self.args.filename, self.output_pass))
+        print(
+            "[oculus_to_bag] Parsing {} to {}. This may take few seconds.".format(
+                self.args.filename, self.output_pass
+            )
+        )
 
         self.file = OculusFileReader(self.args.filename)
         # this can be called several time to iterate through the pings
         ping_msg = self.file.read_next_ping()
         # will return None when finished
         if ping_msg is None:
-            print('[oculus_to_bag] File seems to be empty. Aborting.')
+            print("[oculus_to_bag] File seems to be empty. Aborting.")
             return
 
         k = 0
@@ -238,13 +261,21 @@ class Oculus_parser(RosBagCreator):
             k += 1
             # print(k)
             elapsed_time = time.perf_counter() - start_time
-            print('[oculus_to_bag] {} pings have been parsed in {:.2f} seconds.'.format(
-                k, elapsed_time), end='\r')
+            print(
+                "[oculus_to_bag] {} pings have been parsed in {:.2f} seconds.".format(
+                    k, elapsed_time
+                ),
+                end="\r",
+            )
 
             ros_msg = self.create_ros_oculus_msg(ping_msg)
 
-            self.publish(topic_name=self.args.topicname,
-                         msg=ros_msg, nanoseconds=ping_msg.timestamp_micros()*1e3 + self.args.secondsoffset*1e9)
+            self.publish(
+                topic_name=self.args.topicname,
+                msg=ros_msg,
+                nanoseconds=ping_msg.timestamp_micros() * 1e3
+                + self.args.secondsoffset * 1e9,
+            )
 
             # this can be called several time to iterate through the pings
             ping_msg = self.file.read_next_ping()
@@ -254,6 +285,6 @@ class Oculus_parser(RosBagCreator):
         print("[oculus_to_bag] File parsing is done")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parseur = Oculus_parser()
     parseur.parse()

@@ -84,7 +84,7 @@ The parameters are :
         1. **Make sur the other parameters did not change.**
         1. Check that the image on the topic `/oculus_sonar/image` is still coherent
         1. Try to change the parameter to a **out of range** new value with ROS CLI (`ros2 param get /oculus_sonar <a_param> <a_new_value>`) or Twith RQT Dynamic Reconfigure GUI.
-            1. Make sur to have a warning 
+            1. Make sur to have a warning
             1. Make sur the parameter value do not change
             1. Make sur the other parameters did not change.
             1. Check that the image on the topic `/oculus_sonar/image` is still coherent
@@ -171,7 +171,7 @@ The parameters are :
 1. Specific parameter test
     - ~~`frequency_mode`  TODO(hugoyvrn, https://forssea-robotics.atlassian.net/browse/ROB-848)~~
         1. ~~Change frequency and make sur the out put image aspect change.~~
-    - `gain_assist` 
+    - `gain_assist`
         1. Set gain assit to true `ros2 param set /oculus_sonar gain_assist True`.
         1. Check that the image has change of aspect compare with out gain assist.
         1. Make some movoment in front of the sonar to see the influence of gain assitant.
@@ -223,6 +223,3 @@ TODO @hugoyvrn
 1. Check they are not any artefacts visible on the image on the topic `/oculus_sonar/image`.
 
 <!-- *Make sur the parameter `send_gain` is set to true before doing other tests.* -->
-
-
-

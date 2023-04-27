@@ -7,11 +7,11 @@ ROS2 node for the Blueprint Subsea Oculus sonar.
 This is a ROS2 metapackage including:
  * A ROS2 package **oculus_interfaces** containing the useful ROS messages definitions,
  * A ROS2 package **oculus_ros2** interfacing the driver messages with ROS2 topics,
- 
+
 ## Requirements
 
 This ROS2 metapackage was developed and tested using:
-* Ubuntu 22.04 LTS 
+* Ubuntu 22.04 LTS
 * ROS2 humble
 * CMake ???
 
@@ -149,7 +149,7 @@ ros2 param list
 ```
 To get a detailed description of a param, for example *ping_rate*, use:
 ```
-ros2 param describe /oculus_sonar ping_rate 
+ros2 param describe /oculus_sonar ping_rate
 ```
 And you get:
 ```
@@ -209,6 +209,3 @@ on Ubuntu).
 
 Most of the issue you ~~might~~ will encounter are related to network setup.
 Check the Network configuration section.
-
-
-

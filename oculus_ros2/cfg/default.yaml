@@ -53,4 +53,3 @@ oculus_sonar:
     salinity: 0.0 # Salinity (in parts per thousand (ppt,ppm,g/kg), used to calculate sound speed if needed), min=0.0, max=100
 
     standby: false # Force standby mode
-

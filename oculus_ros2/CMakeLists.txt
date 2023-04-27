@@ -93,9 +93,9 @@ install(PROGRAMS
     DESTINATION bin
 )
 
-install(DIRECTORY 
-    launch 
-    cfg 
+install(DIRECTORY
+    launch
+    cfg
     DESTINATION share/${PROJECT_NAME}
 )
 
