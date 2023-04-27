@@ -169,7 +169,7 @@ int frames_counter = 0;
 void SonarViewer::publish_fan(const oculus_interfaces::msg::Ping &ros_ping_msg) const
 {
     // const int offset = ping->ping_data_offset();
-    const int offset = 0; // TODO(hugoyvrn)
+    const int offset = 229; // TODO(hugoyvrn)
     publish_fan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode, ros_ping_msg.range);
 }
 
@@ -194,7 +194,7 @@ void SonarViewer::publish_fan(const int &width, const int &height, const int &of
         for (int j = 4; j < width + 4; j++)
             data.at<float>(i, j - 4) = rawDataMat.at<uint8_t>(i, j);
 
-    bool gain_processing = 1;
+    bool gain_processing = 0;
     if (gain_processing)
     {
         cv::Mat gainsMat = cv::Mat(height, 4, CV_32F); // 413 4
@@ -230,6 +230,7 @@ void SonarViewer::publish_fan(const int &width, const int &height, const int &of
 
     data.convertTo(data, CV_8U, 255);
     gammaCorrection(data, data, 1.7);
+
 
     // cv::Size data_size = data.size();
     // cv::resize(data, data, data_size/4);
@@ -328,7 +329,7 @@ void SonarViewer::publish_fan(const int &width, const int &height, const int &of
 
     const float ThetaShift = 1.5 * 180;
     const cv::Point origin(image_width / 2, ranges.size());
-    bool sonar_view = false;
+    bool sonar_view = true;
     // std::cout<<ranges.size()<<std::endl;//362
     for (int r = 0; r < ranges.size() && sonar_view; r++)
     {
@@ -350,7 +351,7 @@ void SonarViewer::publish_fan(const int &width, const int &height, const int &of
         }
         cv::Mat data_rows_resized;
         // cv::resize(data.row(r), data_rows_resized, cv::Size(arc_points.size(),arc_points.size()));
-        cv::resize(obstacles_mat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
+        cv::resize(rawDataMat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
         // cv::resize(mat_threshold.row(r), data_rows_resized, cv::Size(arc_points.size(),arc_points.size()));
         for (int k = 0; k < arc_points.size(); k++)
             // mat.at<uint8_t>(arc_points[k]) = data_rows_resized.at<uint8_t>(1,k);
