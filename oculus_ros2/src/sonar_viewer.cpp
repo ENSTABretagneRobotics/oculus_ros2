@@ -180,57 +180,52 @@ void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr &ping) const
 
 void SonarViewer::publish_fan(const int &width, const int &height, const int &offset, const std::vector<uint8_t> &ping_data, const int &master_mode, const double &ping_range) const
 {
-    cv::Mat data;
+    // Create rawDataMat from ping_data
+    cv::Mat rawDataMat(height, (width + 4), CV_8U);
+    std::memcpy(rawDataMat.data, ping_data.data() + offset, height * (width + 4));
 
-    cv::Mat rawDataMat = cv::Mat(height, (width + 4), CV_8U); // 413 256+4
-    #pragma omp parallel for collapse(2)
-    for (int i = 0, k = offset; i < height; i++)
-        for (int j = 0; j < (width + 4); j++)
-            rawDataMat.at<uint8_t>(i, j) = ping_data[k++]; // TODO(hugoyvrn, seams wront to me)
-
-    int bearing = 40;
-    if (master_mode == 1)
-        bearing = 65;
-
-    std::vector<double> ranges = linspace(0., (double)ping_range, height);
+    int bearing = (master_mode == 1) ? 65 : 40;
+    std::vector<double> ranges = linspace(0., ping_range, height);
     int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
     cv::Mat mat = cv::Mat::zeros(cv::Size(image_width, ranges.size()), CV_8UC3);
 
     const float ThetaShift = 1.5 * 180;
     const cv::Point origin(image_width / 2, ranges.size());
+
     for (int r = 0; r < ranges.size(); r++)
     {
-        const double range = ranges[r];
         std::vector<cv::Point> pts;
         cv::ellipse2Poly(origin, cv::Size(r, r), ThetaShift, -bearing, bearing, 1, pts);
-        std::vector<cv::Point> arc_points; // TODO can the size of arc_points be known!?
+
+        std::vector<cv::Point> arc_points;
         arc_points.push_back(pts[0]);
-        for (int k = 0, s = 1; k < (pts.size() - 1); k++)
+
+        for (size_t k = 0; k < (pts.size() - 1); k++)
         {
             cv::LineIterator it(mat, pts[k], pts[k + 1], 4);
-            it++; // The first pts is already initiated in arc_points.push_back(pts[0]);
-            for (int i = 0; i < it.count; i++, ++it)
+            for (int i = 1; i < it.count; i++, ++it)
             {
-                cv::Point pt = it.pos();
-                arc_points.push_back(pt);
+                arc_points.push_back(it.pos());
             }
         }
+
         cv::Mat data_rows_resized;
         cv::resize(rawDataMat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
-        for (int k = 0; k < arc_points.size(); k++)
+
+        for (size_t k = 0; k < arc_points.size(); k++)
             mat.at<cv::Vec3b>(arc_points[k])[1] = data_rows_resized.at<uint8_t>(1, k);
 
         // Draw cone contours
         mat.at<cv::Vec3b>(arc_points[0]) = cv::Vec3b(0, 0, 255);
         mat.at<cv::Vec3b>(*(arc_points.end() - 1)) = cv::Vec3b(0, 0, 255);
         if (r == (ranges.size() - 1))
-            for (int d = 0; d < arc_points.size(); d++)
+            for (size_t d = 0; d < arc_points.size(); d++)
                 mat.at<cv::Vec3b>(arc_points[d]) = cv::Vec3b(0, 0, 255);
     }
 
     // Publish sonar conic image
     sensor_msgs::msg::Image msg;
-    cv_bridge::CvImage(std_msgs::msg::Header(), "rgb8", mat).toImageMsg(msg); // TODO(hugoyvrn, "mono8"? Really?)
-    std_msgs::msg::Header _header;
+    cv_bridge::CvImage(std_msgs::msg::Header(), "rgb8", mat).toImageMsg(msg);
     image_publisher_->publish(msg);
 }
+
