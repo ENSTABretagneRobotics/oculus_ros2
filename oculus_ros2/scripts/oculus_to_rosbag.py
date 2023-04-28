@@ -11,37 +11,7 @@ from rclpy.duration import Duration
 from rclpy.clock import Clock
 import time
 
-"""
-INTALATION NEEDED
-TODO @HY update README.md
-In an a folder like `/home/USER/work/`
-```bash
-git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
-```
-```bash
-pip3 install --upgrade pip
-pip3 install --upgrade "pybind11[global]"
-```
-```bash
-export CMAKE_PREFIX_PATH=/home/USER/work/:$CMAKE_PREFIX_PATH
-echo $CMAKE_PREFIX_PATH # to check
-```
-In /oculus_driver/
-```bash
-mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX=/home/USER/work/ ..
-```
-Go in /oculus_driver/python and run
-```bash
-rm -r build/ oculus_python.egg-info/ # if needed
-```
-```bash
-pip3 install --user -e . # make takes few seconds
-```
-```bash
-export LD_LIBRARY_PATH=~/work/install/lib:$LD_LIBRARY_PATH
-```
-"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse

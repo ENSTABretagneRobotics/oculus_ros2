@@ -39,6 +39,14 @@ add_executable(oculus_viewer_node
 # target_include_directories(oculus_sonar_node PRIVATE
 #   ${CMAKE_CURRENT_SOURCE_DIR}/include
 #   ${OpenCV_INCLUDE_DIRS})
+target_include_directories(oculus_sonar_node PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
+target_include_directories(oculus_viewer_node PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 target_link_libraries(oculus_sonar_node PRIVATE
