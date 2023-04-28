@@ -198,6 +198,15 @@ void SonarViewer::publish_fan(const int &width,
     int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
     cv::Mat mat = cv::Mat::zeros(cv::Size(image_width, ranges.size()), CV_8UC3);
 
+    for (int i = 0; i < image_width; i++)
+    {
+        for (int j = 0; j < ranges.size(); j++)
+        {
+            mat.at<cv::Vec3b>(j, i) = cv::Vec3b(255, 255, 255);
+        }
+    }
+
+
     const float ThetaShift = 1.5 * 180;
     const cv::Point origin(image_width / 2, ranges.size());
 
@@ -222,7 +231,7 @@ void SonarViewer::publish_fan(const int &width,
         cv::resize(rawDataMat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
 
         for (size_t k = 0; k < arc_points.size(); k++)
-            mat.at<cv::Vec3b>(arc_points[k])[1] = data_rows_resized.at<uint8_t>(1, k);
+            mat.at<cv::Vec3b>(arc_points[k]) = cv::Vec3b(0, data_rows_resized.at<uint8_t>(1, k), 0);
 
          // Draw cone contours
         mat.at<cv::Vec3b>(arc_points[0]) = cv::Vec3b(0, 0, 255);
