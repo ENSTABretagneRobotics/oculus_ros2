@@ -54,7 +54,7 @@ protected:
       "data_depth",
       "nbeams",
       "gain_assist",
-      "range ",
+      // "range ", // TODO(hugoyvrn, not working)
       "gamma_correction",
       "gain_percent",
       "sound_speed",
@@ -67,7 +67,7 @@ protected:
 
   bool is_in_standby_mode;  // Same value as ros parameter "standby"
 
-  mutable std::shared_mutex param_mutex;  ///< multithreading protection
+  mutable std::shared_mutex param_mutex;  // multithreading protection
 
 private:
   std::shared_ptr<oculus::SonarDriver> sonar_driver_;

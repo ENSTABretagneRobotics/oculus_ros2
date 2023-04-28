@@ -20,7 +20,7 @@ class OculusDisplayer(Node):
         super().__init__("oculus_subscriber_to_image")
 
         self.image_subscriber = self.create_subscription(
-            Ping, "oculus_sonar/ping", self.callback, 10
+            Ping, "sonar/ping", self.callback, 10
         )
         self.image_publisher = self.create_publisher(Image, "oculus_sonar/image", 10)
 

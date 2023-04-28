@@ -52,4 +52,4 @@ oculus_sonar:
     use_salinity: true # Use salinity to calculate sound_speed.
     salinity: 0.0 # Salinity (in parts per thousand (ppt,ppm,g/kg), used to calculate sound speed if needed), min=0.0, max=100
 
-    standby: false # Force standby mode
+    standby: True # Force standby mode // TODO(hugoyvrn, set default to true)

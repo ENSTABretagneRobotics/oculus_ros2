@@ -12,7 +12,7 @@
 using SonarDriver = oculus::SonarDriver;
 
 OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
-                                      //  sonar_driver_(std::make_shared<SonarDriver>(this->io_service_.io_service())),
+                                     //  sonar_driver_(std::make_shared<SonarDriver>(this->io_service_.io_service())),
                                      sonar_viewer(static_cast<rclcpp::Node *>(this)),
                                      frame_id((this->declare_parameter<std::string>("frame_id"), "sonar")),
                                      topics_prefix(this->declare_parameter<std::string>("topics_prefix", "")),
@@ -21,7 +21,7 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
 {
     if (!this->has_parameter("standby"))
     {
-        this->declare_parameter<bool>("standby", false);
+        this->declare_parameter<bool>("standby", true);
     }
     if (!this->has_parameter("frequency_mode"))
     {
@@ -93,11 +93,11 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
         rcl_interfaces::msg::ParameterDescriptor param_desc;
         rcl_interfaces::msg::FloatingPointRange range;
         range.set__from_value(0.3).set__to_value(40.0).set__step(0.1);
-        param_desc.name = "nbeams";
+        param_desc.name = "range";
         param_desc.type = rclcpp::ParameterType::PARAMETER_DOUBLE;
         param_desc.description = "Sonar range (in meters), min=0.3, max=40.0.";
         param_desc.floating_point_range = {range};
-        this->declare_parameter<double>("range", 40., param_desc);
+        this->declare_parameter<double>("range", 20., param_desc);
     }
     if (!this->has_parameter("gamma_correction"))
     {
@@ -153,7 +153,9 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
         this->declare_parameter<double>("salinity", 0.0, param_desc);
     }
 
-    this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this, std::placeholders::_1));
+    this->param_cb_ = this->add_on_set_parameters_callback(
+        std::bind(&OculusSonarNode::set_config_callback,
+                  this, std::placeholders::_1));  // TODO(hugoyvrn, to move before parameters initialisation)
 
     this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>(
         topics_prefix + declare_parameter<std::string>("status_topic", std::string("status")),
@@ -168,7 +170,7 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
         topics_prefix + declare_parameter<std::string>("pressure_topic", std::string("pressure")),
         1);
 
-     // image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
+    // image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
 
     this->sonar_driver_ = std::make_shared<SonarDriver>(this->io_service_.io_service());
     this->io_service_.start();
@@ -177,25 +179,32 @@ OculusSonarNode::OculusSonarNode() : Node("oculus_sonar"),
         std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
                   << "Is it properly connected ?" << std::endl;
     }
-     // const oculus::PingMessage::ConstPtr ping;
-     // sonar_viewer.publish_fan(ping);
+    // const oculus::PingMessage::ConstPtr ping;
+    // sonar_viewer.publish_fan(ping);
 
-    while (!this->sonar_driver_->connected())  // wait the sonar to connected
+    while (!this->sonar_driver_->connected()) // wait the sonar to connected
     {
-         // std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
-         //           << "Is it properly connected ?" << std::endl;
+        // std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
+        //           << "Is it properly connected ?" << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 
-     // sonar_viewer = SonarViewer(static_cast<rclcpp::Node *>(this));
+    // sonar_viewer = SonarViewer(static_cast<rclcpp::Node *>(this));
 
     update_parameters(currentSonarParameters, this->sonar_driver_->current_ping_config());
     for (const std::string &param_name : dynamic_parameters_names)
-        set_config_callback(this->get_parameters(std::vector{param_name}));
+    {
+        if (param_name != "range") // TODO(hugoyvrn, initialization of range needed)
+        {
+            RCLCPP_INFO_STREAM(get_logger(), "\n-------set_config_callback--------------- before " << param_name);
+            set_config_callback(this->get_parameters(std::vector{param_name}));  // TODO(hugoyvn, wrong way to do)
+            RCLCPP_INFO_STREAM(get_logger(), "\n-------set_config_callback--------------- after " << param_name);
+        }
+    }
 
     this->sonar_driver_->add_status_callback(std::bind(&OculusSonarNode::publish_status, this, std::placeholders::_1));
     this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publish_ping, this, std::placeholders::_1));
-     // callback on dummy messages to reactivate the pings as needed
+    // callback on dummy messages to reactivate the pings as needed
     this->sonar_driver_->add_dummy_callback(std::bind(&OculusSonarNode::handle_dummy, this));
 }
 
@@ -316,7 +325,7 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
         return;
     }
 
-     // Update current config with ping information
+    // Update current config with ping information
     currentSonarParameters.frequency_mode = ping->master_mode();
     currentSonarParameters.range = ping->range();
     currentSonarParameters.gain_percent = ping->gain_percent();
@@ -330,16 +339,16 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr &ping)
     sensor_msgs::msg::Temperature temperature_ros_msg;
     temperature_ros_msg.header = msg.header;
     temperature_ros_msg.temperature = msg.temperature;  // Measurement of the Temperature in Degrees Celsius
-    temperature_ros_msg.variance = 0;                   // 0 is interpreted as variance unknown
+    temperature_ros_msg.variance = 0;                  // 0 is interpreted as variance unknown
     this->temperature_publisher_->publish(temperature_ros_msg);
 
     sensor_msgs::msg::FluidPressure pressure_ros_msg;
     pressure_ros_msg.header = msg.header;
     pressure_ros_msg.fluid_pressure = msg.pressure;  // Absolute pressure reading in Pascals.
-    pressure_ros_msg.variance = 0;                   // 0 is interpreted as variance unknown
+    pressure_ros_msg.variance = 0;                  // 0 is interpreted as variance unknown
     this->pressure_publisher_->publish(pressure_ros_msg);
 
-     // this->image_publisher_->publish(sonar_viewer.fan_image(ping));
+    // this->image_publisher_->publish(sonar_viewer.fan_image(ping));
     sonar_viewer.publish_fan(ping);
 
     update_ros_config();
@@ -383,41 +392,41 @@ void OculusSonarNode::update_parameters(rosParameters &parameters, const std::ve
         else if (!(new_param.get_name() == "standby"))
             RCLCPP_WARN_STREAM(get_logger(), "Wrong parameter to set : new_param = " << new_param << ". Not seted");
     }
-     // RCLCPP_INFO_STREAM(get_logger(), "new_parameters = " << new_parameters);
+    // RCLCPP_INFO_STREAM(get_logger(), "new_parameters = " << new_parameters);
 }
 
 void OculusSonarNode::update_parameters(rosParameters &parameters, SonarDriver::PingConfig feedback)
 {
     std::vector<rclcpp::Parameter> new_parameters;
-     // OculusMessageHeader head;      // The standard message header
-     // uint16_t oculusId;          // Fixed ID 0x4f53
-     // uint16_t srcDeviceId;       // The device id of the source
-     // uint16_t dstDeviceId;       // The device id of the destination
-     // uint16_t msgId;             // Message identifier
-     // uint16_t msgVersion;
-     // uint32_t payloadSize;       // The size of the message payload (header not included)
-     // uint16_t spare2;
-     // uint8_t masterMode;            // mode 0 is flexi mode, needs full fire message (not available for third party developers)
-     //                                // mode 1 - Low Frequency Mode (wide aperture, navigation)
-     //                                // mode 2 - High Frequency Mode (narrow aperture, target identification)
-     // uint8_t pingRate;              // Sets the maximum ping rate. was PingRateType
-     // uint8_t networkSpeed;          // Used to reduce the network comms speed (useful for high latency shared links)
-     // uint8_t gammaCorrection;       // 0 and 0xff = gamma correction = 1.0
-     //                                // Set to 127 for gamma correction = 0.5
-     // uint8_t flags;                 // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
-     //                                // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ?
-     //                                // bit 2: 0 = won't send gain, 1 = send gain
-     //                                // bit 3: 0 = send full return message, 1 = send simple return message
-     //                                // bit 4: gain assist ?
-     //                                // bit 5: ?
-     //                                // bit 6: enable 512 beams
-     //                                // bit 7: ?
-     // double range;                  // The range demand in percent or m depending on flags
-     // double gainPercent;            // The gain demand
-     // double speedOfSound;           // ms-1, if set to zero then internal calc will apply using salinity
-     // double salinity;               // ppt, set to zero if we are in fresh water
+    // OculusMessageHeader head;      // The standard message header
+    // uint16_t oculusId;          // Fixed ID 0x4f53
+    // uint16_t srcDeviceId;       // The device id of the source
+    // uint16_t dstDeviceId;       // The device id of the destination
+    // uint16_t msgId;             // Message identifier
+    // uint16_t msgVersion;
+    // uint32_t payloadSize;       // The size of the message payload (header not included)
+    // uint16_t spare2;
+    // uint8_t masterMode;            // mode 0 is flexi mode, needs full fire message (not available for third party developers)
+    //                                // mode 1 - Low Frequency Mode (wide aperture, navigation)
+    //                                // mode 2 - High Frequency Mode (narrow aperture, target identification)
+    // uint8_t pingRate;              // Sets the maximum ping rate. was PingRateType
+    // uint8_t networkSpeed;          // Used to reduce the network comms speed (useful for high latency shared links)
+    // uint8_t gammaCorrection;       // 0 and 0xff = gamma correction = 1.0
+    //                                // Set to 127 for gamma correction = 0.5
+    // uint8_t flags;                 // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
+    //                                // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ?
+    //                                // bit 2: 0 = won't send gain, 1 = send gain
+    //                                // bit 3: 0 = send full return message, 1 = send simple return message
+    //                                // bit 4: gain assist ?
+    //                                // bit 5: ?
+    //                                // bit 6: enable 512 beams
+    //                                // bit 7: ?
+    // double range;                  // The range demand in percent or m depending on flags
+    // double gainPercent;            // The gain demand
+    // double speedOfSound;           // ms-1, if set to zero then internal calc will apply using salinity
+    // double salinity;               // ppt, set to zero if we are in fresh water
 
-     // Checks
+    // Checks
     if (!(feedback.flags & 0x01))
         RCLCPP_ERROR(get_logger(), "Range is attepreted as percent while ros driver assume range is interpreted as meters.");
     if (!(feedback.flags & 0x04))
@@ -425,36 +434,36 @@ void OculusSonarNode::update_parameters(rosParameters &parameters, SonarDriver::
     if (!(feedback.flags & 0x08))
         RCLCPP_ERROR(get_logger(), "The sonar don't use simple ping message while ros driver assume simple ping are used.");
     {
-         // TODO(hugoyvrn)
-         // feedback.flags & 0x20   // What for ?
+        // TODO(hugoyvrn)
+        // feedback.flags & 0x20   // What for ?
     } {
-         // TODO(hugoyvrn)
-         // feedback.flags & 0x40   // What for ?
+        // TODO(hugoyvrn)
+        // feedback.flags & 0x40   // What for ?
     }
 
     new_parameters.push_back(rclcpp::Parameter("frequency_mode", feedback.masterMode));  // "frequency_mode"
     new_parameters.push_back(rclcpp::Parameter("ping_rate", feedback.pingRate));
-    new_parameters.push_back(rclcpp::Parameter("data_depth", static_cast<int>(feedback.flags & 0x02)));    // data_depth
-    new_parameters.push_back(rclcpp::Parameter("nbeams", static_cast<int>(feedback.flags & 0x30)));        // nbeams
+    new_parameters.push_back(rclcpp::Parameter("data_depth", static_cast<int>(feedback.flags & 0x02)));   // data_depth
+    new_parameters.push_back(rclcpp::Parameter("nbeams", static_cast<int>(feedback.flags & 0x30)));       // nbeams
     new_parameters.push_back(rclcpp::Parameter("gain_assist", static_cast<bool>(feedback.flags & 0x10)));  // gain_assist
     new_parameters.push_back(rclcpp::Parameter("range", feedback.range));
     new_parameters.push_back(rclcpp::Parameter("gamma_correction", feedback.gammaCorrection));
     new_parameters.push_back(rclcpp::Parameter("gain_percent", feedback.gainPercent));
     new_parameters.push_back(rclcpp::Parameter("sound_speed", feedback.speedOfSound));
-     //  // use_salinity  // TODO(hugoyvrn)
-     // {
-     //     rclcpp::Parameter param("use_salinity", );
-     //     new_parameters.push_back(param);
-     // }
+    //  // use_salinity  // TODO(hugoyvrn)
+    // {
+    //     rclcpp::Parameter param("use_salinity", );
+    //     new_parameters.push_back(param);
+    // }
 
     new_parameters.push_back(rclcpp::Parameter("salinity", feedback.salinity));
     update_parameters(parameters, new_parameters);
 }
 
 void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result)
+
 {
     SonarDriver::PingConfig newConfig = currentConfig;  // To avoid to create a new SonarDriver::PingConfig from ros parameters
-
     if (param.get_name() == "frequency_mode")
     {
         RCLCPP_INFO_STREAM(this->get_logger(), "Updating frequency_mode to " << param.as_int() << " (1: 1.2MHz, 2: 2MHz).");
@@ -494,10 +503,10 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
         RCLCPP_INFO_STREAM(this->get_logger(), "Updating data_depth to " << param.as_int() << " (0: 8 bits, 1: 16 bits).");
         switch (param.as_int())
         {
-        case 0:  // 8 bits
+        case 0: // 8 bits
             newConfig.flags &= ~0x02;
             break;
-        case 1:  // 16 bits
+        case 1: // 16 bits
             newConfig.flags |= 0x02;
             break;
         default:
@@ -509,16 +518,17 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
         RCLCPP_INFO_STREAM(this->get_logger(), "Updating nbeams to " << param.as_int() << " (0: 256 beams, 1: 512 beams).");
         switch (param.as_int())
         {
-        case 0:  // 256 beams
+        case 0: // 256 beams
             newConfig.flags &= ~0x40;
             break;
-        case 1:  // 512 beams
+        case 1: // 512 beams
             newConfig.flags |= 0x40;
             break;
         default:
             break;
         }
     }
+
     else if (param.get_name() == "gain_assist")
     {
         RCLCPP_INFO_STREAM(this->get_logger(), "Updating gain_assist to " << param.as_bool());
@@ -527,11 +537,13 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
         else
             newConfig.flags &= ~0x10;
     }
+
     else if (param.get_name() == "range")
     {
         RCLCPP_INFO_STREAM(this->get_logger(), "Updating range to " << param.as_double() << "m.");
         newConfig.range = param.as_double();
     }
+
     else if (param.get_name() == "gamma_correction")
     {
         RCLCPP_INFO_STREAM(this->get_logger(), "Updating gamma_correction to " << param.as_int());
@@ -565,13 +577,14 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
         newConfig.salinity = param.as_double();
     }
 
-    newConfig.flags |= 0x01     // always in meters
-                       | 0x04   // force send gain to true
+    newConfig.flags |= 0x01    // always in meters
+                       | 0x04  // force send gain to true
                        | 0x08;  // use simple ping
 
-     // send config to Oculus sonar and wait for feedback
+    // send config to Oculus sonar and wait for feedback
     SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
     currentConfig = feedback;
+
     update_parameters(currentSonarParameters, feedback);
 
     if (feedback.flags != newConfig.flags)
@@ -582,12 +595,12 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
     else
         RCLCPP_INFO_STREAM(get_logger(), "feedback.flags = " << std::bitset<8>(feedback.flags));  // TODO(hugoyrn, to remove)
 
-     // Warning
+    // Warning
     if (!(feedback.flags & 0x04))
         RCLCPP_ERROR(this->get_logger(), "The oculus do not send gains. There is an error. Data is not complete.");
 
     handle_feedback_for_param<double>(result, param, newConfig.masterMode, feedback.masterMode, "masterMode", "frequency_mode");
-     // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO
+    // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO
     handle_feedback_for_param<int>(result, param, (newConfig.flags & 0x02) ? 1 : 0, (feedback.flags & 0x02) ? 1 : 0,
                                    "data_depth");
     handle_feedback_for_param<bool>(result, param, (newConfig.flags & 0x10) ? 1 : 0, (feedback.flags & 0x10) ? 1 : 0,
@@ -605,19 +618,30 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
 {
     std::shared_lock l(param_mutex);
 
-    rcl_interfaces::msg::SetParametersResult result;
-    result.successful = true;
-    result.reason = "";
-
-     // TODO(hugoyvrn, 1 param par 1 param)
+    RCLCPP_INFO_STREAM(get_logger(), "\n-----set_config_callback----------------- before " << parameters);
     if (parameters.size() != 1)
     {
         RCLCPP_WARN(get_logger(), "You should set parameters one by one.");
         RCLCPP_INFO_STREAM(get_logger(), "parameters = " << parameters);
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = false;
+        result.reason = "Parameters should be set one by one";
+        return result;
     }
+
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = true;
+    result.reason = "";
 
     for (const rclcpp::Parameter &param : parameters)
     {
+        // RCLCPP_INFO_STREAM(get_logger(), "param.get_name() " << param.get_name());
+        // {
+        //     rcl_interfaces::msg::SetParametersResult result;
+        //     result.successful = true;
+        //     result.reason = "TODO(remove)";
+        //     return result;
+        // }
         if (param.get_name() == "standby")
             is_in_standby_mode = param.as_bool();
         else if (std::find(dynamic_parameters_names.begin(),
@@ -632,9 +656,12 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
         }
     }
 
-    if (result.successful)  // If the parameters will be updated to ros
+    if (result.successful) // If the parameters will be updated to ros
+    {
         update_parameters(currentRosParameters, parameters);
+    }
 
+    RCLCPP_INFO_STREAM(get_logger(), "\n-----set_config_callback----------------- after " << parameters);
     return result;
 }
 

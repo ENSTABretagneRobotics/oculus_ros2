@@ -239,4 +239,3 @@ void SonarViewer::publish_fan(const int &width,
     cv_bridge::CvImage(std_msgs::msg::Header(), "rgb8", mat).toImageMsg(msg);
     image_publisher_->publish(msg);
 }
-

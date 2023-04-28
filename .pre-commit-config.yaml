@@ -53,7 +53,7 @@ repos:
         name: ament_cppcheck
         description: Static code analysis of C/C++ files.
         stages: [commit]
-        entry: /usr/bin/bash -c 'source /opt/ros/$ROS_DISTRO/setup.bash && env AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1 ament_cppcheck'
+        entry: /usr/bin/bash -c 'source /opt/ros/humble/setup.bash && env AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1 ament_cppcheck'
         language: system
         files: \.(h\+\+|h|hh|hxx|hpp|cuh|c|cc|cpp|cu|c\+\+|cxx|tpp|txx)$
 
@@ -64,7 +64,7 @@ repos:
         name: ament_cpplint
         description: Static code analysis of C/C++ files.
         stages: [commit]
-        entry: /usr/bin/bash -c 'source /opt/ros/$ROS_DISTRO/setup.bash && ament_cpplint --linelength=140 --filter=-whitespace/newline'
+        entry: /usr/bin/bash -c 'source /opt/ros/humble/setup.bash && ament_cpplint --linelength=140 --filter=-whitespace/newline'
         language: system
         files: \.(h\+\+|h|hh|hxx|hpp|cuh|c|cc|cpp|cu|c\+\+|cxx|tpp|txx)$
 
@@ -75,6 +75,6 @@ repos:
         name: ament_lint_cmake
         description: Check format of CMakeLists.txt files.
         stages: [commit]
-        entry: /usr/bin/bash -c 'source /opt/ros/$ROS_DISTRO/setup.bash && ament_lint_cmake'
+        entry: /usr/bin/bash -c 'source /opt/ros/humble/setup.bash && ament_lint_cmake'
         language: system
         files: CMakeLists\.txt$
