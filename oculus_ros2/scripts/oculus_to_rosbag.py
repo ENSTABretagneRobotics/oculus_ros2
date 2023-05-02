@@ -113,7 +113,7 @@ class Oculus_parser(RosBagCreator):
             default=0,
             help="Set a time offset in seconds. Useful to handle time lignes to utc. A secondsoffset of 1 will write the rosbag 1s later that written in the .oculus file. Default to 0",
         )
-        # TODO
+        # TODO(hugoyvrn)
         parser.add_argument(
             "-st",
             "--startingtime",
@@ -121,7 +121,7 @@ class Oculus_parser(RosBagCreator):
             default=0,
             help="Nombre of seconds since the Epoch for the rosbag startingtime. No data timestamped before startingtime will be taken into account. Default to None.",
         )
-        # TODO
+        # TODO(hugoyvrn)
         parser.add_argument(
             "-et",
             "--endingtime",

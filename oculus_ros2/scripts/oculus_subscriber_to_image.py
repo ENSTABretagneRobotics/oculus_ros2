@@ -34,7 +34,9 @@ class OculusDisplayer(Node):
             name="freq",
             value="0.",
             descriptor=ParameterDescriptor(
-                name="TODO", description="TODO", additional_constraints="freq>=0"
+                name="TODO(hugoyvrn)",
+                description="TODO(hugoyvrn)",
+                additional_constraints="freq>=0",
             ),
         )
         self.freq = self.get_parameter("freq").get_parameter_value().double_value
@@ -80,8 +82,8 @@ class OculusDisplayer(Node):
         image_msg.header = oculus_ros_msg.header
         image_msg.height = oculus_ros_msg.n_ranges
         image_msg.width = oculus_ros_msg.n_beams
-        image_msg.encoding = "mono8"  # or 'mono16' TODO
-        image_msg.is_bigendian = False  # default value TODO
+        image_msg.encoding = "mono8"  # or 'mono16' TODO(hugoyvrn)
+        image_msg.is_bigendian = False  # default value TODO(hugoyvrn)
         image_msg.step = oculus_ros_msg.n_beams
 
         image_msg.data = pingData.flatten().tobytes()

@@ -27,7 +27,7 @@ oculus_sonar:
     # 5: Standby mode (no ping fire).
 
     # # Hint on available network speed (no feedback, sonar seems to ignore it)
-    # network_speed: 0 # Hint on network available speed ? min=0, max=255 # TODO (hugoyvrn, what is it ?)
+    # network_speed: 0 # Hint on network available speed ? min=0, max=255 # TODO(hugoyvrn, what is it ?)
 
 
     data_depth: 0 # Ping data encoding bit count.

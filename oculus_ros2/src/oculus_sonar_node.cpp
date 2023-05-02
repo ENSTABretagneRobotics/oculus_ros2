@@ -520,7 +520,7 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
       RCLCPP_ERROR(this->get_logger(), "The oculus do not send gains. There is an error. Data is not complete.");
 
     handle_feedback_for_param<double>(result, param, newConfig.masterMode, feedback.masterMode, "masterMode", "frequency_mode");
-    // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO
+    // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO(hugoyvrn)
     handle_feedback_for_param<int>(
         result, param, (newConfig.flags & 0x02) ? 1 : 0, (feedback.flags & 0x02) ? 1 : 0, "data_depth");
     handle_feedback_for_param<bool>(
@@ -533,57 +533,57 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
         result, param, newConfig.speedOfSound, feedback.speedOfSound, "sound_speed");  // TODO(hugoyvrn)
     handle_feedback_for_param<double>(result, param, newConfig.salinity, feedback.salinity, "salinity");
   }
+}
 
-  rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(
-      const std::vector<rclcpp::Parameter>& parameters) {
-    std::shared_lock l(param_mutex);
+rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(const std::vector<rclcpp::Parameter>& parameters) {
+  std::shared_lock l(param_mutex);
 
-    RCLCPP_INFO_STREAM(get_logger(), "\n-----set_config_callback----------------- before " << parameters);
-    if (parameters.size() != 1) {
-      RCLCPP_WARN(get_logger(), "You should set parameters one by one.");
-      RCLCPP_INFO_STREAM(get_logger(), "parameters = " << parameters);
-      rcl_interfaces::msg::SetParametersResult result;
-      result.successful = false;
-      result.reason = "Parameters should be set one by one";
-      return result;
-    }
-
+  RCLCPP_INFO_STREAM(get_logger(), "\n-----set_config_callback----------------- before " << parameters);
+  if (parameters.size() != 1) {
+    RCLCPP_WARN(get_logger(), "You should set parameters one by one.");
+    RCLCPP_INFO_STREAM(get_logger(), "parameters = " << parameters);
     rcl_interfaces::msg::SetParametersResult result;
-    result.successful = true;
-    result.reason = "";
-
-    for (const rclcpp::Parameter& param : parameters) {
-      // RCLCPP_INFO_STREAM(get_logger(), "param.get_name() " << param.get_name());
-      // {
-      //     rcl_interfaces::msg::SetParametersResult result;
-      //     result.successful = true;
-      //     result.reason = "TODO(remove)";
-      //     return result;
-      // }
-      if (param.get_name() == "standby") {
-        is_in_standby_mode = param.as_bool();
-      } else if (std::find(dynamic_parameters_names.begin(), dynamic_parameters_names.end(), param.get_name()) !=
-                 dynamic_parameters_names.end()) {
-        send_param_to_sonar(param, result);
-      } else {
-        RCLCPP_WARN_STREAM(get_logger(), "Wrong dynamic parameter to set : param = " << param << ". Not seted");
-        result.successful = true;  // TODO(hugoyvrn, true or false ?)
-        result.reason = "TODO(hugoyvrn)";
-      }
-    }
-
-    if (result.successful)  // If the parameters will be updated to ros
-    {
-      update_parameters(currentRosParameters, parameters);
-    }
-
-    RCLCPP_INFO_STREAM(get_logger(), "\n-----set_config_callback----------------- after " << parameters);
+    result.successful = false;
+    result.reason = "Parameters should be set one by one";
     return result;
   }
 
-  int main(int argc, char* argv[]) {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<OculusSonarNode>());
-    rclcpp::shutdown();
-    return 0;
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+  result.reason = "";
+
+  for (const rclcpp::Parameter& param : parameters) {
+    // RCLCPP_INFO_STREAM(get_logger(), "param.get_name() " << param.get_name());
+    // {
+    //     rcl_interfaces::msg::SetParametersResult result;
+    //     result.successful = true;
+    //     result.reason = "TODO(hugoyvrn, remove)";
+    //     return result;
+    // }
+    if (param.get_name() == "standby") {
+      is_in_standby_mode = param.as_bool();
+    } else if (std::find(dynamic_parameters_names.begin(), dynamic_parameters_names.end(), param.get_name()) !=
+               dynamic_parameters_names.end()) {
+      send_param_to_sonar(param, result);
+    } else {
+      RCLCPP_WARN_STREAM(get_logger(), "Wrong dynamic parameter to set : param = " << param << ". Not seted");
+      result.successful = true;  // TODO(hugoyvrn, true or false ?)
+      result.reason = "TODO(hugoyvrn)";
+    }
   }
+
+  if (result.successful)  // If the parameters will be updated to ros
+  {
+    update_parameters(currentRosParameters, parameters);
+  }
+
+  RCLCPP_INFO_STREAM(get_logger(), "\n-----set_config_callback----------------- after " << parameters);
+  return result;
+}
+
+int main(int argc, char* argv[]) {
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<OculusSonarNode>());
+  rclcpp::shutdown();
+  return 0;
+}

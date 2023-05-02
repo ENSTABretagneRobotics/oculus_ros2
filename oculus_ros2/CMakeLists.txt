@@ -15,16 +15,18 @@ find_package(image_transport REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 
-find_package(oculus_driver QUIET)
+# find_package(oculus_driver QUIET)
 
-if(NOT TARGET oculus_driver)
-    include(FetchContent)
-    FetchContent_Declare(oculus_driver
-        GIT_REPOSITORY https://github.com/ENSTABretagneRobotics/oculus_driver.git
-        GIT_TAG master # tag for development : TODO handle the good version
-    )
-    FetchContent_MakeAvailable(oculus_driver)
-endif()
+# if(NOT TARGET oculus_driver)
+#     include(FetchContent)
+#     FetchContent_Declare(oculus_driver
+#         GIT_REPOSITORY https://github.com/ENSTABretagneRobotics/oculus_driver.git
+#         GIT_TAG master # tag for development : TODO(hugoyvrn) handle the good version
+#     )
+#     FetchContent_MakeAvailable(oculus_driver)
+# endif()
+
+find_package(oculus_driver REQUIRED)
 
 
 add_executable(oculus_sonar_node

@@ -1,0 +1,3 @@
+[submodule "oculus_driver"]
+	path = oculus_driver
+	url = https://github.com/ENSTABretagneRobotics/oculus_driver.git
