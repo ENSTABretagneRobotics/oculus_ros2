@@ -1,3 +1,4 @@
 [submodule "oculus_driver"]
 	path = oculus_driver
 	url = https://github.com/ENSTABretagneRobotics/oculus_driver.git
+	branch = fadfb25e7241dcd45ce0b918d1f8dbce9eef9470
