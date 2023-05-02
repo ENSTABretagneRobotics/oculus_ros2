@@ -33,27 +33,21 @@ def generate_launch_description():
         package="oculus_ros2",
         executable="oculus_sonar_node",
         name="oculus_sonar",
-        parameters=[config],
+        #  parameters=[config],
+        remappings=[
+            (
+                "ping",
+                "/oculus_sonar/ping",
+            ),  # Topic name where ping messages are published (cf Oculus.h).
+            (
+                "status",
+                "/oculus_sonar/status",
+            ),  # Topic name where status messages are published (cf Oculus.h).
+        ],
         arguments=["-port", LaunchConfiguration("port")],
         output="screen",
     )
 
-    image_publisher_node = Node(
-        package="oculus_ros2",
-        executable="oculus_subscriber_to_image.py",
-        name="oculus_subscriber_to_image",
-        output="screen",
-    )
-
-    rqt_reconfigure_node = Node(
-        package="rqt_reconfigure",
-        executable="rqt_reconfigure",
-        name="rqt_reconfigure",
-        output="screen",
-    )
-
     ld.add_action(oculus_sonar_node)
-    ld.add_action(image_publisher_node)
-    # ld.add_action(rqt_reconfigure_node)
 
     return ld

@@ -16,6 +16,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OculusFireConfig.msg"
   "msg/OculusPing.msg"
   "msg/OculusStampedPing.msg"
+  "msg/Ping.msg"
   DEPENDENCIES builtin_interfaces std_msgs
 )
 
