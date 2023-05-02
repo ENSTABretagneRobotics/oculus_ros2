@@ -27,6 +27,7 @@
   <exec_depend>cv_bridge</exec_depend>
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
+  <exec_depend>oculus_driver</exec_depend>
 
   <depend>Boost</depend>
   <depend>oculus_interfaces</depend>
