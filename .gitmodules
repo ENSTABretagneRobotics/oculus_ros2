@@ -1,4 +1,0 @@
-[submodule "oculus_driver"]
-	path = oculus_driver/oculus_driver
-	url = https://github.com/forssea-robotics/oculus_driver.git
-	branch = oculus_sonar
