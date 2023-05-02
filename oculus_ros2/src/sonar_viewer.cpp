@@ -50,7 +50,7 @@ void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr& ping, c
 
   cv::Mat beam(1, img.cols, CV_64F, cv::Scalar::all(0));
 
-  // set the values of the beam // TODO(hugoyvrn, to it with ping data)
+  // set the values of the beam // TODO(hugoyvrn, to link it with ping data)
   const int kNumValues = img.cols / 20;
   double values[kNumValues];
   for (int i = 0; i < kNumValues / 2; i++) values[i] = 24 + i;

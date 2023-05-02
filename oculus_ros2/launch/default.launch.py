@@ -35,6 +35,13 @@ def generate_launch_description():
         name="oculus_sonar",
         parameters=[config],
         arguments=["-port", LaunchConfiguration("port")],
+        namespace="sonar",
+        remappings=[
+            ('status', 'status'),
+            ('ping', 'ping'),
+            ('temperature', 'temperature'),
+            ('pressure', 'pressure'),
+        ],
         output="screen",
     )
 

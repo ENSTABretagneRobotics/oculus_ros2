@@ -28,7 +28,6 @@
 #include <sensor_msgs/msg/temperature.hpp>
 
 typedef struct {
-  std::string frame_id;  // TODO(hugyvrn)
   int frequency_mode;
   int ping_rate;
   int data_depth;
