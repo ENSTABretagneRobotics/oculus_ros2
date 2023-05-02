@@ -1,3 +1,9 @@
+// Copyright 2023 Forssea Robotics
+// All rights reserved.
+//
+// Unauthorized copying of this code base via any medium is strictly prohibited.
+// Proprietary and confidential.
+
 #ifndef OCULUS_ROS2__SONAR_VIEWER_HPP_
 #define OCULUS_ROS2__SONAR_VIEWER_HPP_
 
@@ -10,11 +16,10 @@
 #include <string>
 #include <vector>
 
+#include <oculus_interfaces/msg/ping.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
-#include <oculus_interfaces/msg/ping.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 

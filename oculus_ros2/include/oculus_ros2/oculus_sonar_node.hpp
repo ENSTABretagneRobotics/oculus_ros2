@@ -1,3 +1,9 @@
+// Copyright 2023 Forssea Robotics
+// All rights reserved.
+//
+// Unauthorized copying of this code base via any medium is strictly prohibited.
+// Proprietary and confidential.
+
 #ifndef OCULUS_ROS2__OCULUS_SONAR_NODE_HPP_
 #define OCULUS_ROS2__OCULUS_SONAR_NODE_HPP_
 
@@ -12,14 +18,14 @@
 #include <thread>
 #include <vector>
 
-#include <oculus_ros2/conversions.hpp>
 #include <oculus_interfaces/msg/oculus_status.hpp>
 #include <oculus_interfaces/msg/ping.hpp>
+#include <oculus_ros2/conversions.hpp>
+#include <oculus_ros2/sonar_viewer.hpp>
 #include <rcl_interfaces/msg/parameter_descriptor.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/fluid_pressure.hpp>
 #include <sensor_msgs/msg/temperature.hpp>
-#include <oculus_ros2/sonar_viewer.hpp>
 
 typedef struct {
   std::string frame_id;  // TODO(hugyvrn)

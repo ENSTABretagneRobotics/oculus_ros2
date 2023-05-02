@@ -1,5 +1,11 @@
 #! /usr/bin/python
 
+# Copyright 2023 Forssea Robotics
+# All rights reserved.
+#
+# Unauthorized copying of this code base via any medium is strictly prohibited.
+# Proprietary and confidential.
+
 import rospy
 import dynamic_reconfigure.client
 

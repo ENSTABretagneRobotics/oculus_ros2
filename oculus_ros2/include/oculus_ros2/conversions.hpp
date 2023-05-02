@@ -1,3 +1,9 @@
+// Copyright 2023 Forssea Robotics
+// All rights reserved.
+//
+// Unauthorized copying of this code base via any medium is strictly prohibited.
+// Proprietary and confidential.
+
 #ifndef OCULUS_ROS2__CONVERSIONS_HPP_
 #define OCULUS_ROS2__CONVERSIONS_HPP_
 
@@ -5,14 +11,13 @@
 #include <oculus_driver/OculusMessage.h>
 #include <oculus_driver/SonarDriver.h>
 
-#include <rclcpp/rclcpp.hpp>
-
 #include <oculus_interfaces/msg/oculus_fire_config.hpp>
 #include <oculus_interfaces/msg/oculus_header.hpp>
 #include <oculus_interfaces/msg/oculus_ping.hpp>
 #include <oculus_interfaces/msg/oculus_status.hpp>
 #include <oculus_interfaces/msg/oculus_version_info.hpp>
 #include <oculus_interfaces/msg/ping.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 // #include <sensor_msgs/Image.h>
 

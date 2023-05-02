@@ -1,5 +1,11 @@
 #! /usr/bin/python
 
+# Copyright 2023 Forssea Robotics
+# All rights reserved.
+#
+# Unauthorized copying of this code base via any medium is strictly prohibited.
+# Proprietary and confidential.
+
 # import roslibpy
 # client = roslibpy.Ros(host='localhost', port=11311)
 # client.run()

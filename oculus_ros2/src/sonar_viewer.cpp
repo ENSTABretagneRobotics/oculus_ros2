@@ -1,3 +1,9 @@
+// Copyright 2023 Forssea Robotics
+// All rights reserved.
+//
+// Unauthorized copying of this code base via any medium is strictly prohibited.
+// Proprietary and confidential.
+
 #include <oculus_ros2/sonar_viewer.hpp>
 
 // SonarViewer::SonarViewer(bool *arg)

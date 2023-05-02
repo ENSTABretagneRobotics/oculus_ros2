@@ -1,5 +1,10 @@
 #! /usr/bin/python3
 
+# Copyright 2023 Forssea Robotics
+# All rights reserved.
+#
+# Unauthorized copying of this code base via any medium is strictly prohibited.
+# Proprietary and confidential.
 
 from rclpy.time import Time
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy

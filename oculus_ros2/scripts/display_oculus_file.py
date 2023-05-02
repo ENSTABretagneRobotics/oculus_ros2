@@ -1,5 +1,11 @@
 #! /usr/bin/python3
 
+# Copyright 2023 Forssea Robotics
+# All rights reserved.
+#
+# Unauthorized copying of this code base via any medium is strictly prohibited.
+# Proprietary and confidential.
+
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse

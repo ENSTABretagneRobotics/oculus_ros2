@@ -1,3 +1,9 @@
+# Copyright 2023 Forssea Robotics
+# All rights reserved.
+#
+# Unauthorized copying of this code base via any medium is strictly prohibited.
+# Proprietary and confidential.
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
