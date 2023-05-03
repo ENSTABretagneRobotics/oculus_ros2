@@ -5,7 +5,7 @@ oculus_sonar:
     temperature_warn: 30. # Sonar temperature at which a warning is raised. Default value is 30.0.
     temperature_stop: 35. # Sonar temperature at which the sonar goes to standby mode. Default value is 35.0.
 
-    run_mode: False # Force run_mode mode. Default value is False.
+    run: False # If run is False, stanby mode is forced. Default value is False.
 
     frequency_mode: 1 # Sonar beam frequency mode. Default value is 1.
     # 1: Low frequency (1.2MHz, wide aperture).

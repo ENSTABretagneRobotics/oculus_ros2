@@ -46,12 +46,12 @@ def generate_launch_description():
         output="screen",
     )
 
-    image_publisher_node = Node(
-        package="oculus_ros2",
-        executable="oculus_subscriber_to_image.py",
-        name="oculus_subscriber_to_image",
-        output="screen",
-    )
+    # image_publisher_node = Node(
+    #     package="oculus_ros2",
+    #     executable="oculus_subscriber_to_image.py",
+    #     name="oculus_subscriber_to_image",
+    #     output="screen",
+    # )
 
     rqt_reconfigure_node = Node(
         package="rqt_reconfigure",
@@ -61,7 +61,7 @@ def generate_launch_description():
     )
 
     ld.add_action(oculus_sonar_node)
-    ld.add_action(image_publisher_node)
+    # ld.add_action(image_publisher_node)
     # ld.add_action(rqt_reconfigure_node)
 
     return ld

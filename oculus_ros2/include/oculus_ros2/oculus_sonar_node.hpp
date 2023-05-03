@@ -48,12 +48,12 @@ public:
 
 protected:
   const std::vector<std::string> dynamic_parameters_names{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist",
-      "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run_mode"};
+      "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run"};
   rosParameters currentSonarParameters;
   rosParameters currentRosParameters;
   oculus::SonarDriver::PingConfig currentConfig;
 
-  bool is_in_run_mode_mode;  // Same value as ros parameter "run_mode"
+  bool is_in_run_mode;  // Same value as ros parameter "run"
 
   mutable std::shared_mutex param_mutex;  // multithreading protection
 

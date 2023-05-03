@@ -48,8 +48,8 @@ OculusSonarNode::OculusSonarNode()
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
 
-  if (!this->has_parameter("run_mode")) {
-    this->declare_parameter<bool>("run_mode", true);
+  if (!this->has_parameter("run")) {
+    this->declare_parameter<bool>("run", false);
   }
   if (!this->has_parameter("frequency_mode")) {
     rcl_interfaces::msg::ParameterDescriptor param_desc;
@@ -242,15 +242,15 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr& ping) {
   if (this->ping_publisher_->get_subscription_count() == 0) {
     RCLCPP_INFO(this->get_logger(), "There is no subscriber to the ping topic.");
     RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-    is_in_run_mode_mode = false;
-    this->set_parameter(rclcpp::Parameter("run_mode", false));
+    is_in_run_mode = false;
+    this->set_parameter(rclcpp::Parameter("run", false));
     this->sonar_driver_->standby();
   }
   if (currentSonarParameters.ping_rate == 5) {
     RCLCPP_INFO(this->get_logger(), "ping_rate mode is seted to 5.");
     RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-    is_in_run_mode_mode = false;
-    this->set_parameter(rclcpp::Parameter("run_mode", false));
+    is_in_run_mode = false;
+    this->set_parameter(rclcpp::Parameter("run", false));
     this->sonar_driver_->standby();
   }
 
@@ -259,8 +259,8 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr& ping) {
                                                 << ping->temperature()
                                                 << "°C). Make sur the sonar is underwatter. Security limit set at "
                                                 << temperature_stop_limit << "°C");
-    is_in_run_mode_mode = false;
-    this->set_parameter(rclcpp::Parameter("run_mode", false));
+    is_in_run_mode = false;
+    this->set_parameter(rclcpp::Parameter("run", false));
   } else if (ping->temperature() >= temperature_warn_limit) {
     RCLCPP_WARN_STREAM(this->get_logger(), "Temperature of sonar is to high ("
                                                << ping->temperature()
@@ -268,7 +268,7 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr& ping) {
                                                << temperature_stop_limit << "°C");
   }
 
-  if (!is_in_run_mode_mode) {
+  if (!is_in_run_mode) {
     RCLCPP_INFO(this->get_logger(), "Going to standby mode");
     this->sonar_driver_->standby();
     return;
@@ -300,11 +300,12 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr& ping) {
 
   // TODO(hugoyvrn, publish bearings)
 
+  // sonar_viewer.publish_fan<currentSonarParameters.data_depth == 0 ? unit8_t : unit16_t>(ping);
   sonar_viewer.publish_fan(ping);
 }
 
 void OculusSonarNode::handle_dummy() const {
-  if (is_in_run_mode_mode && this->ping_publisher_->get_subscription_count() > 0 && currentSonarParameters.ping_rate != 5) {
+  if (is_in_run_mode && this->ping_publisher_->get_subscription_count() > 0 && currentSonarParameters.ping_rate != 5) {
     RCLCPP_INFO(this->get_logger(), "Exiting standby mode");
     this->sonar_driver_->resume();
   }
@@ -334,7 +335,7 @@ void OculusSonarNode::update_parameters(rosParameters& parameters, const std::ve
       parameters.use_salinity = new_param.as_bool();
     else if (new_param.get_name() == "salinity")
       parameters.salinity = new_param.as_double();
-    else if (!(new_param.get_name() == "run_mode"))
+    else if (!(new_param.get_name() == "run"))
       RCLCPP_WARN_STREAM(get_logger(), "Wrong parameter to set : new_param = " << new_param << ". Not seted");
   }
 }
@@ -529,8 +530,8 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
   result.reason = "";
 
   for (const rclcpp::Parameter& param : parameters) {
-    if (param.get_name() == "run_mode") {
-      is_in_run_mode_mode = param.as_bool();
+    if (param.get_name() == "run") {
+      is_in_run_mode = param.as_bool();
     } else if (std::find(dynamic_parameters_names.begin(), dynamic_parameters_names.end(), param.get_name()) !=
                dynamic_parameters_names.end()) {
       send_param_to_sonar(param, result);
