@@ -17,12 +17,14 @@
 #include <vector>
 
 #include <oculus_interfaces/msg/ping.hpp>
+#include <oculus_ros2/conversions.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/header.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/header.hpp>
 
 #include <oculus_ros2/conversions.hpp>
 
