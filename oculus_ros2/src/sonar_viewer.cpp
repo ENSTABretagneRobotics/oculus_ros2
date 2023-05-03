@@ -171,13 +171,16 @@ int frames_counter = 0;
 void SonarViewer::publish_fan(const oculus_interfaces::msg::Ping& ros_ping_msg) const {
   // const int offset = ping->ping_data_offset();
   const int offset = 229;  // TODO(hugoyvrn)
-  publish_fan(
-      ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode, ros_ping_msg.range);
+  publish_fan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
+      ros_ping_msg.range, ros_ping_msg.header);
 }
 
 void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr& ping) const {
-  publish_fan(
-      ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(), ping->range());
+  std_msgs::msg::Header header;
+  header.stamp = oculus::to_ros_stamp(ping->timestamp());
+  // header.frame_id = node_->get_parameter_or<std::string>("frame_id", "sonar");
+  publish_fan(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
+      ping->range(), header);
 }
 
 void SonarViewer::publish_fan(const int& width,
@@ -185,7 +188,8 @@ void SonarViewer::publish_fan(const int& width,
     const int& offset,
     const std::vector<uint8_t>& ping_data,
     const int& master_mode,
-    const double& ping_range) const {
+    const double& ping_range,
+    const std_msgs::msg::Header& header) const {
   // Create rawDataMat from ping_data
   cv::Mat rawDataMat(height, (width + 4), CV_8U);
   std::memcpy(rawDataMat.data, ping_data.data() + offset, height * (width + 4));
@@ -223,12 +227,12 @@ void SonarViewer::publish_fan(const int& width,
       rgb_img.at<cv::Vec3b>(arc_points[k]) = cv::Vec3b(0, data_rows_resized.at<uint8_t>(1, k), 0);
   }
 
-  cv::Mat yuv_img;
-  //   cv::cvtColor(rgb_img, yuv_img, cv::COLOR_BGR2YUV_I420);
+  // cv::Mat yuv_img;
+  // cv::cvtColor(rgb_img, yuv_img, cv::COLOR_BGR2YUV_I420);
 
-  //   // Publish sonar conic image
+  // Publish sonar conic image
   sensor_msgs::msg::Image msg;
-  cv_bridge::CvImage(std_msgs::msg::Header(), "rgb8", rgb_img).toImageMsg(msg);
+  cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, rgb_img).toImageMsg(msg);
   //   cv_bridge::CvImage(std_msgs::msg::Header(), sensor_msgs::image_encodings::NV21, yuv_img).toImageMsg(msg);
   image_publisher_->publish(msg);
 }

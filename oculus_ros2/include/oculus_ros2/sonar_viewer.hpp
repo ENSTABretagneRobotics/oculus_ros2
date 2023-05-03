@@ -17,11 +17,13 @@
 #include <vector>
 
 #include <oculus_interfaces/msg/ping.hpp>
+#include <oculus_ros2/conversions.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/header.hpp>
 
 class SonarViewer {
 public:
@@ -35,7 +37,8 @@ public:
       const int& offset,
       const std::vector<uint8_t>& ping_data,
       const int& master_mode,
-      const double& ping_rage) const;
+      const double& ping_rage,
+      const std_msgs::msg::Header& header) const;
   void stream_and_filter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data);
   // void stream_and_filter(const oculus::PingMessage::ConstPtr &ping);
   // sensor_msgs::msg::Image publish_fan(const oculus::PingMessage::ConstPtr &ping);

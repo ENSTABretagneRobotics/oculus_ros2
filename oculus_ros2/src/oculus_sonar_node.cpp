@@ -209,6 +209,7 @@ void OculusSonarNode::publish_status(const OculusStatusMsg& status) const {
   static oculus_interfaces::msg::OculusStatus msg;
   oculus::copy_to_ros(msg, status);
   this->status_publisher_->publish(msg);
+  // TODO(hugoyvrn, publish temperature)
 }
 
 inline rclcpp::Time to_ros_stamp(const SonarDriver::TimePoint& stamp) {
@@ -299,7 +300,8 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr& ping) {
   pressure_ros_msg.variance = 0;  // 0 is interpreted as variance unknown
   this->pressure_publisher_->publish(pressure_ros_msg);
 
-  // this->image_publisher_->publish(sonar_viewer.fan_image(ping));
+  // TODO(hugoyvrn, publish bearings)
+
   sonar_viewer.publish_fan(ping);
 
   update_ros_config();
