@@ -48,13 +48,12 @@ public:
 
 protected:
   const std::vector<std::string> dynamic_parameters_names{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist",
-      // "range ", // TODO(hugoyvrn, not working)
-      "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "standby"};
+      "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run_mode"};
   rosParameters currentSonarParameters;
   rosParameters currentRosParameters;
   oculus::SonarDriver::PingConfig currentConfig;
 
-  bool is_in_standby_mode;  // Same value as ros parameter "standby"
+  bool is_in_run_mode_mode;  // Same value as ros parameter "run_mode"
 
   mutable std::shared_mutex param_mutex;  // multithreading protection
 
@@ -107,8 +106,8 @@ void OculusSonarNode::update_ros_config_for_param(
     T& currentSonar_param, const T& new_param, const std::string& ros_param_name, const std::string& param_name) {
   if (currentSonar_param != new_param) {
     this->remove_on_set_parameters_callback(this->param_cb_.get());
-    RCLCPP_INFO_STREAM(
-        this->get_logger(), "coucou " << param_name << " : ros = " << currentSonar_param << " topic = " << new_param);
+    RCLCPP_WARN_STREAM(this->get_logger(),
+        "The parameter " << param_name << " has change by it self from " << currentSonar_param << " to " << new_param);
     currentSonar_param = new_param;
     this->set_parameter(rclcpp::Parameter(ros_param_name, new_param));
     this->param_cb_ =

@@ -17,16 +17,17 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
-    ld.add_action(
-        DeclareLaunchArgument(
-            name="port",
-            default_value="this_is_a_port",
-            description="Filters Configuration",
-        )
-    )
+    # ld.add_action(
+    #     DeclareLaunchArgument(
+    #         name="port",
+    #         default_value="this_is_a_port",
+    #         description="Filters Configuration",
+    #     )
+    # )
 
     config = os.path.join(
         get_package_share_directory("oculus_ros2"), "cfg", "default.yaml"
+        # get_package_share_directory("oculus_ros2"), "cfg", "tmp.yaml"
     )
 
     oculus_sonar_node = Node(
@@ -34,7 +35,7 @@ def generate_launch_description():
         executable="oculus_sonar_node",
         name="oculus_sonar",
         parameters=[config],
-        arguments=["-port", LaunchConfiguration("port")],
+        # arguments=["-port", LaunchConfiguration("port")],
         namespace="sonar",
         remappings=[
             ('status', 'status'),
