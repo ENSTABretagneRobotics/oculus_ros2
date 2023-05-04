@@ -8,13 +8,6 @@
 
 #include <oculus_ros2/oculus_sonar_node.hpp>
 
-// TODO(hugoyvrn)
-#include <bitset>
-#include <chrono>
-#include <mutex>
-#include <shared_mutex>
-#include <thread>
-
 using SonarDriver = oculus::SonarDriver;
 
 OculusSonarNode::OculusSonarNode()
@@ -181,7 +174,9 @@ OculusSonarNode::OculusSonarNode()
     set_config_callback(this->get_parameters(std::vector{param_name}));
   }
   this->param_cb_ = this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::set_config_callback, this,
-      std::placeholders::_1));  // TODO(hugoyvrn, to move before parameters initialisation)
+      std::placeholders::_1));  // TODO(hugoyvrn, to move before parameters initialisation ?)
+
+  // this->??(&OculusSonarNode::enable_run_mode)  // TODO(hugoyvrn)
 
   this->sonar_driver_->add_status_callback(std::bind(&OculusSonarNode::publish_status, this, std::placeholders::_1));
   this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publish_ping, this, std::placeholders::_1));
@@ -191,6 +186,16 @@ OculusSonarNode::OculusSonarNode()
 
 OculusSonarNode::~OculusSonarNode() {
   this->io_service_.stop();
+}
+
+void OculusSonarNode::enable_run_mode() {
+  is_in_run_mode = true;
+  this->set_parameter(rclcpp::Parameter("run", true));
+}
+
+void OculusSonarNode::desable_run_mode() {
+  is_in_run_mode = false;
+  this->set_parameter(rclcpp::Parameter("run", false));
 }
 
 void OculusSonarNode::publish_status(const OculusStatusMsg& status) const {
@@ -242,15 +247,13 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr& ping) {
   if (this->ping_publisher_->get_subscription_count() == 0) {
     RCLCPP_INFO(this->get_logger(), "There is no subscriber to the ping topic.");
     RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-    is_in_run_mode = false;
-    this->set_parameter(rclcpp::Parameter("run", false));
+    desable_run_mode();
     this->sonar_driver_->standby();
   }
   if (currentSonarParameters.ping_rate == 5) {
     RCLCPP_INFO(this->get_logger(), "ping_rate mode is seted to 5.");
     RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-    is_in_run_mode = false;
-    this->set_parameter(rclcpp::Parameter("run", false));
+    desable_run_mode();
     this->sonar_driver_->standby();
   }
 
@@ -259,8 +262,7 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr& ping) {
                                                 << ping->temperature()
                                                 << "°C). Make sur the sonar is underwatter. Security limit set at "
                                                 << temperature_stop_limit << "°C");
-    is_in_run_mode = false;
-    this->set_parameter(rclcpp::Parameter("run", false));
+    desable_run_mode();
   } else if (ping->temperature() >= temperature_warn_limit) {
     RCLCPP_WARN_STREAM(this->get_logger(), "Temperature of sonar is to high ("
                                                << ping->temperature()
@@ -474,7 +476,7 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
       newConfig.speedOfSound = 0.0;
   } else if (param.get_name() == "sound_speed") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating sound_speed to " << param.as_double() << " m/s.");
-    if (!currentSonarParameters.use_salinity) { // TODO(hugoyvrn)
+    if (!currentRosParameters.use_salinity) {
       if (param.as_double() >= 1400.0 && param.as_double() <= 1600.0)
         newConfig.speedOfSound = param.as_double();
       else
@@ -491,7 +493,7 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
 
   // send config to Oculus sonar and wait for feedback
   SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
-  currentConfig = feedback; // TODO(hugoyvrn)
+  currentConfig = feedback;  // TODO(hugoyvrn)
 
   update_parameters(currentSonarParameters, feedback);
 
@@ -534,7 +536,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
     } else if (std::find(dynamic_parameters_names.begin(), dynamic_parameters_names.end(), param.get_name()) !=
                dynamic_parameters_names.end()) {
       send_param_to_sonar(param, result);
-    } else { // TODO
+    } else {  // TODO
       RCLCPP_WARN_STREAM(get_logger(), "Wrong dynamic parameter to set : param = " << param << ". Not seted");
       result.successful = false;
       result.reason = "The parameter is not a decalred or is not a dynamic paramter.";
@@ -550,7 +552,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
 
 int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<OculusSonarNode>()); // force to monothread
+  rclcpp::spin(std::make_shared<OculusSonarNode>());  // force to monothread
   rclcpp::shutdown();
   return 0;
 }

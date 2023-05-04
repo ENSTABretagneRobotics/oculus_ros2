@@ -91,6 +91,8 @@ private:
   void send_param_to_sonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result);
   rcl_interfaces::msg::SetParametersResult set_config_callback(const std::vector<rclcpp::Parameter>& parameters);
 
+  void enable_run_mode();
+  void desable_run_mode();
   void publish_status(const OculusStatusMsg& status) const;
   void publish_ping(const oculus::PingMessage::ConstPtr& pingMetadata);
   void handle_dummy() const;
