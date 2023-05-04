@@ -300,7 +300,6 @@ void OculusSonarNode::publish_ping(const oculus::PingMessage::ConstPtr& ping) {
 
   // TODO(hugoyvrn, publish bearings)
 
-  // sonar_viewer.publish_fan<currentSonarParameters.data_depth == 0 ? unit8_t : unit16_t>(ping);
   sonar_viewer.publish_fan(ping);
 }
 
@@ -475,7 +474,7 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
       newConfig.speedOfSound = 0.0;
   } else if (param.get_name() == "sound_speed") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating sound_speed to " << param.as_double() << " m/s.");
-    if (!get_parameter_or("use_salinity", rclcpp::Parameter("use_salinity", true)).as_bool()) {
+    if (!currentSonarParameters.use_salinity) { // TODO(hugoyvrn)
       if (param.as_double() >= 1400.0 && param.as_double() <= 1600.0)
         newConfig.speedOfSound = param.as_double();
       else
@@ -492,7 +491,7 @@ void OculusSonarNode::send_param_to_sonar(rclcpp::Parameter param, rcl_interface
 
   // send config to Oculus sonar and wait for feedback
   SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
-  currentConfig = feedback;
+  currentConfig = feedback; // TODO(hugoyvrn)
 
   update_parameters(currentSonarParameters, feedback);
 
@@ -535,7 +534,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
     } else if (std::find(dynamic_parameters_names.begin(), dynamic_parameters_names.end(), param.get_name()) !=
                dynamic_parameters_names.end()) {
       send_param_to_sonar(param, result);
-    } else {
+    } else { // TODO
       RCLCPP_WARN_STREAM(get_logger(), "Wrong dynamic parameter to set : param = " << param << ". Not seted");
       result.successful = false;
       result.reason = "The parameter is not a decalred or is not a dynamic paramter.";
@@ -551,7 +550,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::set_config_callback(co
 
 int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<OculusSonarNode>());
+  rclcpp::spin(std::make_shared<OculusSonarNode>()); // force to monothread
   rclcpp::shutdown();
   return 0;
 }

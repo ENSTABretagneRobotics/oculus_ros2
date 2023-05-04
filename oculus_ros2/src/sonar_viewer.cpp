@@ -168,71 +168,27 @@ int grid_presence_counter[36][25] = {0};
 int grid_absence_counter[36][25] = {0};
 int frames_counter = 0;
 
-void SonarViewer::publish_fan(const oculus_interfaces::msg::Ping& ros_ping_msg) const {
+void SonarViewer::publish_fan(
+    const oculus_interfaces::msg::Ping& ros_ping_msg, const std::string& frame_id, const int& data_depth) const {
   // const int offset = ping->ping_data_offset();
   const int offset = 229;  // TODO(hugoyvrn)
   publish_fan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
       ros_ping_msg.range, ros_ping_msg.header);
 }
 
-void SonarViewer::publish_fan(const oculus::PingMessage::ConstPtr& ping) const {
+void SonarViewer::publish_fan(
+    const oculus::PingMessage::ConstPtr& ping, const std::string& frame_id, const int& data_depth) const {
   std_msgs::msg::Header header;
   header.stamp = oculus::to_ros_stamp(ping->timestamp());
-  // header.frame_id = node_->get_parameter_or<std::string>("frame_id", "sonar");  // TODO(hugoyvrn)
-  publish_fan(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
-      ping->range(), header);
-}
-
-void SonarViewer::publish_fan(const int& width,
-    const int& height,
-    const int& offset,
-    const std::vector<uint8_t>& ping_data,
-    const int& master_mode,
-    const double& ping_range,
-    const std_msgs::msg::Header& header) const {
-  // Create rawDataMat from ping_data
-  cv::Mat rawDataMat(height, (width + 4), CV_8U);
-  std::memcpy(rawDataMat.data, ping_data.data() + offset, height * (width + 4));
-
-  int bearing = (master_mode == 1) ? 65 : 40;
-  std::vector<double> ranges = linspace(0., ping_range, height);
-  int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
-  cv::Mat rgb_img = cv::Mat::zeros(cv::Size(image_width, ranges.size()), CV_8UC3);
-
-  for (int i = 0; i < image_width; i++) {
-    for (int j = 0; j < ranges.size(); j++) {
-      rgb_img.at<cv::Vec3b>(j, i) = cv::Vec3b(255, 255, 255);
-    }
+  header.frame_id = frame_id;
+  // publish_fan<data_depth == 0 ? uint8_t : uint16_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(),
+  //     ping->data(), ping->master_mode(), ping->range(), header);
+  if (data_depth == 0) {
+    publish_fan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
+        ping->range(), header);
   }
-
-  const float ThetaShift = 1.5 * 180;
-  const cv::Point origin(image_width / 2, ranges.size());
-
-  for (int r = 0; r < ranges.size(); r++) {
-    std::vector<cv::Point> pts;
-    cv::ellipse2Poly(origin, cv::Size(r, r), ThetaShift, -bearing, bearing, 1, pts);
-
-    std::vector<cv::Point> arc_points;
-    arc_points.push_back(pts[0]);
-
-    for (size_t k = 0; k < (pts.size() - 1); k++) {
-      cv::LineIterator it(rgb_img, pts[k], pts[k + 1], 4);
-      for (int i = 1; i < it.count; i++, ++it) arc_points.push_back(it.pos());
-    }
-
-    cv::Mat data_rows_resized;
-    cv::resize(rawDataMat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
-
-    for (size_t k = 0; k < arc_points.size(); k++)
-      rgb_img.at<cv::Vec3b>(arc_points[k]) = cv::Vec3b(0, data_rows_resized.at<uint8_t>(1, k), 0);
+  else {
+    publish_fan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
+        ping->range(), header); // TODO(hugoyvrn, handle publish_fan<uint16_t> for 16bits data depth)
   }
-
-  // cv::Mat yuv_img;
-  // cv::cvtColor(rgb_img, yuv_img, cv::COLOR_BGR2YUV_I420);
-
-  // Publish sonar conic image
-  sensor_msgs::msg::Image msg;
-  cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, rgb_img).toImageMsg(msg);
-  //   cv_bridge::CvImage(std_msgs::msg::Header(), sensor_msgs::image_encodings::NV21, yuv_img).toImageMsg(msg);
-  image_publisher_->publish(msg);
 }
