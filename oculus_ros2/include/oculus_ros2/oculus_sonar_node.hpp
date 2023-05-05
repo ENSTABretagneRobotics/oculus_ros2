@@ -41,6 +41,18 @@ typedef struct {
   double salinity;
 } rosParameters;
 
+namespace flagByte {
+const int rangeAsMeters = 0x02;  // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
+const int dataDepth = 0x02;  // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ?
+const int sendGains = 0x03;  // bit 2: 0 = won't send gain, 1 = send gain
+const int simplePing = 0x04;  // bit 3: 0 = send full return message, 1 = send simple return message
+const int gainAssist = 0x05;  // bit 4: gain assist?
+// const int ?? = 0x06;  // bit 5: ?
+const int nbeams = 0x07;  // bit 6: enable 512 beams
+// const int ?? = 0x08;  // bit 7: ?
+}  // namespace flagByte
+
+
 class OculusSonarNode : public rclcpp::Node {
 public:
   OculusSonarNode();
@@ -49,6 +61,12 @@ public:
 protected:
   const std::vector<std::string> dynamic_parameters_names_{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist",
       "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run"};
+  const std::string pingRateDescription =
+      "Frequency of ping fires.\n\t" + std::to_string(pingRateNormal) + ": 10Hz max ping rate.\n\t" +
+      std::to_string(pingRateHigh) + ": 15Hz max ping rate.\n\t" + std::to_string(pingRateHighest) + ": 40Hz max ping rate.\n\t" +
+      std::to_string(pingRateLow) + ": 5Hz max ping rate.\n\t" + std::to_string(pingRateLowest) + ": 2Hz max ping rate.\n\t" +
+      std::to_string(pingRateStandby) + ": Standby mode (no ping fire).";
+
   rosParameters currentSonarParameters_;
   rosParameters currentRosParameters_;
   oculus::SonarDriver::PingConfig currentConfig_;
@@ -84,7 +102,7 @@ private:
       const T& old_val,
       const T& new_val,
       const std::string& param_name,
-      const std::string& param_name_to_display = std::string()) const;
+      const std::string& param_name_to_display = "") const;
   void updateParameters(rosParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters);
   void updateParameters(rosParameters& parameters, oculus::SonarDriver::PingConfig feedback);
   void sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result);
@@ -92,6 +110,7 @@ private:
 
   void enableRunMode();
   void desableRunMode();
+  void checkFlag(uint8_t flags);
   void publishStatus(const OculusStatusMsg& status) const;
   void publishPing(const oculus::PingMessage::ConstPtr& pingMetadata);
   void handleDummy() const;
@@ -124,16 +143,15 @@ void OculusSonarNode::handleFeedbackForParam(rcl_interfaces::msg::SetParametersR
     const std::string& param_name,
     const std::string& param_name_to_display) const {
   if (old_val != new_val) {
-    std::string param_name_to_display = param_name_to_display == "" ? param_name : param_name_to_display;
+    std::string param_name_to_display_ = param_name_to_display == "" ? param_name : param_name_to_display;
     if (param.get_name() == param_name) {
-      // if (parameters.size() == 1)
       result.successful = false;
-      RCLCPP_WARN_STREAM(this->get_logger(), "Could not update " << param_name_to_display);
-      result.reason.append("Could not update " + param_name_to_display + ".\n");
+      RCLCPP_WARN_STREAM(this->get_logger(), "Could not update " << param_name_to_display_);
+      result.reason.append("Could not update " + param_name_to_display_ + ".\n");
     } else {
-      RCLCPP_WARN_STREAM(this->get_logger(), param_name_to_display << " change from " << old_val << " to " << new_val
-                                                                    << " when updating the parameter " << param.get_name());
-      result.reason.append(param_name_to_display + " change.\n");
+      RCLCPP_WARN_STREAM(this->get_logger(), param_name_to_display_ << " change from " << old_val << " to " << new_val
+                                                                   << " when updating the parameter " << param.get_name());
+      result.reason.append(param_name_to_display_ + " change.\n");
     }
   }
 }

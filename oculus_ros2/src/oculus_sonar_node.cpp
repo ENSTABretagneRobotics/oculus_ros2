@@ -37,7 +37,8 @@ OculusSonarNode::OculusSonarNode()
   {
     // std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
     //           << "Is it properly connected ?" << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    const int sleepWhileConnecting = 1000;
+    std::this_thread::sleep_for(std::chrono::milliseconds(sleepWhileConnecting));
   }
 
   if (!this->has_parameter("run")) {
@@ -62,14 +63,7 @@ OculusSonarNode::OculusSonarNode()
     range.set__from_value(0).set__to_value(5).set__step(1);
     param_desc.name = "ping_rate";
     param_desc.type = rclcpp::ParameterType::PARAMETER_INTEGER;
-    param_desc.description =
-        "Frequency of ping fires.\n"
-        "\t0: 10Hz max ping rate.\n"
-        "\t1: 15Hz max ping rate.\n"
-        "\t2: 40Hz max ping rate.\n"
-        "\t3: 5Hz max ping rate.\n"
-        "\t4: 2Hz max ping rate.\n"
-        "\t5: Standby mode (no ping fire).";
+    param_desc.description = pingRateDescription;
     param_desc.integer_range = {range};
     this->declare_parameter<int>("ping_rate", 2, param_desc);
   }
@@ -197,8 +191,21 @@ void OculusSonarNode::desableRunMode() {
   this->set_parameter(rclcpp::Parameter("run", false));
 }
 
+void OculusSonarNode::checkFlag(uint8_t flags) {
+  if (!(flags & flagByte::rangeAsMeters)) {
+    RCLCPP_ERROR(get_logger(), "Range is attepreted as percent while ros driver assume range is interpreted as meters.");
+  }
+  if (!(flags & flagByte::sendGains)) {
+    RCLCPP_ERROR(get_logger(), "The sonar don't send gain while ros driver assume gains are sended. Data is incomplete.");
+  }
+  if (!(flags & flagByte::simplePing)) {
+    RCLCPP_ERROR(get_logger(), "The sonar don't use simple ping message while ros driver assume simple ping are used.");
+  }
+}
+
 void OculusSonarNode::publishStatus(const OculusStatusMsg& status) const {
-  if (status.partNumber != 1042)
+  const int oculusM1200dPartNumber = 1042;
+  if (status.partNumber != oculusM1200dPartNumber)
     RCLCPP_ERROR_STREAM(get_logger(),
         "The sonar version seems to be different than M1200d."
         " This driver is not suppose to work with your sonar.");
@@ -207,12 +214,6 @@ void OculusSonarNode::publishStatus(const OculusStatusMsg& status) const {
   oculus::copyToRos(msg, status);
   this->status_publisher_->publish(msg);
   // TODO(hugoyvrn, publish temperature)
-}
-
-inline rclcpp::Time toRosStamp(const SonarDriver::TimePoint& stamp) {
-  size_t nano = std::chrono::duration_cast<std::chrono::nanoseconds>(stamp.time_since_epoch()).count();
-  size_t seconds = nano / 1000000000;
-  return rclcpp::Time(seconds, nano - 1000000000 * seconds);
 }
 
 void OculusSonarNode::updateRosConfig() {
@@ -249,8 +250,8 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
     desableRunMode();
     this->sonar_driver_->standby();
   }
-  if (currentSonarParameters_.ping_rate == 5) {
-    RCLCPP_INFO(this->get_logger(), "ping_rate mode is seted to 5.");
+  if (currentSonarParameters_.ping_rate == pingRateStandby) {
+    RCLCPP_INFO_STREAM(this->get_logger(), "ping_rate mode is seted to " << pingRateStandby << ".");
     RCLCPP_INFO(this->get_logger(), "Going to standby mode");
     desableRunMode();
     this->sonar_driver_->standby();
@@ -305,7 +306,8 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
 }
 
 void OculusSonarNode::handleDummy() const {
-  if (is_in_run_mode_ && this->ping_publisher_->get_subscription_count() > 0 && currentSonarParameters_.ping_rate != 5) {
+  if (is_in_run_mode_ && this->ping_publisher_->get_subscription_count() > 0 &&
+      currentSonarParameters_.ping_rate != pingRateStandby) {
     RCLCPP_INFO(this->get_logger(), "Exiting standby mode");
     this->sonar_driver_->resume();
   }
@@ -370,19 +372,15 @@ void OculusSonarNode::updateParameters(rosParameters& parameters, SonarDriver::P
   // double speedOfSound;           // ms-1, if set to zero then internal calc will apply using salinity
   // double salinity;               // ppt, set to zero if we are in fresh water
 
-  // Checks
-  if (!(feedback.flags & 0x01))
-    RCLCPP_ERROR(get_logger(), "Range is attepreted as percent while ros driver assume range is interpreted as meters.");
-  if (!(feedback.flags & 0x04))
-    RCLCPP_ERROR(get_logger(), "The sonar don't send gain while ros driver assume gains are sended. Data is incomplete.");
-  if (!(feedback.flags & 0x08))
-    RCLCPP_ERROR(get_logger(), "The sonar don't use simple ping message while ros driver assume simple ping are used.");
+  checkFlag(feedback.flags);
 
   new_parameters.push_back(rclcpp::Parameter("frequency_mode", feedback.masterMode));  // "frequency_mode"
   new_parameters.push_back(rclcpp::Parameter("ping_rate", feedback.pingRate));
-  new_parameters.push_back(rclcpp::Parameter("data_depth", static_cast<int>(feedback.flags & 0x02)));  // data_depth
-  new_parameters.push_back(rclcpp::Parameter("nbeams", static_cast<int>(feedback.flags & 0x30)));  // nbeams
-  new_parameters.push_back(rclcpp::Parameter("gain_assist", static_cast<bool>(feedback.flags & 0x10)));  // gain_assist
+  new_parameters.push_back(
+      rclcpp::Parameter("data_depth", static_cast<int>(feedback.flags & flagByte::dataDepth)));  // data_depth
+  new_parameters.push_back(rclcpp::Parameter("nbeams", static_cast<int>(feedback.flags & flagByte::nbeams)));  // nbeams
+  new_parameters.push_back(
+      rclcpp::Parameter("gain_assist", static_cast<bool>(feedback.flags & flagByte::gainAssist)));  // gain_assist
   new_parameters.push_back(rclcpp::Parameter("range", feedback.range));
   new_parameters.push_back(rclcpp::Parameter("gamma_correction", feedback.gammaCorrection));
   new_parameters.push_back(rclcpp::Parameter("gain_percent", feedback.gainPercent));
@@ -397,68 +395,34 @@ void OculusSonarNode::updateParameters(rosParameters& parameters, SonarDriver::P
   updateParameters(parameters, new_parameters);
 }
 
-void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result)
-
-{
+void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result) {
   SonarDriver::PingConfig newConfig = currentConfig_;  // To avoid to create a new SonarDriver::PingConfig from ros parameters
   if (param.get_name() == "frequency_mode") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating frequency_mode to " << param.as_int() << " (1: 1.2MHz, 2: 2MHz).");
     newConfig.masterMode = param.as_int();
   } else if (param.get_name() == "ping_rate") {
-    RCLCPP_INFO_STREAM(this->get_logger(),
-        "Updating ping_rate to " << param.as_int() << " (0: 10Hz, 1: 15Hz, 2: 40Hz, 3: 5Hz, 4: 2Hz, 5: Standby mode).");
-    switch (param.as_int()) {
-      case 0:
-        newConfig.pingRate = pingRateNormal;
-        break;  // 10Hz
-      case 1:
-        newConfig.pingRate = pingRateHigh;
-        break;  // 15Hz
-      case 2:
-        newConfig.pingRate = pingRateHighest;
-        break;  // 40Hz
-      case 3:
-        newConfig.pingRate = pingRateLow;
-        break;  // 5Hz
-      case 4:
-        newConfig.pingRate = pingRateLowest;
-        break;  // 2Hz
-      case 5:
-        newConfig.pingRate = pingRateStandby;
-        break;  // standby mode
-      default:
-        break;
-    }
+    RCLCPP_INFO_STREAM(this->get_logger(), "Updating ping_rate to " << param.as_int() << " (" + pingRateDescription + ").");
+    newConfig.pingRate = param.as_int();
   } else if (param.get_name() == "data_depth") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating data_depth to " << param.as_int() << " (0: 8 bits, 1: 16 bits).");
-    switch (param.as_int()) {
-      case 0:  // 8 bits
-        newConfig.flags &= ~0x02;
-        break;
-      case 1:  // 16 bits
-        newConfig.flags |= 0x02;
-        break;
-      default:
-        break;
+    if (param.as_int() == 0) {
+      newConfig.flags &= ~flagByte::dataDepth;  // 8 bits
+    } else {
+      newConfig.flags |= flagByte::dataDepth;  // 16 bits
     }
   } else if (param.get_name() == "nbeams") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating nbeams to " << param.as_int() << " (0: 256 beams, 1: 512 beams).");
-    switch (param.as_int()) {
-      case 0:  // 256 beams
-        newConfig.flags &= ~0x40;
-        break;
-      case 1:  // 512 beams
-        newConfig.flags |= 0x40;
-        break;
-      default:
-        break;
+    if (param.as_int() == 0) {
+      newConfig.flags &= ~flagByte::nbeams;  // 256 beams
+    } else {
+      newConfig.flags |= flagByte::nbeams;  // 512 beams
     }
   } else if (param.get_name() == "gain_assist") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating gain_assist to " << param.as_bool());
     if (param.as_bool()) {
-      newConfig.flags |= 0x10;
+      newConfig.flags |= flagByte::gainAssist;
     } else {
-      newConfig.flags &= ~0x10;
+      newConfig.flags &= ~flagByte::gainAssist;
     }
   } else if (param.get_name() == "range") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating range to " << param.as_double() << "m.");
@@ -476,7 +440,8 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
   } else if (param.get_name() == "sound_speed") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating sound_speed to " << param.as_double() << " m/s.");
     if (!currentRosParameters_.use_salinity) {
-      if (param.as_double() >= 1400.0 && param.as_double() <= 1600.0)
+      if (param.as_double() >= 1400.0 &&
+          param.as_double() <= 1600.0)  // TODO(hugoyvrn, why is there a range verification here and not for other parameters?)
         newConfig.speedOfSound = param.as_double();
       else
         RCLCPP_INFO_STREAM(this->get_logger(), "Speed of sound must be between 1400.0 and 1600.0.");
@@ -486,9 +451,9 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
     newConfig.salinity = param.as_double();
   }
 
-  newConfig.flags |= 0x01  // always in meters
-                   | 0x04  // force send gain to true
-                   | 0x08;  // use simple ping
+  newConfig.flags |= flagByte::rangeAsMeters  // always in meters
+                   | flagByte::sendGains  // force send gain to true
+                   | flagByte::simplePing;  // use simple ping
 
   // send config to Oculus sonar and wait for feedback
   SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
@@ -496,16 +461,16 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
 
   updateParameters(currentSonarParameters_, feedback);
 
-  if (!(feedback.flags & 0x04)) {
-    RCLCPP_ERROR(this->get_logger(), "The oculus do not send gains. There is an error. Data is not complete.");
-  }
+  checkFlag(feedback.flags);
 
   handleFeedbackForParam<double>(result, param, newConfig.masterMode, feedback.masterMode, "masterMode", "frequency_mode");
   // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO(hugoyvrn)
-  handleFeedbackForParam<int>(result, param, (newConfig.flags & 0x02) ? 1 : 0, (feedback.flags & 0x02) ? 1 : 0, "data_depth");
-  handleFeedbackForParam<bool>(
-      result, param, (newConfig.flags & 0x10) ? 1 : 0, (feedback.flags & 0x10) ? 1 : 0, "gain_assist");
-  handleFeedbackForParam<int>(result, param, (newConfig.flags & 0x40) ? 1 : 0, (feedback.flags & 0x40) ? 1 : 0, "nbeams");
+  handleFeedbackForParam<int>(result, param, (newConfig.flags & flagByte::dataDepth) ? 1 : 0,
+      (feedback.flags & flagByte::dataDepth) ? 1 : 0, "data_depth");
+  handleFeedbackForParam<bool>(result, param, (newConfig.flags & flagByte::gainAssist) ? 1 : 0,
+      (feedback.flags & flagByte::gainAssist) ? 1 : 0, "gain_assist");
+  handleFeedbackForParam<int>(
+      result, param, (newConfig.flags & flagByte::nbeams) ? 1 : 0, (feedback.flags & flagByte::nbeams) ? 1 : 0, "nbeams");
   handleFeedbackForParam<double>(result, param, newConfig.range, feedback.range, "range");
   handleFeedbackForParam<int>(result, param, newConfig.gammaCorrection, feedback.gammaCorrection, "gamma_correction");
   handleFeedbackForParam<double>(result, param, newConfig.gainPercent, feedback.gainPercent, "gain_percent");

@@ -15,6 +15,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <type_traits>
 
 #include <oculus_interfaces/msg/ping.hpp>
 #include <oculus_ros2/conversions.hpp>
@@ -27,7 +28,6 @@
 
 class SonarViewer {
 public:
-  // SonarViewer(bool *arg);
   explicit SonarViewer(rclcpp::Node* node);
   ~SonarViewer();
   void publishFan(const oculus::PingMessage::ConstPtr& ping, const std::string& frame_id = "", const int& data_depth = 0) const;
@@ -42,11 +42,8 @@ public:
       const double& ping_rage,
       const std_msgs::msg::Header& header) const;
   void streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data);
-  // void streamAndFilter(const oculus::PingMessage::ConstPtr &ping);
-  // sensor_msgs::msg::Image publishFan(const oculus::PingMessage::ConstPtr &ping);
 
 private:
-  //      //   sensor_msgs::ImagePtr msg;
   const rclcpp::Node* node_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
 };
@@ -85,6 +82,9 @@ void SonarViewer::publishFan(const int& width,
     const int& master_mode,
     const double& ping_range,
     const std_msgs::msg::Header& header) const {
+  static_assert(std::is_same<DataType, uint8_t>::value || std::is_same<DataType, uint16_t>::value,
+      "publishFan can only be build for uint8_t and uint16_16");
+
   // Create rawDataMat from ping_data
   cv::Mat rawDataMat(height, (width + 4), CV_8U);
   std::memcpy(rawDataMat.data, ping_data.data() + offset, height * (width + 4));
@@ -94,16 +94,12 @@ void SonarViewer::publishFan(const int& width,
   int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
   cv::Mat mono_img;
   if (std::is_same<DataType, uint8_t>::value) {
-    mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), CV_8UC1) * 255;
+    mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), CV_8UC1);
   } else {
-    mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), CV_16UC1) * 65535;
+    mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), CV_16UC1);
   }
 
-  // for (int i = 0; i < image_width; i++) {
-  //   for (int j = 0; j < ranges.size(); j++) {
-  //     mono_img.at<DataType>(j, i) = 255;
-  //   }
-  // }
+  mono_img *= 1 << sizeof(DataType) * CHAR_BIT;  // Seting the image to white
 
   const float theta_shift = 1.5 * 180;
   const cv::Point origin(image_width / 2, ranges.size());
