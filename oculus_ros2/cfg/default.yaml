@@ -27,7 +27,7 @@ oculus_sonar:
     #  0: Oculus outputs 256 beams.
     #  1: Oculus outputs 512 beams.
 
-    gain_assist: True # Enable auto gain. Default value is True.
+    gain_assist: True # Enable gain assist. Default value is True.
 
     range: 20.0 # Sonar range (in meters), min=0.3, max=40.0.  Default value is 20.0.
 

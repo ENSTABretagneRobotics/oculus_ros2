@@ -15,12 +15,12 @@ SonarViewer::SonarViewer(rclcpp::Node* node) : node_(node) {
 
 SonarViewer::~SonarViewer() {}
 
-// void SonarViewer::stream_and_filter(const int &width,
+// void SonarViewer::streamAndFilter(const int &width,
 //                                     const int &height,
 //                                     const int &offset,
 //                                     const std::vector<uint8_t> &ping_data,
 //                                     cv::Mat &data)
-void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data) {
+void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data) {
   int width = ping->bearing_count();
   int height = ping->range_count();
   int offset = ping->ping_data_offset();
@@ -114,12 +114,12 @@ void SonarViewer::stream_and_filter(const oculus::PingMessage::ConstPtr& ping, c
 }
 
 void gammaCorrection(const cv::Mat& src, cv::Mat& dst, const float gamma) {
-  float invGamma = 1 / gamma;
+  float inv_gamma = 1 / gamma;
 
   cv::Mat table(1, 256, CV_8U);
   uchar* p = table.ptr();
   for (int i = 0; i < 256; ++i) {
-    p[i] = (uchar)(pow(i / 255.0, invGamma) * 255);
+    p[i] = (uchar)(pow(i / 255.0, inv_gamma) * 255);
   }
 
   LUT(src, table, dst);
@@ -168,27 +168,27 @@ int grid_presence_counter[36][25] = {0};
 int grid_absence_counter[36][25] = {0};
 int frames_counter = 0;
 
-void SonarViewer::publish_fan(
+void SonarViewer::publishFan(
     const oculus_interfaces::msg::Ping& ros_ping_msg, const std::string& frame_id, const int& data_depth) const {
   // const int offset = ping->ping_data_offset();
   const int offset = 229;  // TODO(hugoyvrn)
-  publish_fan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
+  publishFan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
       ros_ping_msg.range, ros_ping_msg.header);
 }
 
-void SonarViewer::publish_fan(
+void SonarViewer::publishFan(
     const oculus::PingMessage::ConstPtr& ping, const std::string& frame_id, const int& data_depth) const {
   std_msgs::msg::Header header;
-  header.stamp = oculus::to_ros_stamp(ping->timestamp());
+  header.stamp = oculus::toRosStamp(ping->timestamp());
   header.frame_id = frame_id;
-  // publish_fan<data_depth == 0 ? uint8_t : uint16_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(),
+  // publishFan<data_depth == 0 ? uint8_t : uint16_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(),
   //     ping->data(), ping->master_mode(), ping->range(), header);
   if (data_depth == 0) {
-    publish_fan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
+    publishFan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
         ping->range(), header);
   }
   else {
-    publish_fan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
-        ping->range(), header); // TODO(hugoyvrn, handle publish_fan<uint16_t> for 16bits data depth)
+    publishFan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
+        ping->range(), header); // TODO(hugoyvrn, handle publishFan<uint16_t> for 16bits data depth)
   }
 }

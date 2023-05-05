@@ -56,6 +56,7 @@ Checks: >
   cert-dcl58-cpp,
   cert-err34-c,
   cert-err52-cpp,
+  cert-err58-cpp,
   cert-err60-cpp,
   cert-flp30-c,
   cert-msc50-cpp,

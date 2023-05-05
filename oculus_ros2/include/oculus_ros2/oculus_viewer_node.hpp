@@ -24,7 +24,7 @@ public:
 
 private:
   // rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
-  SonarViewer sonar_viewer;
+  SonarViewer sonar_viewer_;
   rclcpp::Subscription<oculus_interfaces::msg::Ping>::SharedPtr ping_subscription_;
   void ping_callback(const oculus_interfaces::msg::Ping& ping_msg) const;
 };
