@@ -13,7 +13,7 @@ This is a ROS2 metapackage including:
 This ROS2 metapackage was developed and tested using:
 * Ubuntu 22.04 LTS
 * ROS2 humble
-* CMake ???
+* CMake 3.22.1
 
 
 ## Getting started

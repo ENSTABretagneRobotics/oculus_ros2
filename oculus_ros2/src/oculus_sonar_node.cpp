@@ -12,28 +12,27 @@ using SonarDriver = oculus::SonarDriver;
 
 OculusSonarNode::OculusSonarNode()
   : Node("oculus_sonar"),
-    //  sonar_driver_(std::make_shared<SonarDriver>(this->io_service_.io_service())),
+    // sonar_driver_(std::make_shared<SonarDriver>(this->io_service_.io_service())),
     sonar_viewer_(static_cast<rclcpp::Node*>(this)),
     frame_id_(this->declare_parameter<std::string>("frame_id", "sonar")),
-    temperature_warn_limit_(this->declare_parameter<double>("temperature_warn", 30.)),
-    temperature_stop_limit_(this->declare_parameter<double>("temperature_stop", 35.)) {
+
+    temperature_warn_limit_(this->declare_parameter<double>("temperature_warn", params::TEMPERATURE_WARN_DEFAULT_VALUE)),
+    temperature_stop_limit_(this->declare_parameter<double>("temperature_stop", params::TEMPERATURE_STOP_DEFAULT_VALUE)),
+    is_in_run_mode_(this->declare_parameter<bool>("run", params::RUN_MODE_DEFAULT_VALUE))
+     {
   this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>("status", 1);
   this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>("ping", 1);
   this->temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>("temperature", 1);
   this->pressure_publisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("pressure", 1);
 
-  // image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("fan_image", 10);
-
-  this->sonar_driver_ = std::make_shared<SonarDriver>(this->io_service_.io_service());
+  this->sonar_driver_ = std::make_shared<SonarDriver>(this->io_service_.io_service()); // TODO(hugoyvrn, test on sonar and remove)
   this->io_service_.start();
-  if (!this->sonar_driver_->wait_next_message()) {
+  if (!this->sonar_driver_->wait_next_message()) {  // Non-blocking function making connection with the sonar.
     std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
               << "Is it properly connected ?" << std::endl;
   }
-  // const oculus::PingMessage::ConstPtr ping;
-  // sonar_viewer_.publishFan(ping);
 
-  while (!this->sonar_driver_->connected())  // wait the sonar to connected
+  while (!this->sonar_driver_->connected())  // Blocking while waiting the connected with the sonar.
   {
     // std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
     //           << "Is it properly connected ?" << std::endl;
@@ -41,124 +40,38 @@ OculusSonarNode::OculusSonarNode()
     std::this_thread::sleep_for(std::chrono::milliseconds(sleepWhileConnecting));
   }
 
-  if (!this->has_parameter("run")) {
-    this->declare_parameter<bool>("run", false);
+  for (const params::bool_param& param : params::bool_) {
+    if (!this->has_parameter(param.name)) {
+      rcl_interfaces::msg::ParameterDescriptor param_desc;
+      param_desc.name = param.name;
+      param_desc.type = rclcpp::ParameterType::PARAMETER_BOOL;
+      param_desc.description = param.desc;
+      this->declare_parameter<bool>(param.name, param.default_val, param_desc);
+    }
   }
-  if (!this->has_parameter("frequency_mode")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    rcl_interfaces::msg::IntegerRange range;
-    range.set__from_value(1).set__to_value(2).set__step(1);
-    param_desc.name = "frequency_mode";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_INTEGER;
-    param_desc.description =
-        "Sonar beam frequency mode.\n"
-        "\t1: Low frequency (1.2MHz, wide aperture).\n"
-        "\t2: High frequency (2.1Mhz, narrow aperture).";
-    param_desc.integer_range = {range};
-    this->declare_parameter<int>("frequency_mode", 1, param_desc);
+  for (const params::int_param& param : params::int_) {
+    if (!this->has_parameter(param.name)) {
+      rcl_interfaces::msg::ParameterDescriptor param_desc;
+      param_desc.name = param.name;
+      param_desc.type = rclcpp::ParameterType::PARAMETER_INTEGER;
+      param_desc.description = param.desc;
+      rcl_interfaces::msg::IntegerRange range;
+      range.set__from_value(param.min).set__to_value(param.max).set__step(1);
+      param_desc.integer_range = {range};
+      this->declare_parameter<int>(param.name, param.default_val, param_desc);
+    }
   }
-  if (!this->has_parameter("ping_rate")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    rcl_interfaces::msg::IntegerRange range;
-    range.set__from_value(0).set__to_value(5).set__step(1);
-    param_desc.name = "ping_rate";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_INTEGER;
-    param_desc.description = pingRateDescription;
-    param_desc.integer_range = {range};
-    this->declare_parameter<int>("ping_rate", 2, param_desc);
-  }
-  if (!this->has_parameter("data_depth")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    rcl_interfaces::msg::IntegerRange range;
-    range.set__from_value(0).set__to_value(1).set__step(1);
-    param_desc.name = "data_depth";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_INTEGER;
-    param_desc.description =
-        "Ping data encoding bit count.\n"
-        "\t0: Ping data encoded on 8bits.\n"
-        "\t1: Ping data encoded on 16bits.";
-    param_desc.integer_range = {range};
-    this->declare_parameter<int>("data_depth", 0, param_desc);
-  }
-  if (!this->has_parameter("nbeams")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-
-    rcl_interfaces::msg::IntegerRange range;
-    range.set__from_value(0).set__to_value(1).set__step(1);
-    param_desc.name = "nbeams";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_INTEGER;
-    param_desc.description =
-        "Number of ping beams.\n"
-        "\t0: Oculus outputs 256 beams.\n"
-        "\t1: Oculus outputs 512 beams.";
-    param_desc.integer_range = {range};
-    this->declare_parameter<int>("nbeams", 0, param_desc);
-  }
-  if (!this->has_parameter("gain_assist")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    param_desc.name = "gain_assist";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_BOOL;
-    param_desc.description = "Enable auto gain.";
-    this->declare_parameter<bool>("gain_assist", true, param_desc);
-  }
-  if (!this->has_parameter("range")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    rcl_interfaces::msg::FloatingPointRange range;
-    range.set__from_value(0.3).set__to_value(40.0).set__step(0.1);
-    param_desc.name = "range";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_DOUBLE;
-    param_desc.description = "Sonar range (in meters), min=0.3, max=40.0.";
-    param_desc.floating_point_range = {range};
-    this->declare_parameter<double>("range", .3, param_desc);
-  }
-  if (!this->has_parameter("gamma_correction")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    rcl_interfaces::msg::IntegerRange range;
-    range.set__from_value(0).set__to_value(255).set__step(1);
-    param_desc.name = "gamma_correction";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_INTEGER;
-    param_desc.description = "Gamma correction, min=0, max=255.";
-    param_desc.integer_range = {range};
-    this->declare_parameter<int>("gamma_correction", 158, param_desc);
-  }
-  if (!this->has_parameter("gain_percent")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    rcl_interfaces::msg::FloatingPointRange range;
-    range.set__from_value(0.1).set__to_value(100.0).set__step(0.1);
-    param_desc.name = "gain_percent";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_DOUBLE;
-    param_desc.description = "Gain percentage (%), min=0.1, max=100.0.";
-    param_desc.floating_point_range = {range};
-    this->declare_parameter<double>("gain_percent", 50.0, param_desc);
-  }
-  if (!this->has_parameter("sound_speed")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    rcl_interfaces::msg::FloatingPointRange range;
-    range.set__from_value(0.0).set__to_value(1600.0).set__step(0.1);  // min = 1400.0 but must include 0.0 for configuration
-    param_desc.name = "sound_speed";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_DOUBLE;
-    param_desc.description = "Sound speed (in m/s, set to 0 for it to be calculated using salinity), min=1400.0, max=1600.0.";
-    param_desc.floating_point_range = {range};
-    this->declare_parameter<double>("sound_speed", 0.0, param_desc);
-  }
-  if (!this->has_parameter("use_salinity")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    param_desc.name = "use_salinity";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_BOOL;
-    param_desc.description = "Use salinity to calculate sound_speed.";
-    this->declare_parameter<bool>("use_salinity", true, param_desc);
-  }
-  if (!this->has_parameter("salinity")) {
-    rcl_interfaces::msg::ParameterDescriptor param_desc;
-    rcl_interfaces::msg::FloatingPointRange range;
-    range.set__from_value(0.0).set__to_value(100.0).set__step(0.1);
-    param_desc.name = "salinity";
-    param_desc.type = rclcpp::ParameterType::PARAMETER_DOUBLE;
-    param_desc.description =
-        "Salinity (in parts per thousand (ppt,ppm,g/kg), "
-        "used to calculate sound speed if needed), min=0.0, max=100";
-    param_desc.floating_point_range = {range};
-    this->declare_parameter<double>("salinity", 0.0, param_desc);
+  for (const params::double_param& param : params::double_) {
+    if (!this->has_parameter(param.name)) {
+      rcl_interfaces::msg::ParameterDescriptor param_desc;
+      param_desc.name = param.name;
+      param_desc.type = rclcpp::ParameterType::PARAMETER_DOUBLE;
+      param_desc.description = param.desc;
+      rcl_interfaces::msg::IntegerRange range;
+      range.set__from_value(param.min).set__to_value(param.max).set__step(param.step);
+      param_desc.integer_range = {range};
+      this->declare_parameter<double>(param.name, param.default_val, param_desc);
+    }
   }
 
   // Get the current sonar config
@@ -209,6 +122,8 @@ void OculusSonarNode::publishStatus(const OculusStatusMsg& status) const {
     RCLCPP_ERROR_STREAM(get_logger(),
         "The sonar version seems to be different than M1200d."
         " This driver is not suppose to work with your sonar.");
+
+  // TODO(hugoyvrn, update ros param ?)
 
   static oculus_interfaces::msg::OculusStatus msg;
   oculus::copyToRos(msg, status);
@@ -401,7 +316,7 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating frequency_mode to " << param.as_int() << " (1: 1.2MHz, 2: 2MHz).");
     newConfig.masterMode = param.as_int();
   } else if (param.get_name() == "ping_rate") {
-    RCLCPP_INFO_STREAM(this->get_logger(), "Updating ping_rate to " << param.as_int() << " (" + pingRateDescription + ").");
+    RCLCPP_INFO_STREAM(this->get_logger(), "Updating ping_rate to " << param.as_int() << " (" + params::ping_rate.desc + ").");
     newConfig.pingRate = param.as_int();
   } else if (param.get_name() == "data_depth") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating data_depth to " << param.as_int() << " (0: 8 bits, 1: 16 bits).");
@@ -500,10 +415,6 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::setConfigCallback(cons
     } else if (std::find(dynamic_parameters_names_.begin(), dynamic_parameters_names_.end(), param.get_name()) !=
                dynamic_parameters_names_.end()) {
       sendParamToSonar(param, result);
-    } else {  // TODO
-      RCLCPP_WARN_STREAM(get_logger(), "Wrong dynamic parameter to set : param = " << param << ". Not seted");
-      result.successful = false;
-      result.reason = "The parameter is not a decalred or is not a dynamic paramter.";
     }
   }
 

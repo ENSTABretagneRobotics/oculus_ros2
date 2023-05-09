@@ -101,72 +101,7 @@ void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv:
   cv::normalize(result, result, 0, 1, cv::NORM_MINMAX);
   cv::imshow("result", result);
   cv::waitKey(1);
-
-  /*std::stringstream file_name;
-  file_name << "/home/jaouadros/catkin_ws/src/Sonar_processing_display/tests/results/before/image_" << image_i << ".jpg";
-  cv::normalize(img, img, 0, 255, cv::NORM_MINMAX);
-  cv::imwrite(file_name.str(), img);
-  std::stringstream file_name2;
-  cv::normalize(result, result, 0, 255, cv::NORM_MINMAX);
-  file_name2 << "/home/jaouadros/catkin_ws/src/Sonar_processing_display/tests/results/after/image_" << image_i << ".jpg";
-  cv::imwrite(file_name2.str(), result);
-  image_i++;*/
 }
-
-void gammaCorrection(const cv::Mat& src, cv::Mat& dst, const float gamma) {
-  float inv_gamma = 1 / gamma;
-
-  cv::Mat table(1, 256, CV_8U);
-  uchar* p = table.ptr();
-  for (int i = 0; i < 256; ++i) {
-    p[i] = (uchar)(pow(i / 255.0, inv_gamma) * 255);
-  }
-
-  LUT(src, table, dst);
-}
-
-std::string type2str(int type) {
-  std::string r;
-
-  uchar depth = type & CV_MAT_DEPTH_MASK;
-  uchar chans = 1 + (type >> CV_CN_SHIFT);
-
-  switch (depth) {
-    case CV_8U:
-      r = "8U";
-      break;
-    case CV_8S:
-      r = "8S";
-      break;
-    case CV_16U:
-      r = "16U";
-      break;
-    case CV_16S:
-      r = "16S";
-      break;
-    case CV_32S:
-      r = "32S";
-      break;
-    case CV_32F:
-      r = "32F";
-      break;
-    case CV_64F:
-      r = "64F";
-      break;
-    default:
-      r = "User";
-      break;
-  }
-
-  r += "C";
-  r += (chans + '0');
-
-  return r;
-}
-
-int grid_presence_counter[36][25] = {0};
-int grid_absence_counter[36][25] = {0};
-int frames_counter = 0;
 
 void SonarViewer::publishFan(
     const oculus_interfaces::msg::Ping& ros_ping_msg, const std::string& frame_id, const int& data_depth) const {
@@ -186,9 +121,8 @@ void SonarViewer::publishFan(
   if (data_depth == 0) {
     publishFan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
         ping->range(), header);
-  }
-  else {
+  } else {
     publishFan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
-        ping->range(), header); // TODO(hugoyvrn, handle publishFan<uint16_t> for 16bits data depth)
+        ping->range(), header);  // TODO(hugoyvrn, handle publishFan<uint16_t> for 16bits data depth)
   }
 }

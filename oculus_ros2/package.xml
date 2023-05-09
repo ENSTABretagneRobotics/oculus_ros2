@@ -2,7 +2,7 @@
 <package format="3">
   <name>oculus_ros2</name>
   <version>0.0.1</version>
-  <description>ROS node for BluePrint subsea Oculus sonar</description>
+  <description>ROS 2 nodes for BluePrint subsea Oculus M1200d sonar</description>
 
   <maintainer email="auguste@forssea-robotics.fr">Auguste BOURGOIS</maintainer>
 

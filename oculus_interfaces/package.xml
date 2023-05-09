@@ -2,7 +2,7 @@
 <package format="3">
     <name>oculus_interfaces</name>
     <version>0.0.1</version>
-    <description>TODO(hugoyvrn): Package description</description>
+    <description>ROS 2 messages interfaces for BluePrint subsea Oculus M1200d sonar</description>
     <maintainer email="auguste@forssea-robotics.fr">Auguste BOURGOIS</maintainer>
     <license>BSD3</license>
 
