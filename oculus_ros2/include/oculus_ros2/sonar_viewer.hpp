@@ -100,24 +100,25 @@ void SonarViewer::publishFan(const int& width,
   const float theta_shift = 1.5 * 180;
   const cv::Point origin(image_width / 2, ranges.size());
 
-  for (int r = 0; r < ranges.size(); r++) {  // TODO(??, optimize for cuda)
-    std::vector<cv::Point> pts;
-    cv::ellipse2Poly(origin, cv::Size(r, r), theta_shift, -bearing, bearing, 1, pts);
+  cv::parallel_for_(cv::Range(0, ranges.size()), [&](const cv::Range& range) {  // TODO(??, optimize for cuda)
+    for (int r = range.start; r < range.end; r++) {
+      std::vector<cv::Point> pts;
+      cv::ellipse2Poly(origin, cv::Size(r, r), theta_shift, -bearing, bearing, 1, pts);
 
-    std::vector<cv::Point> arc_points;
-    arc_points.push_back(pts[0]);
+      std::vector<cv::Point> arc_points;
+      arc_points.push_back(pts[0]);
 
-    for (size_t k = 0; k < (pts.size() - 1); k++) {  // TODO(??, optimize for cuda)
-      cv::LineIterator it(mono_img, pts[k], pts[k + 1], 4);
-      for (int i = 1; i < it.count; i++, ++it) arc_points.push_back(it.pos());  // TODO(??, optimize for cuda)
+      for (size_t k = 0; k < (pts.size() - 1); k++) {
+        cv::LineIterator it(mono_img, pts[k], pts[k + 1], 4);
+        for (int i = 1; i < it.count; i++, ++it) arc_points.push_back(it.pos());
+      }
+
+      cv::Mat data_rows_resized;
+      cv::resize(rawDataMat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
+
+      for (size_t k = 0; k < arc_points.size(); k++) mono_img.at<DataType>(arc_points[k]) = data_rows_resized.at<DataType>(1, k);
     }
-
-    cv::Mat data_rows_resized;
-    cv::resize(rawDataMat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
-
-    for (size_t k = 0; k < arc_points.size(); k++)  // TODO(??, optimize for cuda)
-      mono_img.at<DataType>(arc_points[k]) = data_rows_resized.at<DataType>(1, k);
-  }
+  });
 
   // Publish sonar conic image
   sensor_msgs::msg::Image msg;
