@@ -54,22 +54,21 @@ private:
 
 template <typename T>
 std::vector<double> linspace(T start_in, T end_in, int num_in) {
-  std::vector<double> linspaced;
-
   const auto start = static_cast<double>(start_in);
   const auto end = static_cast<double>(end_in);
   const auto num = static_cast<double>(num_in);
+  std::vector<double> linspaced(std::max(0,num_in-1));
+
   if (num == 0) {
     return linspaced;
-  } else if (num == 1) {
+  }
+  if (num == 1) {
     linspaced.push_back(start);
     return linspaced;
   }
 
-  const double delta = (end - start) / (num - 1);
-  for (int i = 0; i < num - 1; ++i) {
-    linspaced.push_back(start + delta * i);
-  }
+  double delta = (end - start) / (num - 1);
+  std::generate(linspaced.begin(), linspaced.end(), [i = 0, &delta]() mutable { return i++ * delta; });
   linspaced.push_back(end);  // I want to ensure that start and end
                              // are exactly the same as the input
   return linspaced;

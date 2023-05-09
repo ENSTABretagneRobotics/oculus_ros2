@@ -135,14 +135,14 @@ void OculusSonarNode::updateRosConfig() {
   std::shared_lock l(param_mutex_);
 
   updateRosConfigForParam<int>(
-      currentRosParameters_.frequency_mode, currentSonarParameters_.frequency_mode, "frequency_mode", "master_mode");
+      currentRosParameters_.frequency_mode, currentSonarParameters_.frequency_mode, "frequency_mode");
 
   updateRosConfigForParam<double>(currentRosParameters_.range, currentSonarParameters_.range, "range");
 
   updateRosConfigForParam<double>(currentRosParameters_.gain_percent, currentSonarParameters_.gain_percent, "gain_percent");
 
   updateRosConfigForParam<double>(
-      currentRosParameters_.sound_speed, currentSonarParameters_.sound_speed, "sound_speed", "speed_of_sound_used");
+      currentRosParameters_.sound_speed, currentSonarParameters_.sound_speed, "sound_speed");
 
   updateRosConfigForParam<int>(currentRosParameters_.ping_rate, currentSonarParameters_.ping_rate, "ping_rate");
 
@@ -228,7 +228,7 @@ void OculusSonarNode::handleDummy() const {
   }
 }
 
-void OculusSonarNode::updateParameters(rosParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters) {
+void OculusSonarNode::updateParameters(sonarParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters) {
   for (const rclcpp::Parameter& new_param : new_parameters) {
     if (new_param.get_name() == "frequency_mode")
       parameters.frequency_mode = new_param.as_int();
@@ -257,7 +257,7 @@ void OculusSonarNode::updateParameters(rosParameters& parameters, const std::vec
   }
 }
 
-void OculusSonarNode::updateParameters(rosParameters& parameters, SonarDriver::PingConfig feedback) {
+void OculusSonarNode::updateParameters(sonarParameters& parameters, SonarDriver::PingConfig feedback) {
   std::vector<rclcpp::Parameter> new_parameters;
   // OculusMessageHeader head;      // The standard message header
   // uint16_t oculusId;          // Fixed ID 0x4f53

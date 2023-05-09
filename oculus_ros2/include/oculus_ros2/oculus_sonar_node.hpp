@@ -27,7 +27,7 @@
 #include <sensor_msgs/msg/fluid_pressure.hpp>
 #include <sensor_msgs/msg/temperature.hpp>
 
-typedef struct {
+struct sonarParameters {
   int frequency_mode;
   int ping_rate;
   int data_depth;
@@ -39,7 +39,7 @@ typedef struct {
   double sound_speed;
   bool use_salinity;
   double salinity;
-} rosParameters;
+};
 
 namespace flagByte {
 const int RANGE_AS_METERS = 0x02;  // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
@@ -129,8 +129,8 @@ protected:
   const std::vector<std::string> dynamic_parameters_names_{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist",
       "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run"};
 
-  rosParameters currentSonarParameters_;
-  rosParameters currentRosParameters_;
+  sonarParameters currentSonarParameters_;
+  sonarParameters currentRosParameters_;
   oculus::SonarDriver::PingConfig currentConfig_;
 
   bool is_in_run_mode_;  // Same value as ros parameter "run"
@@ -153,9 +153,6 @@ private:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_{nullptr};
 
   template <class T>
-  void updateRosConfigForParam(
-      T& currentSonar_param, const T& new_param, const std::string& ros_param_name, const std::string& param_name);
-  template <class T>
   void updateRosConfigForParam(T& currentSonar_param, const T& new_param, const std::string& param_name);
   void updateRosConfig();
   template <class T>
@@ -165,8 +162,8 @@ private:
       const T& new_val,
       const std::string& param_name,
       const std::string& param_name_to_display = "") const;
-  void updateParameters(rosParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters);
-  void updateParameters(rosParameters& parameters, oculus::SonarDriver::PingConfig feedback);
+  void updateParameters(sonarParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters);
+  void updateParameters(sonarParameters& parameters, oculus::SonarDriver::PingConfig feedback);
   void sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result);
   rcl_interfaces::msg::SetParametersResult setConfigCallback(const std::vector<rclcpp::Parameter>& parameters);
 
@@ -179,19 +176,14 @@ private:
 };
 
 template <class T>
-void OculusSonarNode::updateRosConfigForParam(T& currentSonar_param, const T& new_param, const std::string& param_name) {
-  updateRosConfigForParam(currentSonar_param, new_param, param_name, param_name);
-}
-
-template <class T>
 void OculusSonarNode::updateRosConfigForParam(
-    T& currentSonar_param, const T& new_param, const std::string& ros_param_name, const std::string& param_name) {
+    T& currentSonar_param, const T& new_param, const std::string& param_name) {
   if (currentSonar_param != new_param) {
     this->remove_on_set_parameters_callback(this->param_cb_.get());
     RCLCPP_WARN_STREAM(this->get_logger(),
         "The parameter " << param_name << " has change by it self from " << currentSonar_param << " to " << new_param);
     currentSonar_param = new_param;
-    this->set_parameter(rclcpp::Parameter(ros_param_name, new_param));
+    this->set_parameter(rclcpp::Parameter(param_name, new_param));
     this->param_cb_ =
         this->add_on_set_parameters_callback(std::bind(&OculusSonarNode::setConfigCallback, this, std::placeholders::_1));
   }

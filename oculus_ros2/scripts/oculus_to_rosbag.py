@@ -147,41 +147,6 @@ class Oculus_parser(RosBagCreator):
                        type="oculus_interfaces/msg/Ping")
 
     def create_ros_oculus_msg(self, ping_msg):
-        # print("timestamp",           ping_msg.timestamp())
-        # print("timestamp_micros",    ping_msg.timestamp_micros())
-        # print(dir(ping_msg), "\n")
-        # ['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__',
-        #   '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__',
-        #   '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', 'bearing_count', 'bearing_data', 'data', 'gains',
-        #   'has_gains', 'master_mode', 'message', 'ping_data', 'range_count', 'raw_ping_data', 'sample_size']
-
-        # print(dir(ping_msg.master_mode()), "\n")
-
-        # print(dir(ping_msg.message), "\n")
-        # ['__call__', '__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__func__', '__ge__', '__get__',
-        #   '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__ne__', '__new__', '__reduce__',
-        #   '__reduce_ex__', '__repr__', '__self__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']
-
-        # print(dir(ping_msg.message()), "\n")
-        # ['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__',
-        #   '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__',
-        #   '__setattr__', '__sizeof__', '__str__', '__subclasshook__', 'data', 'header']
-
-        # print(dir(ping_msg.message().header()), "\n")
-        # ['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__',
-        #   '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__',
-        #   '__setattr__', '__sizeof__', '__str__', '__subclasshook__', 'dstDeviceId', 'msgId', 'msgVersion', 'oculusId', 'payloadSize', 'spare2',
-        #   'srcDeviceId']
-
-        # print(">>>>>>>>>>>>", ping_msg)
-
-        # print(dir(ping_msg.message().data()), "\n")
-        # ['__class__', '__delattr__', '__delitem__', '__dir__', '__doc__', '__enter__', '__eq__', '__exit__', '__format__', '__ge__',
-        #   '__getattribute__', '__getitem__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__len__', '__lt__', '__ne__',
-        #   '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__setitem__', '__sizeof__', '__str__', '__subclasshook__',
-        #   'c_contiguous', 'cast', 'contiguous', 'f_contiguous', 'format', 'hex', 'itemsize', 'nbytes', 'ndim', 'obj', 'readonly', 'release',
-        #   'shape', 'strides', 'suboffsets', 'tobytes', 'tolist', 'toreadonly']
-
         ros_msg = Ping()
 
         seconds = ping_msg.timestamp_micros() * 1e-6 + self.args.secondsoffset

@@ -76,17 +76,6 @@ def display_oculus_ping(msg, ax, args):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog="OculusFileReader",
-        description="Example of how to read and display the content of a .oculus "
-        + "file. This will display the first ping from a the file.",
-    )
-    parser.add_argument("filename", type=str, help="Path to a .oculus file to display")
-    parser.add_argument(
-        "-r", "--rate", type=float, default=1e-2, help=". Default to 1e-2"
-    )
-
-    args = parser.parse_args()
 
     print("Opening", args.filename)
     file = OculusFileReader(args.filename)
@@ -120,7 +109,19 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        prog="OculusFileReader",
+        description="Example of how to read and display the content of a .oculus "
+        + "file. This will display the first ping from a the file.",
+    )
+    parser.add_argument("filename", type=str,
+                        help="Path to a .oculus file to display")
+    parser.add_argument(
+        "-r", "--rate", type=float, default=1e-2, help=". Default to 1e-2"
+    )
 
+    args = parser.parse_args()
+    
     main()
 
     # parser = argparse.ArgumentParser(
