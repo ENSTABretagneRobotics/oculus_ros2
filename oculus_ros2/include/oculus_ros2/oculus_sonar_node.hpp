@@ -42,13 +42,13 @@ typedef struct {
 } rosParameters;
 
 namespace flagByte {
-const int rangeAsMeters = 0x02;  // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
-const int dataDepth = 0x02;  // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ?
-const int sendGains = 0x03;  // bit 2: 0 = won't send gain, 1 = send gain
-const int simplePing = 0x04;  // bit 3: 0 = send full return message, 1 = send simple return message
-const int gainAssist = 0x05;  // bit 4: gain assist?
+const int RANGE_AS_METERS = 0x02;  // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
+const int DATA_DEPTH = 0x02;  // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ?
+const int SEND_GAINS = 0x03;  // bit 2: 0 = won't send gain, 1 = send gain
+const int SIMPLE_PING = 0x04;  // bit 3: 0 = send full return message, 1 = send simple return message
+const int GAIN_ASSIST = 0x05;  // bit 4: gain assist?
 // const int ?? = 0x06;  // bit 5: ?
-const int nbeams = 0x07;  // bit 6: enable 512 beams
+const int NBEAMS = 0x07;  // bit 6: enable 512 beams
 // const int ?? = 0x08;  // bit 7: ?
 }  // namespace flagByte
 
@@ -58,19 +58,18 @@ const double TEMPERATURE_WARN_DEFAULT_VALUE = 30.;
 const double TEMPERATURE_STOP_DEFAULT_VALUE = 35.;
 const bool RUN_MODE_DEFAULT_VALUE = false;
 
-
-struct bool_param {
+struct BoolParam {
   const std::string name;
   const bool default_val;
   const std::string desc;
 };
 
-const bool_param gain_assist = {"gain_assist", true, ""};
-const bool_param use_salinity = {"use_salinity", true, "Use salinity to calculate sound_speed."};
+const BoolParam GAIN_ASSIT = {"gain_assist", true, ""};
+const BoolParam USE_SALINITY = {"use_salinity", true, "Use salinity to calculate sound_speed."};
 
-const std::vector<bool_param> bool_= {gain_assist, use_salinity};
+const std::vector<BoolParam> BOOL = {GAIN_ASSIT, USE_SALINITY};
 
-struct int_param {
+struct IntParam {
   const std::string name;
   const int min;
   const int max;
@@ -78,29 +77,29 @@ struct int_param {
   const std::string desc;
 };
 
-const int_param frequency_mode = {"frequency_mode", 0, 1, 0,
+const IntParam FREQUENCY_MODE = {"frequency_mode", 0, 1, 0,
     "Sonar beam frequency mode.\n"
     "\t1: Low frequency (1.2MHz, wide aperture).\n"
     "\t2: High frequency (2.1Mhz, narrow aperture)."};
 
-const int_param ping_rate = {"ping_rate", 0, 5, 2,
+const IntParam PING_RATE = {"ping_rate", 0, 5, 2,
     "Frequency of ping fires.\n\t" + std::to_string(pingRateNormal) + ": 10Hz max ping rate.\n\t" + std::to_string(pingRateHigh) +
         ": 15Hz max ping rate.\n\t" + std::to_string(pingRateHighest) + ": 40Hz max ping rate.\n\t" +
         std::to_string(pingRateLow) + ": 5Hz max ping rate.\n\t" + std::to_string(pingRateLowest) + ": 2Hz max ping rate.\n\t" +
         char(pingRateStandby) + ": Standby mode (no ping fire)."};
-const int_param data_depth = {"data_depth", 0, 1, 1,
+const IntParam DATA_DEPTH = {"data_depth", 0, 1, 1,
     "Ping data encoding bit count.\n"
     "\t0: Ping data encoded on 8bits.\n"
     "\t1: Ping data encoded on 16bits."};
-const int_param nbeams = {"nbeams", 0, 1, 1,
+const IntParam NBEAMS = {"nbeams", 0, 1, 1,
     "Number of ping beams.\n"
     "\t0: Oculus outputs 256 beams.\n"
     "\t1: Oculus outputs 512 beams."};
-const int_param gamma_correction = {"gamma_correction", 0, 255, 153, "Gamma correction, min=0, max=255."};
+const IntParam GAMMA_CORRECTION = {"gamma_correction", 0, 255, 153, "Gamma correction, min=0, max=255."};
 
-const std::vector<int_param> int_= {frequency_mode, ping_rate, data_depth, nbeams, gamma_correction};
+const std::vector<IntParam> INT = {FREQUENCY_MODE, PING_RATE, DATA_DEPTH, NBEAMS, GAMMA_CORRECTION};
 
-struct double_param {
+struct DoubleParam {
   const std::string name;
   const double min;
   const double max;
@@ -109,15 +108,15 @@ struct double_param {
   const std::string desc;
 };
 
-const double_param range = {"range", .3, 40., .1, 20., "Sonar range (in meters), min=0.3, max=40.0."};
-const double_param gain_percent = {"gain_percent", .1, 100., .1, 50., "Gain percentage (%), min=0.1, max=100.0."};
-const double_param sound_speed = {"sound_speed", 1400., 1600., .1, 1500.,
+const DoubleParam RANGE = {"range", .3, 40., .1, 20., "Sonar range (in meters), min=0.3, max=40.0."};
+const DoubleParam GAIN_PERCENT = {"gain_percent", .1, 100., .1, 50., "Gain percentage (%), min=0.1, max=100.0."};
+const DoubleParam SOUND_SPEED = {"sound_speed", 1400., 1600., .1, 1500.,
     "Sound speed (in m/s, set to 0 for it to be calculated using salinity), min=1400.0, max=1600.0."};
-const double_param salinity = {"salinity", 0., 100., .1, 0.,
+const DoubleParam SALINITY = {"salinity", 0., 100., .1, 0.,
     "Salinity (in parts per thousand (ppt,ppm,g/kg), "
     "used to calculate sound speed if needed), min=0.0, max=100"};
 
-const std::vector<double_param> double_ = {range, gain_percent, sound_speed, salinity};
+const std::vector<DoubleParam> DOUBLE = {RANGE, GAIN_PERCENT, SOUND_SPEED, SALINITY};
 
 }  // namespace params
 
@@ -206,15 +205,15 @@ void OculusSonarNode::handleFeedbackForParam(rcl_interfaces::msg::SetParametersR
     const std::string& param_name,
     const std::string& param_name_to_display) const {
   if (old_val != new_val) {
-    std::string param_name_to_display_ = param_name_to_display == "" ? param_name : param_name_to_display;
+    std::string param_name_to_display = param_name_to_display == "" ? param_name : param_name_to_display;
     if (param.get_name() == param_name) {
       result.successful = false;
-      RCLCPP_WARN_STREAM(this->get_logger(), "Could not update " << param_name_to_display_);
-      result.reason.append("Could not update " + param_name_to_display_ + ".\n");
+      RCLCPP_WARN_STREAM(this->get_logger(), "Could not update " << param_name_to_display);
+      result.reason.append("Could not update " + param_name_to_display + ".\n");
     } else {
-      RCLCPP_WARN_STREAM(this->get_logger(), param_name_to_display_ << " change from " << old_val << " to " << new_val
+      RCLCPP_WARN_STREAM(this->get_logger(), param_name_to_display << " change from " << old_val << " to " << new_val
                                                                     << " when updating the parameter " << param.get_name());
-      result.reason.append(param_name_to_display_ + " change.\n");
+      result.reason.append(param_name_to_display + " change.\n");
     }
   }
 }

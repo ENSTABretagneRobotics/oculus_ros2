@@ -14,8 +14,8 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
-#include <vector>
 #include <type_traits>
+#include <vector>
 
 #include <oculus_interfaces/msg/ping.hpp>
 #include <oculus_ros2/conversions.hpp>
@@ -93,12 +93,8 @@ void SonarViewer::publishFan(const int& width,
   std::vector<double> ranges = linspace(0., ping_range, height);
   int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
   cv::Mat mono_img;
-  if (std::is_same<DataType, uint8_t>::value) {
-    mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), CV_8UC1);
-  } else {
-    mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), CV_16UC1);
-  }
-
+  const int cv_encoding = std::is_same<DataType, uint8_t>::value ? CV_8UC1 : CV_16UC1;
+  mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), cv_encoding);
   mono_img *= 1 << sizeof(DataType) * CHAR_BIT;  // Seting the image to white
 
   const float theta_shift = 1.5 * 180;
