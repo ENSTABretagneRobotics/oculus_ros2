@@ -43,6 +43,10 @@ public:
       const std_msgs::msg::Header& header) const;
   void streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data);
 
+protected:
+  const double LOW_FREQUENCY_BEARING_APERTURE = 65;
+  const double HIGHT_FREQUENCY_BEARING_APERTURE = 40;
+
 private:
   const rclcpp::Node* node_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
@@ -52,20 +56,17 @@ template <typename T>
 std::vector<double> linspace(T start_in, T end_in, int num_in) {
   std::vector<double> linspaced;
 
-  auto start = static_cast<double>(start_in);
-  auto end = static_cast<double>(end_in);
-  auto num = static_cast<double>(num_in);
-
+  const auto start = static_cast<double>(start_in);
+  const auto end = static_cast<double>(end_in);
+  const auto num = static_cast<double>(num_in);
   if (num == 0) {
     return linspaced;
-  }
-  if (num == 1) {
+  } else if (num == 1) {
     linspaced.push_back(start);
     return linspaced;
   }
 
-  double delta = (end - start) / (num - 1);
-
+  const double delta = (end - start) / (num - 1);
   for (int i = 0; i < num - 1; ++i) {
     linspaced.push_back(start + delta * i);
   }
@@ -83,21 +84,22 @@ void SonarViewer::publishFan(const int& width,
     const double& ping_range,
     const std_msgs::msg::Header& header) const {
   static_assert(std::is_same<DataType, uint8_t>::value || std::is_same<DataType, uint16_t>::value,
-      "publishFan can only be build for uint8_t and uint16_16");
+      "publishFan can only be build for uint8_t and uint16_t");
 
   // Create rawDataMat from ping_data
-  cv::Mat rawDataMat(height, (width + 4), CV_8U);
-  std::memcpy(rawDataMat.data, ping_data.data() + offset, height * (width + 4));
+  cv::Mat rawDataMat(height, (width + 4), CV_8U);  // TODO(JaouadROS, 4 is a magic number, what is it?)
+  std::memcpy(
+      rawDataMat.data, ping_data.data() + offset, height * (width + 4));  // TODO(JaouadROS, 4 is a magic number, what is it?)
 
-  int bearing = (master_mode == 1) ? 65 : 40;
-  std::vector<double> ranges = linspace(0., ping_range, height);
-  int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
+  const double bearing = (master_mode == 1) ? LOW_FREQUENCY_BEARING_APERTURE : HIGHT_FREQUENCY_BEARING_APERTURE;
+  const std::vector<double> ranges = linspace(0., ping_range, height);
+  const int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
   cv::Mat mono_img;
   const int cv_encoding = std::is_same<DataType, uint8_t>::value ? CV_8UC1 : CV_16UC1;
   mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), cv_encoding);
   mono_img *= 1 << sizeof(DataType) * CHAR_BIT;  // Seting the image to white
 
-  const float theta_shift = 1.5 * 180;
+  const float theta_shift = 1.5 * 180;  // TODO(JaouadROS, 1.5 is a magic number, what is it?)
   const cv::Point origin(image_width / 2, ranges.size());
 
   cv::parallel_for_(cv::Range(0, ranges.size()), [&](const cv::Range& range) {  // TODO(??, optimize for cuda)
@@ -122,9 +124,9 @@ void SonarViewer::publishFan(const int& width,
 
   // Publish sonar conic image
   sensor_msgs::msg::Image msg;
-  const char* encoding =
+  const char* ros_image_encoding =
       std::is_same<DataType, uint8_t>::value ? sensor_msgs::image_encodings::MONO8 : sensor_msgs::image_encodings::MONO16;
-  cv_bridge::CvImage(header, encoding, mono_img).toImageMsg(msg);
+  cv_bridge::CvImage(header, ros_image_encoding, mono_img).toImageMsg(msg);
   image_publisher_->publish(msg);
 }
 

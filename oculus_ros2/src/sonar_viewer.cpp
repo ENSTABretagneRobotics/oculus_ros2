@@ -25,10 +25,10 @@ void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv:
   int height = ping->range_count();
   int offset = ping->ping_data_offset();
 
-  cv::Mat rawDataMat = cv::Mat(height, (width + 4), CV_8U);
+  cv::Mat rawDataMat = cv::Mat(height, (width + 4), CV_8U);  // TODO(JaouadROS, 4 is a magic number, what is it?)
 #pragma omp parallel for collapse(2)
   for (int i = 0, k = offset; i < height; i++) {
-    for (int j = 0; j < (width + 4); j++) {
+    for (int j = 0; j < (width + 4); j++) {  // TODO(JaouadROS, 4 is a magic number, what is it?)
       rawDataMat.at<uint8_t>(i, j) = ping->data()[k++];
     }
   }
@@ -36,14 +36,13 @@ void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv:
   data = cv::Mat(height, width, CV_64F);
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < height; i++) {
-    for (int j = 4; j < width + 4; j++) {
-      data.at<double>(i, j - 4) = rawDataMat.at<uint8_t>(i, j);
+    for (int j = 4; j < width + 4; j++) {  // TODO(JaouadROS, 20 is a magic number, what is it?)
+      data.at<double>(i, j - 4) = rawDataMat.at<uint8_t>(i, j);  // TODO(JaouadROS, 20 is a magic number, what is it?)
     }
   }
 
   cv::Mat img = data;
   img = img / 255.0;
-  cv::imshow("img", img);
 
   cv::Mat img_f;
   cv::dft(img, img_f, cv::DFT_COMPLEX_OUTPUT);
@@ -51,18 +50,18 @@ void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv:
   cv::Mat beam(1, img.cols, CV_64F, cv::Scalar::all(0));
 
   // set the values of the beam // TODO(hugoyvrn, to link it with ping data)
-  const int kNumValues = img.cols / 20;
+  const int kNumValues = img.cols / 20;  // TODO(JaouadROS, 20 is a magic number, what is it?)
   double values[kNumValues];
-  for (int i = 0; i < kNumValues / 2; i++) values[i] = 24 + i;
-  values[kNumValues / 2] = 70;
+  for (int i = 0; i < kNumValues / 2; i++) values[i] = 24 + i;  // TODO(JaouadROS, 24 is a magic number, what is it?)
+  values[kNumValues / 2] = 70;  // TODO(JaouadROS, 70 is a magic number, what is it?)
   for (int i = kNumValues / 2 + 1; i < kNumValues; i++) values[i] = values[kNumValues - i - 1];
   for (int i = 0; i < kNumValues; i++) beam.at<double>(0, i * img.cols / kNumValues) = values[i];
 
   // normalize the beam
   cv::Mat psf = (1.0 / cv::sum(beam)[0]) * beam;
 
-  int kw = psf.rows;
-  int kh = psf.cols;
+  const int kw = psf.rows;
+  const int kh = psf.cols;
   cv::Mat psf_padded = cv::Mat::zeros(img.size(), img.type());
   psf.copyTo(psf_padded(cv::Rect(0, 0, kh, kw)));
 
@@ -74,7 +73,7 @@ void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv:
   cv::pow(psf_f, 2, psf_f_2);
   cv::transform(psf_f_2, psf_f_2, cv::Matx12f(1, 1));
 
-  double noise = 0.001;
+  const double noise = 0.001;
   cv::Mat ipsf_f(psf_f.size(), CV_64FC2);
   for (int i = 0; i < psf_f.rows; i++) {
     for (int j = 0; j < psf_f.cols; j++) {
@@ -99,8 +98,6 @@ void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv:
   for (int i = 0; i < result.cols; i++) result_shifted_rows.col(i).copyTo(result.col((i + shift) % result.cols));
   result.setTo(0, result < 0);
   cv::normalize(result, result, 0, 1, cv::NORM_MINMAX);
-  cv::imshow("result", result);
-  cv::waitKey(1);
 }
 
 void SonarViewer::publishFan(
