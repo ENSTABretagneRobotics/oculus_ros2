@@ -11,7 +11,7 @@ oculus_sonar:
     # 1: Low frequency (1.2MHz, wide aperture).
     # 2: High frequency (2.1MHz, narrow aperture).
 
-    ping_rate: 0 # Frequency of ping fires. Default value is 2.
+    ping_rate: 2 # Frequency of ping fires. Default value is 2.
     # 0: 10Hz max ping rate.
     # 1: 15Hz max ping rate.
     # 2: 40Hz max ping rate.
@@ -32,7 +32,7 @@ oculus_sonar:
     range: 20.0 # Sonar range (in meters), min=0.3, max=40.0.  Default value is 20.0.
 
     # These parameters are for scaling data (investigate)
-    gamma_correction: 158 # Gamma correction, min=0, max=255.  Default value is 158.
+    gamma_correction: 153 # Gamma correction, min=0, max=255.  Default value is 153 (60%).
     gain_percent: 50.0 # Gain percentage (%), min=0.1, max=100.0.  Default value is 50.0.
 
     sound_speed: 0.0 # Sound speed (in m/s, set to 0 for it to be calculated using salinity), min=1400.0, max=1600.0. Default value is 0.0.
