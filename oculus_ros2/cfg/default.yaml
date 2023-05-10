@@ -38,4 +38,3 @@ oculus_sonar:
     sound_speed: 0.0 # Sound speed (in m/s, set to 0 for it to be calculated using salinity), min=1400.0, max=1600.0. Default value is 0.0.
     use_salinity: True # Use salinity to calculate sound_speed. Default value is True.
     salinity: 0.0 # Salinity (in parts per thousand (ppt,ppm,g/kg), used to calculate sound speed if needed), min=0.0, max=100. Default value is 0.0.
-

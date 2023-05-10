@@ -21,14 +21,15 @@ SonarViewer::~SonarViewer() {}
 //                                     const std::vector<uint8_t> &ping_data,
 //                                     cv::Mat &data)
 void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data) {
-  int width = ping->bearing_count();
-  int height = ping->range_count();
-  int offset = ping->ping_data_offset();
+  const int width = ping->bearing_count();
+  const int step = width + SIZE_OF_GAIN;
+  const int height = ping->range_count();
+  const int offset = ping->ping_data_offset();
 
-  cv::Mat rawDataMat = cv::Mat(height, (width + 4), CV_8U);  // TODO(JaouadROS, 4 is a magic number, what is it?)
+  cv::Mat rawDataMat = cv::Mat(height, step, CV_8U);
 #pragma omp parallel for collapse(2)
   for (int i = 0, k = offset; i < height; i++) {
-    for (int j = 0; j < (width + 4); j++) {  // TODO(JaouadROS, 4 is a magic number, what is it?)
+    for (int j = 0; j < step; j++) {
       rawDataMat.at<uint8_t>(i, j) = ping->data()[k++];
     }
   }
@@ -36,8 +37,8 @@ void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv:
   data = cv::Mat(height, width, CV_64F);
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < height; i++) {
-    for (int j = 4; j < width + 4; j++) {  // TODO(JaouadROS, 20 is a magic number, what is it?)
-      data.at<double>(i, j - 4) = rawDataMat.at<uint8_t>(i, j);  // TODO(JaouadROS, 20 is a magic number, what is it?)
+    for (int j = SIZE_OF_GAIN; j < step; j++) {
+      data.at<double>(i, j - SIZE_OF_GAIN) = rawDataMat.at<uint8_t>(i, j);
     }
   }
 

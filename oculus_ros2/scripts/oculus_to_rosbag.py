@@ -134,8 +134,7 @@ class Oculus_parser(RosBagCreator):
         )
         self.args = parser.parse_args()
         self.output_pass = (
-            self.args.destination + "/" +
-            self.args.filename.split("/")[-1][:-7]
+            self.args.destination + "/" + self.args.filename.split("/")[-1][:-7]
         )
         self.output_pass.replace("//", "/")
         self.output_pass.replace("/./", "/")
@@ -143,8 +142,7 @@ class Oculus_parser(RosBagCreator):
 
         print("[oculus_to_bag] Opening", self.args.filename)
 
-        self.new_topic(name=self.args.topicname,
-                       type="oculus_interfaces/msg/Ping")
+        self.new_topic(name=self.args.topicname, type="oculus_interfaces/msg/Ping")
 
     def create_ros_oculus_msg(self, ping_msg):
         ros_msg = Ping()

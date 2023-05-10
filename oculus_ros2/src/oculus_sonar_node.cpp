@@ -134,15 +134,13 @@ void OculusSonarNode::publishStatus(const OculusStatusMsg& status) const {
 void OculusSonarNode::updateRosConfig() {
   std::shared_lock l(param_mutex_);
 
-  updateRosConfigForParam<int>(
-      currentRosParameters_.frequency_mode, currentSonarParameters_.frequency_mode, "frequency_mode");
+  updateRosConfigForParam<int>(currentRosParameters_.frequency_mode, currentSonarParameters_.frequency_mode, "frequency_mode");
 
   updateRosConfigForParam<double>(currentRosParameters_.range, currentSonarParameters_.range, "range");
 
   updateRosConfigForParam<double>(currentRosParameters_.gain_percent, currentSonarParameters_.gain_percent, "gain_percent");
 
-  updateRosConfigForParam<double>(
-      currentRosParameters_.sound_speed, currentSonarParameters_.sound_speed, "sound_speed");
+  updateRosConfigForParam<double>(currentRosParameters_.sound_speed, currentSonarParameters_.sound_speed, "sound_speed");
 
   updateRosConfigForParam<int>(currentRosParameters_.ping_rate, currentSonarParameters_.ping_rate, "ping_rate");
 

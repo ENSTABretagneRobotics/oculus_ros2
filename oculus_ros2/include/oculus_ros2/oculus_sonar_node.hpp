@@ -86,7 +86,7 @@ const IntParam PING_RATE = {"ping_rate", 0, 5, 2,
     "Frequency of ping fires.\n\t" + std::to_string(pingRateNormal) + ": 10Hz max ping rate.\n\t" + std::to_string(pingRateHigh) +
         ": 15Hz max ping rate.\n\t" + std::to_string(pingRateHighest) + ": 40Hz max ping rate.\n\t" +
         std::to_string(pingRateLow) + ": 5Hz max ping rate.\n\t" + std::to_string(pingRateLowest) + ": 2Hz max ping rate.\n\t" +
-        char(pingRateStandby) + ": Standby mode (no ping fire)."};
+        static_cast<char>(pingRateStandby) + ": Standby mode (no ping fire)."};
 const IntParam DATA_DEPTH = {"data_depth", 0, 1, 1,
     "Ping data encoding bit count.\n"
     "\t0: Ping data encoded on 8bits.\n"
@@ -176,8 +176,7 @@ private:
 };
 
 template <class T>
-void OculusSonarNode::updateRosConfigForParam(
-    T& currentSonar_param, const T& new_param, const std::string& param_name) {
+void OculusSonarNode::updateRosConfigForParam(T& currentSonar_param, const T& new_param, const std::string& param_name) {
   if (currentSonar_param != new_param) {
     this->remove_on_set_parameters_callback(this->param_cb_.get());
     RCLCPP_WARN_STREAM(this->get_logger(),
@@ -204,7 +203,7 @@ void OculusSonarNode::handleFeedbackForParam(rcl_interfaces::msg::SetParametersR
       result.reason.append("Could not update " + param_name_to_display + ".\n");
     } else {
       RCLCPP_WARN_STREAM(this->get_logger(), param_name_to_display << " change from " << old_val << " to " << new_val
-                                                                    << " when updating the parameter " << param.get_name());
+                                                                   << " when updating the parameter " << param.get_name());
       result.reason.append(param_name_to_display + " change.\n");
     }
   }

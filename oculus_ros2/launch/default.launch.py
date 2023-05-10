@@ -26,10 +26,10 @@ def generate_launch_description():
         parameters=[config],
         namespace="sonar",
         remappings=[
-            ('status', 'status'),
-            ('ping', 'ping'),
-            ('temperature', 'temperature'),
-            ('pressure', 'pressure'),
+            ("status", "status"),
+            ("ping", "ping"),
+            ("temperature", "temperature"),
+            ("pressure", "pressure"),
         ],
         output="screen",
     )

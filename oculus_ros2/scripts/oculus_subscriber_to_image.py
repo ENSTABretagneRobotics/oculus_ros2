@@ -78,7 +78,7 @@ class OculusDisplayer(Node):
         assert pingData.shape == (oculus_ros_msg.n_ranges, oculus_ros_msg.n_beams)
 
         image_msg = Image()
-        image_msg.header.frame_id = "sonar" # TODO(hugoyvrn)
+        image_msg.header.frame_id = "sonar"  # TODO(hugoyvrn)
         image_msg.header = oculus_ros_msg.header
         image_msg.height = oculus_ros_msg.n_ranges
         image_msg.width = oculus_ros_msg.n_beams
