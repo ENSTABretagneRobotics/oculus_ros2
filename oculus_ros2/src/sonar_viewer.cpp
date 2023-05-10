@@ -112,7 +112,7 @@ void SonarViewer::publishFan(
 void SonarViewer::publishFan(
     const oculus::PingMessage::ConstPtr& ping, const std::string& frame_id, const int& data_depth) const {
   std_msgs::msg::Header header;
-  header.stamp = oculus::toRosStamp(ping->timestamp());
+  header.stamp = oculus::toMsg(ping->timestamp());
   header.frame_id = frame_id;
   // publishFan<data_depth == 0 ? uint8_t : uint16_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(),
   //     ping->data(), ping->master_mode(), ping->range(), header);

@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -97,8 +98,8 @@ void SonarViewer::publishFan(const int& width,
   const int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
   cv::Mat mono_img;
   const int cv_encoding = std::is_same<DataType, uint8_t>::value ? CV_8UC1 : CV_16UC1;
-  mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), cv_encoding);
-  mono_img *= 1 << sizeof(DataType) * CHAR_BIT;  // Setting the image to white
+  mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), cv_encoding) *
+             std::numeric_limits<DataType>::max();  // Initialize a white image
 
   const float theta_shift = 1.5 * 180;  // TODO(JaouadROS, 1.5 is a magic number, what is it?)
   const cv::Point origin(image_width / 2, ranges.size());

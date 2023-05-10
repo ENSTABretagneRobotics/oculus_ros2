@@ -23,13 +23,13 @@
 
 namespace oculus {
 
-inline rclcpp::Time toRosStamp(const SonarDriver::TimePoint& stamp) {
+inline rclcpp::Time toMsg(const SonarDriver::TimePoint& stamp) {
   size_t nano = std::chrono::duration_cast<std::chrono::nanoseconds>(stamp.time_since_epoch()).count();
   size_t seconds = nano / 1000000000;
   return rclcpp::Time(seconds, nano - 1000000000 * seconds);
 }
 
-inline void copyToRos(oculus_interfaces::msg::OculusHeader& msg, const OculusMessageHeader& header) {
+inline void toMsg(oculus_interfaces::msg::OculusHeader& msg, const OculusMessageHeader& header) {
   msg.oculus_id = header.oculusId;
   msg.src_device_id = header.srcDeviceId;
   msg.dst_device_id = header.dstDeviceId;
@@ -39,7 +39,7 @@ inline void copyToRos(oculus_interfaces::msg::OculusHeader& msg, const OculusMes
   msg.spare2 = header.spare2;
 }
 
-inline void copyToRos(oculus_interfaces::msg::OculusVersionInfo& msg, const OculusVersionInfo& version) {
+inline void toMsg(oculus_interfaces::msg::OculusVersionInfo& msg, const OculusVersionInfo& version) {
   msg.firmware_version0 = version.firmwareVersion0;
   msg.firmware_date0 = version.firmwareDate0;
   msg.firmware_version1 = version.firmwareVersion1;
@@ -48,15 +48,15 @@ inline void copyToRos(oculus_interfaces::msg::OculusVersionInfo& msg, const Ocul
   msg.firmware_date2 = version.firmwareDate2;
 }
 
-inline void copyToRos(oculus_interfaces::msg::OculusStatus& msg, const OculusStatusMsg& status) {
-  copyToRos(msg.hdr, status.hdr);
+inline void toMsg(oculus_interfaces::msg::OculusStatus& msg, const OculusStatusMsg& status) {
+  toMsg(msg.hdr, status.hdr);
 
   msg.device_id = status.deviceId;
   msg.device_type = status.deviceType;
   msg.part_number = status.partNumber;
   msg.status = status.status;
 
-  copyToRos(msg.version_info, status.versinInfo);
+  toMsg(msg.version_info, status.versinInfo);
 
   msg.ip_addr = status.ipAddr;
   msg.ip_mask = status.ipMask;
@@ -80,8 +80,8 @@ inline void copyToRos(oculus_interfaces::msg::OculusStatus& msg, const OculusSta
   msg.pressure = status.pressure;
 }
 
-inline void copyToRos(oculus_interfaces::msg::OculusFireConfig& msg, const OculusSimpleFireMessage& fireConfig) {
-  copyToRos(msg.head, fireConfig.head);
+inline void toMsg(oculus_interfaces::msg::OculusFireConfig& msg, const OculusSimpleFireMessage& fireConfig) {
+  toMsg(msg.head, fireConfig.head);
 
   msg.master_mode = fireConfig.masterMode;
   msg.ping_rate = fireConfig.pingRate;
@@ -94,8 +94,8 @@ inline void copyToRos(oculus_interfaces::msg::OculusFireConfig& msg, const Oculu
   msg.salinity = fireConfig.salinity;
 }
 
-inline void copyToRos(oculus_interfaces::msg::OculusPing& msg, const OculusSimplePingResult& ping) {
-  copyToRos(msg.fire_message, ping.fireMessage);
+inline void toMsg(oculus_interfaces::msg::OculusPing& msg, const OculusSimplePingResult& ping) {
+  toMsg(msg.fire_message, ping.fireMessage);
   msg.ping_id = ping.pingId;
   msg.status = ping.status;
   msg.frequency = ping.frequency;
@@ -112,8 +112,8 @@ inline void copyToRos(oculus_interfaces::msg::OculusPing& msg, const OculusSimpl
   msg.message_size = ping.messageSize;
 }
 
-inline void copyToRos(oculus_interfaces::msg::Ping& msg, const oculus::PingMessage::ConstPtr& ping) {
-  msg.header.stamp = toRosStamp(ping->timestamp());
+inline void toMsg(oculus_interfaces::msg::Ping& msg, const oculus::PingMessage::ConstPtr& ping) {
+  msg.header.stamp = toMsg(ping->timestamp());
 
   msg.ping_id = ping->ping_index();
   msg.ping_firing_date = ping->ping_firing_date();

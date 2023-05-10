@@ -133,7 +133,7 @@ protected:
   sonarParameters currentRosParameters_;
   oculus::SonarDriver::PingConfig currentConfig_;
 
-  bool is_in_run_mode_;  // Same value as ros parameter "run"
+  bool is_running_;  // Same value as ros parameter "run"
 
   mutable std::shared_mutex param_mutex_;  // multithreading protection
 
@@ -160,15 +160,14 @@ private:
       const rclcpp::Parameter& param,
       const T& old_val,
       const T& new_val,
-      const std::string& param_name,
-      const std::string& param_name_to_display = "") const;
+      const std::string& param_name) const;
   void updateParameters(sonarParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters);
   void updateParameters(sonarParameters& parameters, oculus::SonarDriver::PingConfig feedback);
   void sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result);
   rcl_interfaces::msg::SetParametersResult setConfigCallback(const std::vector<rclcpp::Parameter>& parameters);
 
   void enableRunMode();
-  void desableRunMode();
+  void disableRunMode();
   void checkFlag(uint8_t flags);
   void publishStatus(const OculusStatusMsg& status) const;
   void publishPing(const oculus::PingMessage::ConstPtr& pingMetadata);
@@ -193,18 +192,16 @@ void OculusSonarNode::handleFeedbackForParam(rcl_interfaces::msg::SetParametersR
     const rclcpp::Parameter& param,
     const T& old_val,
     const T& new_val,
-    const std::string& param_name,
-    const std::string& param_name_to_display) const {
+    const std::string& param_name) const {
   if (old_val != new_val) {
-    std::string param_name_to_display = param_name_to_display == "" ? param_name : param_name_to_display;
     if (param.get_name() == param_name) {
       result.successful = false;
-      RCLCPP_WARN_STREAM(this->get_logger(), "Could not update " << param_name_to_display);
-      result.reason.append("Could not update " + param_name_to_display + ".\n");
+      RCLCPP_WARN_STREAM(this->get_logger(), "Could not update " << param_name);
+      result.reason.append("Could not update " + param_name + ".\n");
     } else {
-      RCLCPP_WARN_STREAM(this->get_logger(), param_name_to_display << " change from " << old_val << " to " << new_val
-                                                                   << " when updating the parameter " << param.get_name());
-      result.reason.append(param_name_to_display + " change.\n");
+      RCLCPP_WARN_STREAM(this->get_logger(),
+          param_name << " change from " << old_val << " to " << new_val << " when updating the parameter " << param.get_name());
+      result.reason.append(param_name + " change.\n");
     }
   }
 }

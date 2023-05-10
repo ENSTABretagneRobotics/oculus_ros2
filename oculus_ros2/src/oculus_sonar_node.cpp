@@ -18,7 +18,7 @@ OculusSonarNode::OculusSonarNode()
 
     temperature_warn_limit_(this->declare_parameter<double>("temperature_warn", params::TEMPERATURE_WARN_DEFAULT_VALUE)),
     temperature_stop_limit_(this->declare_parameter<double>("temperature_stop", params::TEMPERATURE_STOP_DEFAULT_VALUE)),
-    is_in_run_mode_(this->declare_parameter<bool>("run", params::RUN_MODE_DEFAULT_VALUE)) {
+    is_running_(this->declare_parameter<bool>("run", params::RUN_MODE_DEFAULT_VALUE)) {
   this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>("status", 1);
   this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>("ping", 1);
   this->temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>("temperature", 1);
@@ -95,12 +95,12 @@ OculusSonarNode::~OculusSonarNode() {
 }
 
 void OculusSonarNode::enableRunMode() {
-  is_in_run_mode_ = true;
+  is_running_ = true;
   this->set_parameter(rclcpp::Parameter("run", true));
 }
 
-void OculusSonarNode::desableRunMode() {
-  is_in_run_mode_ = false;
+void OculusSonarNode::disableRunMode() {
+  is_running_ = false;
   this->set_parameter(rclcpp::Parameter("run", false));
 }
 
@@ -126,7 +126,7 @@ void OculusSonarNode::publishStatus(const OculusStatusMsg& status) const {
   // TODO(hugoyvrn, update ros param ?)
 
   static oculus_interfaces::msg::OculusStatus msg;
-  oculus::copyToRos(msg, status);
+  oculus::toMsg(msg, status);
   this->status_publisher_->publish(msg);
   // TODO(hugoyvrn, publish temperature)
 }
@@ -160,13 +160,13 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
   if (this->ping_publisher_->get_subscription_count() == 0) {
     RCLCPP_INFO(this->get_logger(), "There is no subscriber to the ping topic.");
     RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-    desableRunMode();
+    disableRunMode();
     this->sonar_driver_->standby();
   }
   if (currentSonarParameters_.ping_rate == pingRateStandby) {
     RCLCPP_INFO_STREAM(this->get_logger(), "ping_rate mode is seted to " << pingRateStandby << ".");
     RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-    desableRunMode();
+    disableRunMode();
     this->sonar_driver_->standby();
   }
 
@@ -175,7 +175,7 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
                                                 << ping->temperature()
                                                 << "°C). Make sur the sonar is underwatter. Security limit set at "
                                                 << temperature_stop_limit_ << "°C");
-    desableRunMode();
+    disableRunMode();
   } else if (ping->temperature() >= temperature_warn_limit_) {
     RCLCPP_WARN_STREAM(this->get_logger(), "Temperature of sonar is to high ("
                                                << ping->temperature()
@@ -183,7 +183,7 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
                                                << temperature_stop_limit_ << "°C");
   }
 
-  if (!is_in_run_mode_) {
+  if (!is_running_) {
     RCLCPP_INFO(this->get_logger(), "Going to standby mode");
     this->sonar_driver_->standby();
     return;
@@ -198,7 +198,7 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
 
   static oculus_interfaces::msg::Ping msg;
   msg.header.frame_id = frame_id_;
-  oculus::copyToRos(msg, ping);
+  oculus::toMsg(msg, ping);
   this->ping_publisher_->publish(msg);
 
   sensor_msgs::msg::Temperature temperature_ros_msg;
@@ -219,7 +219,7 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
 }
 
 void OculusSonarNode::handleDummy() const {
-  if (is_in_run_mode_ && this->ping_publisher_->get_subscription_count() > 0 &&
+  if (is_running_ && this->ping_publisher_->get_subscription_count() > 0 &&
       currentSonarParameters_.ping_rate != pingRateStandby) {
     RCLCPP_INFO(this->get_logger(), "Exiting standby mode");
     this->sonar_driver_->resume();
@@ -376,7 +376,7 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
 
   checkFlag(feedback.flags);
 
-  handleFeedbackForParam<double>(result, param, newConfig.masterMode, feedback.masterMode, "masterMode", "frequency_mode");
+  handleFeedbackForParam<double>(result, param, newConfig.masterMode, feedback.masterMode, "frequency_mode");
   // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO(hugoyvrn)
   handleFeedbackForParam<int>(result, param, (newConfig.flags & flagByte::DATA_DEPTH) ? 1 : 0,
       (feedback.flags & flagByte::DATA_DEPTH) ? 1 : 0, "data_depth");
@@ -409,7 +409,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::setConfigCallback(cons
 
   for (const rclcpp::Parameter& param : parameters) {
     if (param.get_name() == "run") {
-      is_in_run_mode_ = param.as_bool();
+      is_running_ = param.as_bool();
     } else if (std::find(dynamic_parameters_names_.begin(), dynamic_parameters_names_.end(), param.get_name()) !=
                dynamic_parameters_names_.end()) {
       sendParamToSonar(param, result);
