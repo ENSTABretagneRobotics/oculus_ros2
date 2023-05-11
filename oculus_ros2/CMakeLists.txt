@@ -9,17 +9,15 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(oculus_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-# find_package(rqt_reconfigure REQUIRED)
-find_package(rcl_interfaces REQUIRED)
-find_package(image_transport REQUIRED)
+find_package(oculus_driver REQUIRED)
+find_package(oculus_interfaces REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV 4.5.4 REQUIRED)
-find_package(oculus_driver REQUIRED)
 
 add_executable(oculus_sonar_node
     src/oculus_sonar_node.cpp

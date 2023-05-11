@@ -1,8 +1,34 @@
-// Copyright 2023 Forssea Robotics
-// All rights reserved.
-//
-// Unauthorized copying of this code base via any medium is strictly prohibited.
-// Proprietary and confidential.
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2022, ENSTA-Bretagne
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #ifndef OCULUS_ROS2__OCULUS_SONAR_NODE_HPP_
 #define OCULUS_ROS2__OCULUS_SONAR_NODE_HPP_
@@ -27,7 +53,7 @@
 #include <sensor_msgs/msg/fluid_pressure.hpp>
 #include <sensor_msgs/msg/temperature.hpp>
 
-struct sonarParameters {
+struct SonarParameters {
   int frequency_mode;
   int ping_rate;
   int data_depth;
@@ -129,8 +155,8 @@ protected:
   const std::vector<std::string> dynamic_parameters_names_{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist",
       "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run"};
 
-  sonarParameters currentSonarParameters_;
-  sonarParameters currentRosParameters_;
+  SonarParameters currentSonarParameters_;
+  SonarParameters currentRosParameters_;
   oculus::SonarDriver::PingConfig currentConfig_;
 
   bool is_running_;  // Same value as ros parameter "run"
@@ -161,8 +187,8 @@ private:
       const T& old_val,
       const T& new_val,
       const std::string& param_name) const;
-  void updateParameters(sonarParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters);
-  void updateParameters(sonarParameters& parameters, oculus::SonarDriver::PingConfig feedback);
+  void updateLocalParameters(SonarParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters);
+  void updateLocalParameters(SonarParameters& parameters, oculus::SonarDriver::PingConfig feedback);
   void sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result);
   rcl_interfaces::msg::SetParametersResult setConfigCallback(const std::vector<rclcpp::Parameter>& parameters);
 

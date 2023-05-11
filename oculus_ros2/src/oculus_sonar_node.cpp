@@ -1,8 +1,34 @@
-// Copyright 2023 Forssea Robotics
-// All rights reserved.
-//
-// Unauthorized copying of this code base via any medium is strictly prohibited.
-// Proprietary and confidential.
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2022, ENSTA-Bretagne
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 
@@ -75,7 +101,7 @@ OculusSonarNode::OculusSonarNode()
   }
 
   // Get the current sonar config
-  updateParameters(currentSonarParameters_, this->sonar_driver_->current_ping_config());
+  updateLocalParameters(currentSonarParameters_, this->sonar_driver_->current_ping_config());
   for (const std::string& param_name : dynamic_parameters_names_) {
     setConfigCallback(this->get_parameters(std::vector{param_name}));
   }
@@ -226,7 +252,7 @@ void OculusSonarNode::handleDummy() const {
   }
 }
 
-void OculusSonarNode::updateParameters(sonarParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters) {
+void OculusSonarNode::updateLocalParameters(SonarParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters) {
   for (const rclcpp::Parameter& new_param : new_parameters) {
     if (new_param.get_name() == "frequency_mode")
       parameters.frequency_mode = new_param.as_int();
@@ -255,7 +281,7 @@ void OculusSonarNode::updateParameters(sonarParameters& parameters, const std::v
   }
 }
 
-void OculusSonarNode::updateParameters(sonarParameters& parameters, SonarDriver::PingConfig feedback) {
+void OculusSonarNode::updateLocalParameters(SonarParameters& parameters, SonarDriver::PingConfig feedback) {
   std::vector<rclcpp::Parameter> new_parameters;
   // OculusMessageHeader head;      // The standard message header
   // uint16_t oculusId;          // Fixed ID 0x4f53
@@ -305,7 +331,7 @@ void OculusSonarNode::updateParameters(sonarParameters& parameters, SonarDriver:
   // }
 
   new_parameters.push_back(rclcpp::Parameter("salinity", feedback.salinity));
-  updateParameters(parameters, new_parameters);
+  updateLocalParameters(parameters, new_parameters);
 }
 
 void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result) {
@@ -372,7 +398,7 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
   SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
   currentConfig_ = feedback;  // TODO(hugoyvrn)
 
-  updateParameters(currentSonarParameters_, feedback);
+  updateLocalParameters(currentSonarParameters_, feedback);
 
   checkFlag(feedback.flags);
 
@@ -417,7 +443,7 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::setConfigCallback(cons
   }
 
   if (result.successful) {  // If the parameters will be updated to ros
-    updateParameters(currentRosParameters_, parameters);
+    updateLocalParameters(currentRosParameters_, parameters);
   }
 
   return result;

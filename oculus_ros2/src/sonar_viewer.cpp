@@ -1,14 +1,37 @@
-// Copyright 2023 Forssea Robotics
-// All rights reserved.
-//
-// Unauthorized copying of this code base via any medium is strictly prohibited.
-// Proprietary and confidential.
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2022, ENSTA-Bretagne
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #include <oculus_ros2/sonar_viewer.hpp>
 
-// SonarViewer::SonarViewer(bool *arg)
-// {
-// }
 SonarViewer::SonarViewer(rclcpp::Node* node) : node_(node) {
   image_publisher_ = node->create_publisher<sensor_msgs::msg::Image>("image", 10);
 }
@@ -22,7 +45,7 @@ SonarViewer::~SonarViewer() {}
 //                                     cv::Mat &data)
 void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data) {
   const int width = ping->bearing_count();
-  const int step = width + SIZE_OF_GAIN;
+  const int step = width + SIZE_OF_GAIN_;
   const int height = ping->range_count();
   const int offset = ping->ping_data_offset();
 
@@ -37,8 +60,8 @@ void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv:
   data = cv::Mat(height, width, CV_64F);
 #pragma omp parallel for collapse(2)
   for (int i = 0; i < height; i++) {
-    for (int j = SIZE_OF_GAIN; j < step; j++) {
-      data.at<double>(i, j - SIZE_OF_GAIN) = rawDataMat.at<uint8_t>(i, j);
+    for (int j = SIZE_OF_GAIN_; j < step; j++) {
+      data.at<double>(i, j - SIZE_OF_GAIN_) = rawDataMat.at<uint8_t>(i, j);
     }
   }
 

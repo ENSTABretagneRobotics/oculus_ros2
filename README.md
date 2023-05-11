@@ -71,9 +71,9 @@ git clone https://github.com/ENSTABretagneRobotics/oculus_driver.git
 cd oculus_driver
 git switch master # for development
 ```
-handle the git branch as you want. Please keep in mind you have to pull the reposetory yourself to keep up to date.
+handle the git branch as you want. Please keep in mind you have to pull the repository yourself to keep up to date.
 
-Create a build directory in the root of the reposetory :
+Create a build directory in the root of the repository :
 ```bash
 mkdir build && cd build
 ```

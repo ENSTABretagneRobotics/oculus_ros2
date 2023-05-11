@@ -1,8 +1,34 @@
-// Copyright 2023 Forssea Robotics
-// All rights reserved.
-//
-// Unauthorized copying of this code base via any medium is strictly prohibited.
-// Proprietary and confidential.
+/*
+ * BSD 3-Clause License
+ *
+ * Copyright (c) 2022, ENSTA-Bretagne
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived from
+ *    this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #ifndef OCULUS_ROS2__SONAR_VIEWER_HPP_
 #define OCULUS_ROS2__SONAR_VIEWER_HPP_
@@ -45,36 +71,36 @@ public:
   void streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data);
 
 protected:
-  const double LOW_FREQUENCY_BEARING_APERTURE = 65.;
-  const double HIGHT_FREQUENCY_BEARING_APERTURE = 40.;
-  const int SIZE_OF_GAIN = 4;
+  const double LOW_FREQUENCY_BEARING_APERTURE_ = 65.;
+  const double HIGHT_FREQUENCY_BEARING_APERTURE_ = 40.;
+  const int SIZE_OF_GAIN_ = 4;
 
 private:
   const rclcpp::Node* node_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
 };
 
-template <typename T>
-std::vector<double> linspace(T start_in, T end_in, int num_in) {
-  const auto start = static_cast<double>(start_in);
-  const auto end = static_cast<double>(end_in);
-  const auto num = static_cast<double>(num_in);
-  std::vector<double> linspaced(std::max(0, num_in - 1));
+// template <typename T>
+// std::vector<double> linspace(T start_in, T end_in, int num_in) {
+//   const auto start = static_cast<double>(start_in);
+//   const auto end = static_cast<double>(end_in);
+//   const auto num = static_cast<double>(num_in);
+//   std::vector<double> linspaced(std::max(0, num_in - 1));
 
-  if (num == 0) {
-    return linspaced;
-  }
-  if (num == 1) {
-    linspaced.push_back(start);
-    return linspaced;
-  }
+//   if (num == 0) {
+//     return linspaced;
+//   }
+//   if (num == 1) {
+//     linspaced.push_back(start);
+//     return linspaced;
+//   }
 
-  double delta = (end - start) / (num - 1);
-  std::generate(linspaced.begin(), linspaced.end(), [i = 0, &delta]() mutable { return i++ * delta; });
-  linspaced.push_back(end);  // I want to ensure that start and end
-                             // are exactly the same as the input
-  return linspaced;
-}
+//   double delta = (end - start) / (num - 1);
+//   std::generate(linspaced.begin(), linspaced.end(), [i = 0, &delta]() mutable { return i++ * delta; });
+//   linspaced.push_back(end);  // I want to ensure that start and end
+//                              // are exactly the same as the input
+//   return linspaced;
+// }
 
 template <typename DataType>
 void SonarViewer::publishFan(const int& width,
@@ -87,24 +113,26 @@ void SonarViewer::publishFan(const int& width,
   static_assert(std::is_same<DataType, uint8_t>::value || std::is_same<DataType, uint16_t>::value,
       "publishFan can only be build for uint8_t and uint16_t");
 
-  const int step = width + SIZE_OF_GAIN;
+  const int step = width + SIZE_OF_GAIN_;
 
   // Create rawDataMat from ping_data
   cv::Mat rawDataMat(height, step, CV_8U);
   std::memcpy(rawDataMat.data, ping_data.data() + offset, height * step);
 
-  const double bearing = (master_mode == 1) ? LOW_FREQUENCY_BEARING_APERTURE : HIGHT_FREQUENCY_BEARING_APERTURE;
-  const std::vector<double> ranges = linspace(0., ping_range, height);
-  const int image_width = 2 * std::sin(bearing * M_PI / 180) * ranges.size();
+  const double bearing = (master_mode == 1) ? LOW_FREQUENCY_BEARING_APERTURE_ : HIGHT_FREQUENCY_BEARING_APERTURE_;
+  // const std::vector<double> ranges = linspace(0., ping_range, height);
+  const int image_width = 2 * std::sin(bearing * M_PI / 180) * height;
   cv::Mat mono_img;
-  const int cv_encoding = std::is_same<DataType, uint8_t>::value ? CV_8UC1 : CV_16UC1;
-  mono_img = cv::Mat::ones(cv::Size(image_width, ranges.size()), cv_encoding) *
-             std::numeric_limits<DataType>::max();  // Initialize a white image
+  if constexpr (std::is_same<DataType, uint8_t>::value) {
+    mono_img = cv::Mat::ones(cv::Size(image_width, height), CV_8UC1) * std::numeric_limits<DataType>::max();
+  } else {
+    mono_img = cv::Mat::ones(cv::Size(image_width, height), CV_16UC1) * std::numeric_limits<DataType>::max();
+  }
 
   const float theta_shift = 1.5 * 180;  // TODO(JaouadROS, 1.5 is a magic number, what is it?)
-  const cv::Point origin(image_width / 2, ranges.size());
+  const cv::Point origin(image_width / 2, height);
 
-  cv::parallel_for_(cv::Range(0, ranges.size()), [&](const cv::Range& range) {  // TODO(??, optimize for cuda)
+  cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {  // TODO(??, optimize for cuda)
     for (int r = range.start; r < range.end; r++) {
       std::vector<cv::Point> pts;
       cv::ellipse2Poly(origin, cv::Size(r, r), theta_shift, -bearing, bearing, 1, pts);
