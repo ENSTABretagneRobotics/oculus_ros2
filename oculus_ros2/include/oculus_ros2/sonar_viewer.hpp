@@ -68,7 +68,6 @@ public:
       const int& master_mode,
       const double& ping_rage,
       const std_msgs::msg::Header& header) const;
-  void streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data);
 
 protected:
   const double LOW_FREQUENCY_BEARING_APERTURE_ = 65.;
@@ -79,28 +78,6 @@ private:
   const rclcpp::Node* node_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
 };
-
-// template <typename T>
-// std::vector<double> linspace(T start_in, T end_in, int num_in) {
-//   const auto start = static_cast<double>(start_in);
-//   const auto end = static_cast<double>(end_in);
-//   const auto num = static_cast<double>(num_in);
-//   std::vector<double> linspaced(std::max(0, num_in - 1));
-
-//   if (num == 0) {
-//     return linspaced;
-//   }
-//   if (num == 1) {
-//     linspaced.push_back(start);
-//     return linspaced;
-//   }
-
-//   double delta = (end - start) / (num - 1);
-//   std::generate(linspaced.begin(), linspaced.end(), [i = 0, &delta]() mutable { return i++ * delta; });
-//   linspaced.push_back(end);  // I want to ensure that start and end
-//                              // are exactly the same as the input
-//   return linspaced;
-// }
 
 template <typename DataType>
 void SonarViewer::publishFan(const int& width,
@@ -120,7 +97,6 @@ void SonarViewer::publishFan(const int& width,
   std::memcpy(rawDataMat.data, ping_data.data() + offset, height * step);
 
   const double bearing = (master_mode == 1) ? LOW_FREQUENCY_BEARING_APERTURE_ : HIGHT_FREQUENCY_BEARING_APERTURE_;
-  // const std::vector<double> ranges = linspace(0., ping_range, height);
   const int image_width = 2 * std::sin(bearing * M_PI / 180) * height;
   cv::Mat mono_img;
   if constexpr (std::is_same<DataType, uint8_t>::value) {
