@@ -38,20 +38,17 @@ using SonarDriver = oculus::SonarDriver;
 
 OculusSonarNode::OculusSonarNode()
   : Node("oculus_sonar"),
-    // sonar_driver_(std::make_shared<SonarDriver>(this->io_service_.io_service())),
+    is_running_(this->declare_parameter<bool>("run", params::RUN_MODE_DEFAULT_VALUE)),
     sonar_viewer_(static_cast<rclcpp::Node*>(this)),
     frame_id_(this->declare_parameter<std::string>("frame_id", "sonar")),
-
     temperature_warn_limit_(this->declare_parameter<double>("temperature_warn", params::TEMPERATURE_WARN_DEFAULT_VALUE)),
-    temperature_stop_limit_(this->declare_parameter<double>("temperature_stop", params::TEMPERATURE_STOP_DEFAULT_VALUE)),
-    is_running_(this->declare_parameter<bool>("run", params::RUN_MODE_DEFAULT_VALUE)) {
+    temperature_stop_limit_(this->declare_parameter<double>("temperature_stop", params::TEMPERATURE_STOP_DEFAULT_VALUE)) {
   this->status_publisher_ = this->create_publisher<oculus_interfaces::msg::OculusStatus>("status", 1);
   this->ping_publisher_ = this->create_publisher<oculus_interfaces::msg::Ping>("ping", 1);
   this->temperature_publisher_ = this->create_publisher<sensor_msgs::msg::Temperature>("temperature", 1);
   this->pressure_publisher_ = this->create_publisher<sensor_msgs::msg::FluidPressure>("pressure", 1);
 
-  this->sonar_driver_ =
-      std::make_shared<SonarDriver>(this->io_service_.io_service());  // TODO(hugoyvrn, test on sonar and remove)
+  this->sonar_driver_ = std::make_shared<SonarDriver>(this->io_service_.io_service());
   this->io_service_.start();
   if (!this->sonar_driver_->wait_next_message()) {  // Non-blocking function making connection with the sonar.
     std::cerr << "Timeout reached while waiting for a connection to the Oculus sonar. "
@@ -143,18 +140,33 @@ void OculusSonarNode::checkFlag(uint8_t flags) {
 }
 
 void OculusSonarNode::publishStatus(const OculusStatusMsg& status) const {
-  const int oculusM1200dPartNumber = 1042;
-  if (status.partNumber != oculusM1200dPartNumber)
+  if (status.partNumber != OculusPartNumberType::partNumberM1200d) {
     RCLCPP_ERROR_STREAM(get_logger(),
         "The sonar version seems to be different than M1200d."
         " This driver is not suppose to work with your sonar.");
+  }
 
   // TODO(hugoyvrn, update ros param ?)
 
   static oculus_interfaces::msg::OculusStatus msg;
   oculus::toMsg(msg, status);
   this->status_publisher_->publish(msg);
-  // TODO(hugoyvrn, publish temperature)
+
+  if (!is_running_) {
+    sensor_msgs::msg::Temperature temperature_ros_msg;
+    temperature_ros_msg.header.frame_id = frame_id_;
+    // temperature_ros_msg.header.stamp = this->get_clock()->now();  // TODO(hugoyvrn)
+    temperature_ros_msg.temperature = status.temperature6;  // Measurement of the Temperature in Degrees Celsius
+    temperature_ros_msg.variance = 0;  // 0 is interpreted as variance unknown
+    this->temperature_publisher_->publish(temperature_ros_msg);
+
+    sensor_msgs::msg::FluidPressure pressure_ros_msg;
+    pressure_ros_msg.header.frame_id = frame_id_;
+    // pressure_ros_msg.header.stamp = this->get_clock()->now();  // TODO(hugoyvrn)
+    pressure_ros_msg.fluid_pressure = status.pressure;  // Pressure reading in Pascals.
+    pressure_ros_msg.variance = 0;  // 0 is interpreted as variance unknown
+    this->pressure_publisher_->publish(pressure_ros_msg);
+  }
 }
 
 void OculusSonarNode::updateRosConfig() {
@@ -241,7 +253,7 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
 
   // TODO(hugoyvrn, publish bearings)
 
-  sonar_viewer_.publishFan(ping);
+  sonar_viewer_.publishFan(ping, currentSonarParameters_.data_depth, frame_id_);
 }
 
 void OculusSonarNode::handleDummy() const {
@@ -396,14 +408,14 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
 
   // send config to Oculus sonar and wait for feedback
   SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
-  currentConfig_ = feedback;  // TODO(hugoyvrn)
+  currentConfig_ = feedback;
 
   updateLocalParameters(currentSonarParameters_, feedback);
 
   checkFlag(feedback.flags);
 
   handleFeedbackForParam<double>(result, param, newConfig.masterMode, feedback.masterMode, "frequency_mode");
-  // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO(hugoyvrn)
+  // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO(???)
   handleFeedbackForParam<int>(result, param, (newConfig.flags & flagByte::DATA_DEPTH) ? 1 : 0,
       (feedback.flags & flagByte::DATA_DEPTH) ? 1 : 0, "data_depth");
   handleFeedbackForParam<bool>(result, param, (newConfig.flags & flagByte::GAIN_ASSIST) ? 1 : 0,

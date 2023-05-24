@@ -39,15 +39,21 @@ SonarViewer::SonarViewer(rclcpp::Node* node) : node_(node) {
 SonarViewer::~SonarViewer() {}
 
 void SonarViewer::publishFan(
-    const oculus_interfaces::msg::Ping& ros_ping_msg, const std::string& frame_id, const int& data_depth) const {
-  // const int offset = ping->ping_data_offset(); // TODo(hugoyvrn)
+    const oculus_interfaces::msg::Ping& ros_ping_msg, const int& data_depth, const std::string& frame_id) const {
+  // const int offset = ping->ping_data_offset(); // TODO(hugoyvrn)
   const int offset = 229;  // TODO(JaouadROS, 229 is a magic number)
-  publishFan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
-      ros_ping_msg.range, ros_ping_msg.header);
+
+  if (data_depth == 0) {
+    publishFan<uint8_t>(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
+      ros_ping_msg.header);
+  } else {
+    publishFan<uint16_t>(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
+      ros_ping_msg.header);
+  }
 }
 
 void SonarViewer::publishFan(
-    const oculus::PingMessage::ConstPtr& ping, const std::string& frame_id, const int& data_depth) const {
+    const oculus::PingMessage::ConstPtr& ping, const int& data_depth, const std::string& frame_id) const {
   std_msgs::msg::Header header;
   header.stamp = oculus::toMsg(ping->timestamp());
   header.frame_id = frame_id;
@@ -55,9 +61,9 @@ void SonarViewer::publishFan(
   //     ping->data(), ping->master_mode(), ping->range(), header);
   if (data_depth == 0) {
     publishFan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
-        ping->range(), header);
+        header);
   } else {
     publishFan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
-        ping->range(), header);  // TODO(hugoyvrn, handle publishFan<uint16_t> for 16bits data depth)
+        header);  // TODO(hugoyvrn, handle publishFan<uint16_t> for 16bits data depth)
   }
 }

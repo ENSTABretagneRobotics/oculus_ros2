@@ -57,16 +57,15 @@ class SonarViewer {
 public:
   explicit SonarViewer(rclcpp::Node* node);
   ~SonarViewer();
-  void publishFan(const oculus::PingMessage::ConstPtr& ping, const std::string& frame_id = "", const int& data_depth = 0) const;
+  void publishFan(const oculus::PingMessage::ConstPtr& ping, const int& data_depth, const std::string& frame_id = "") const;
   void publishFan(
-      const oculus_interfaces::msg::Ping& ros_ping_msg, const std::string& frame_id = "", const int& data_depth = 0) const;
+      const oculus_interfaces::msg::Ping& ros_ping_msg, const int& data_depth, const std::string& frame_id = "") const;
   template <typename DataType>
   void publishFan(const int& width,
       const int& height,
       const int& offset,
-      const std::vector<DataType>& ping_data,
+      const std::vector<uint8_t>& ping_data,
       const int& master_mode,
-      const double& ping_rage,
       const std_msgs::msg::Header& header) const;
 
 protected:
@@ -83,9 +82,8 @@ template <typename DataType>
 void SonarViewer::publishFan(const int& width,
     const int& height,
     const int& offset,
-    const std::vector<DataType>& ping_data,
+    const std::vector<uint8_t>& ping_data,
     const int& master_mode,
-    const double& ping_range,
     const std_msgs::msg::Header& header) const {
   static_assert(std::is_same<DataType, uint8_t>::value || std::is_same<DataType, uint16_t>::value,
       "publishFan can only be build for uint8_t and uint16_t");
@@ -118,13 +116,17 @@ void SonarViewer::publishFan(const int& width,
 
       for (size_t k = 0; k < (pts.size() - 1); k++) {
         cv::LineIterator it(mono_img, pts[k], pts[k + 1], 4);  // TODO(JaouadROS, 4 is a magic number, what is it?)
-        for (int i = 1; i < it.count; i++, ++it) arc_points.push_back(it.pos());
+        for (int i = 1; i < it.count; i++, ++it) {
+          arc_points.push_back(it.pos());
+        }
       }
 
       cv::Mat data_rows_resized;
       cv::resize(rawDataMat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
 
-      for (size_t k = 0; k < arc_points.size(); k++) mono_img.at<DataType>(arc_points[k]) = data_rows_resized.at<DataType>(1, k);
+      for (size_t k = 0; k < arc_points.size(); k++) {
+        mono_img.at<DataType>(arc_points[k]) = data_rows_resized.at<DataType>(1, k);
+      }
     }
   });
 
