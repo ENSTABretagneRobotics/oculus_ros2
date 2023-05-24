@@ -68,14 +68,14 @@ struct SonarParameters {
 };
 
 namespace flagByte {
-const int RANGE_AS_METERS = 0x02;  // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
+const int RANGE_AS_METERS = 0x01;  // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
 const int DATA_DEPTH = 0x02;  // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ?
-const int SEND_GAINS = 0x03;  // bit 2: 0 = won't send gain, 1 = send gain
-const int SIMPLE_PING = 0x04;  // bit 3: 0 = send full return message, 1 = send simple return message
-const int GAIN_ASSIST = 0x05;  // bit 4: gain assist?
-// const int ?? = 0x06;  // bit 5: ?
-const int NBEAMS = 0x07;  // bit 6: enable 512 beams
-// const int ?? = 0x08;  // bit 7: ?
+const int SEND_GAINS = 0x04;  // bit 2: 0 = won't send gain, 1 = send gain
+const int SIMPLE_PING = 0x08;  // bit 3: 0 = send full return message, 1 = send simple return message
+const int GAIN_ASSIST = 0x10;  // bit 4: gain assist?
+// const int ?? = 0x20;  // bit 5: ?
+const int NBEAMS = 0x40;  // bit 6: enable 512 beams
+// const int ?? = 0x80;  // bit 7: ?
 }  // namespace flagByte
 
 namespace params {
