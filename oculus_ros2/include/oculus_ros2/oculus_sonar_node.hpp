@@ -56,7 +56,6 @@
 struct SonarParameters {
   int frequency_mode;
   int ping_rate;
-  int data_depth;
   int nbeams;
   bool gain_assist;
   double range;
@@ -69,7 +68,7 @@ struct SonarParameters {
 
 namespace flagByte {
 const int RANGE_AS_METERS = 0x01;  // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
-const int DATA_DEPTH = 0x02;  // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ?
+// const int ?? = 0x02;  // bit 1: ??
 const int SEND_GAINS = 0x04;  // bit 2: 0 = won't send gain, 1 = send gain
 const int SIMPLE_PING = 0x08;  // bit 3: 0 = send full return message, 1 = send simple return message
 const int GAIN_ASSIST = 0x10;  // bit 4: gain assist?
@@ -113,17 +112,13 @@ const IntParam PING_RATE = {"ping_rate", 0, 5, 2,
         ": 15Hz max ping rate.\n\t" + std::to_string(pingRateHighest) + ": 40Hz max ping rate.\n\t" +
         std::to_string(pingRateLow) + ": 5Hz max ping rate.\n\t" + std::to_string(pingRateLowest) + ": 2Hz max ping rate.\n\t" +
         static_cast<char>(pingRateStandby) + ": Standby mode (no ping fire)."};
-const IntParam DATA_DEPTH = {"data_depth", 0, 1, 1,
-    "Ping data encoding bit count.\n"
-    "\t0: Ping data encoded on 8bits.\n"
-    "\t1: Ping data encoded on 16bits."};
 const IntParam NBEAMS = {"nbeams", 0, 1, 1,
     "Number of ping beams.\n"
     "\t0: Oculus outputs 256 beams.\n"
     "\t1: Oculus outputs 512 beams."};
 const IntParam GAMMA_CORRECTION = {"gamma_correction", 0, 255, 153, "Gamma correction, min=0, max=255."};
 
-const std::vector<IntParam> INT = {FREQUENCY_MODE, PING_RATE, DATA_DEPTH, NBEAMS, GAMMA_CORRECTION};
+const std::vector<IntParam> INT = {FREQUENCY_MODE, PING_RATE, NBEAMS, GAMMA_CORRECTION};
 
 struct DoubleParam {
   const std::string name;
@@ -152,7 +147,7 @@ public:
   ~OculusSonarNode();
 
 protected:
-  const std::vector<std::string> dynamic_parameters_names_{"frequency_mode", "ping_rate", "data_depth", "nbeams", "gain_assist",
+  const std::vector<std::string> dynamic_parameters_names_{"frequency_mode", "ping_rate", "nbeams", "gain_assist",
       "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run"};
 
   SonarParameters currentSonarParameters_;

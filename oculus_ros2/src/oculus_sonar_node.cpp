@@ -190,8 +190,6 @@ void OculusSonarNode::updateRosConfig() {
 
   updateRosConfigForParam<int>(currentRosParameters_.ping_rate, currentSonarParameters_.ping_rate, "ping_rate");
 
-  updateRosConfigForParam<int>(currentRosParameters_.data_depth, currentSonarParameters_.data_depth, "data_depth");
-
   updateRosConfigForParam<bool>(currentRosParameters_.gain_assist, currentSonarParameters_.gain_assist, "gain_assist");
 
   updateRosConfigForParam<int>(
@@ -256,7 +254,7 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
 
   // TODO(hugoyvrn, publish bearings)
 
-  sonar_viewer_.publishFan(ping, currentSonarParameters_.data_depth, frame_id_);
+  sonar_viewer_.publishFan(ping, frame_id_);
 }
 
 void OculusSonarNode::handleDummy() {
@@ -272,8 +270,6 @@ void OculusSonarNode::updateLocalParameters(SonarParameters& parameters, const s
       parameters.frequency_mode = new_param.as_int();
     else if (new_param.get_name() == "ping_rate")
       parameters.ping_rate = new_param.as_int();
-    else if (new_param.get_name() == "data_depth")
-      parameters.data_depth = new_param.as_int();
     else if (new_param.get_name() == "nbeams")
       parameters.nbeams = new_param.as_int();
     else if (new_param.get_name() == "gain_assist")
@@ -329,8 +325,6 @@ void OculusSonarNode::updateLocalParameters(SonarParameters& parameters, SonarDr
 
   new_parameters.push_back(rclcpp::Parameter("frequency_mode", feedback.masterMode));  // "frequency_mode"
   new_parameters.push_back(rclcpp::Parameter("ping_rate", feedback.pingRate));
-  new_parameters.push_back(
-      rclcpp::Parameter("data_depth", static_cast<int>(feedback.flags & flagByte::DATA_DEPTH)));  // data_depth
   new_parameters.push_back(rclcpp::Parameter("nbeams", static_cast<int>(feedback.flags & flagByte::NBEAMS)));  // nbeams
   new_parameters.push_back(
       rclcpp::Parameter("gain_assist", static_cast<bool>(feedback.flags & flagByte::GAIN_ASSIST)));  // gain_assist
@@ -356,13 +350,6 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
   } else if (param.get_name() == "ping_rate") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating ping_rate to " << param.as_int() << " (" + params::PING_RATE.desc + ").");
     newConfig.pingRate = param.as_int();
-  } else if (param.get_name() == "data_depth") {
-    RCLCPP_INFO_STREAM(this->get_logger(), "Updating data_depth to " << param.as_int() << " (0: 8 bits, 1: 16 bits).");
-    if (param.as_int() == 0) {
-      newConfig.flags &= ~flagByte::DATA_DEPTH;  // 8 bits
-    } else {
-      newConfig.flags |= flagByte::DATA_DEPTH;  // 16 bits
-    }
   } else if (param.get_name() == "nbeams") {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating nbeams to " << param.as_int() << " (0: 256 beams, 1: 512 beams).");
     if (param.as_int() == 0) {
@@ -418,8 +405,6 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
 
   handleFeedbackForParam<double>(result, param, newConfig.masterMode, feedback.masterMode, "frequency_mode");
   // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO(???)
-  handleFeedbackForParam<int>(result, param, (newConfig.flags & flagByte::DATA_DEPTH) ? 1 : 0,
-      (feedback.flags & flagByte::DATA_DEPTH) ? 1 : 0, "data_depth");
   handleFeedbackForParam<bool>(result, param, (newConfig.flags & flagByte::GAIN_ASSIST) ? 1 : 0,
       (feedback.flags & flagByte::GAIN_ASSIST) ? 1 : 0, "gain_assist");
   handleFeedbackForParam<int>(

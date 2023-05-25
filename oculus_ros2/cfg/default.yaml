@@ -19,10 +19,6 @@ oculus_sonar:
     # 4: 2Hz max ping rate.
     # 5: Standby mode (no ping fire).
 
-    data_depth: 1 # Ping data encoding bit count. Default value is 1.
-    # 0: Ping data encoded on 8bits.
-    # 1: Ping data encoded on 16bits.
-
     nbeams: 1 # Number of ping beams. Default value is 1.
     #  0: Oculus outputs 256 beams.
     #  1: Oculus outputs 512 beams.

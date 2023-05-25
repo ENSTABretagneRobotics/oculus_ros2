@@ -38,31 +38,76 @@ SonarViewer::SonarViewer(rclcpp::Node* node) : node_(node) {
 
 SonarViewer::~SonarViewer() {}
 
-void SonarViewer::publishFan(const oculus_interfaces::msg::Ping& ros_ping_msg, const int& data_depth) const {
+void SonarViewer::publishFan(const oculus_interfaces::msg::Ping& ros_ping_msg) const {
   // const int offset = ping->ping_data_offset(); // TODO(hugoyvrn)
-  const int offset = 229;  // TODO(JaouadROS, 229 is a magic number)
+  const int offset = 229;  // quick fix TODO(hugoyvrn, why 229?)
 
-  if (data_depth == 0) {
-    publishFan<uint8_t>(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
+  
+    publishFan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
         ros_ping_msg.header);
-  } else {
-    publishFan<uint16_t>(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
-        ros_ping_msg.header);
-  }
+  
 }
 
 void SonarViewer::publishFan(
-    const oculus::PingMessage::ConstPtr& ping, const int& data_depth, const std::string& frame_id) const {
+    const oculus::PingMessage::ConstPtr& ping, const std::string& frame_id) const {
   std_msgs::msg::Header header;
   header.stamp = oculus::toMsg(ping->timestamp());
   header.frame_id = frame_id;
-  // publishFan<data_depth == 0 ? uint8_t : uint16_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(),
-  //     ping->data(), ping->master_mode(), ping->range(), header);
-  if (data_depth == 0) {
-    publishFan<uint8_t>(
+
+    publishFan(
         ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(), header);
-  } else {
-    publishFan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
-        header);  // TODO(hugoyvrn, handle publishFan<uint16_t> for 16bits data depth)
-  }
+
 }
+
+
+void SonarViewer::publishFan(const int& width,
+    const int& height,
+    const int& offset,
+    const std::vector<uint8_t>& ping_data,
+    const int& master_mode,
+    const std_msgs::msg::Header& header) const {
+  const int step = width + SIZE_OF_GAIN_;
+  const float theta_shift = 270;
+  const int mat_encoding = CV_8U;
+  const char* ros_image_encoding = sensor_msgs::image_encodings::MONO8;
+
+  cv::Mat rawDataMat(height, step, mat_encoding);
+
+  std::memcpy(rawDataMat.data, ping_data.data() + offset, height * step);
+
+  const double bearing = (master_mode == 1) ? LOW_FREQUENCY_BEARING_APERTURE_ : HIGHT_FREQUENCY_BEARING_APERTURE_;
+  const int image_width = 2 * std::sin(bearing * M_PI / 180) * height;
+  cv::Mat mono_img =
+      cv::Mat::ones(cv::Size(image_width, height), CV_MAKETYPE(mat_encoding, 1)) * std::numeric_limits<uint8_t>::max();
+  const cv::Point origin(image_width / 2, height);
+
+  cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {  // TODO(??, optimize for cuda)
+    for (int r = range.start; r < range.end; r++) {
+      std::vector<cv::Point> pts;
+      cv::ellipse2Poly(origin, cv::Size(r, r), theta_shift, -bearing, bearing, 1, pts);
+
+      std::vector<cv::Point> arc_points;
+      arc_points.push_back(pts[0]);
+
+      for (size_t k = 0; k < (pts.size() - 1); k++) {
+        cv::LineIterator it(mono_img, pts[k], pts[k + 1], SIZE_OF_GAIN_);
+        for (int i = 1; i < it.count; i++, ++it) {
+          arc_points.push_back(it.pos());
+        }
+      }
+
+      cv::Mat data_rows_resized;
+      cv::resize(rawDataMat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
+
+      for (size_t k = 0; k < arc_points.size(); k++) {
+        mono_img.at<uint8_t>(arc_points[k]) = data_rows_resized.at<uint8_t>(1, k);
+      }
+    }
+  });
+
+  // Publish sonar conic image
+  sensor_msgs::msg::Image msg;
+  cv_bridge::CvImage(header, ros_image_encoding, mono_img).toImageMsg(msg);
+  image_publisher_->publish(msg);
+}
+
