@@ -38,17 +38,16 @@ SonarViewer::SonarViewer(rclcpp::Node* node) : node_(node) {
 
 SonarViewer::~SonarViewer() {}
 
-void SonarViewer::publishFan(
-    const oculus_interfaces::msg::Ping& ros_ping_msg, const int& data_depth, const std::string& frame_id) const {
+void SonarViewer::publishFan(const oculus_interfaces::msg::Ping& ros_ping_msg, const int& data_depth) const {
   // const int offset = ping->ping_data_offset(); // TODO(hugoyvrn)
   const int offset = 229;  // TODO(JaouadROS, 229 is a magic number)
 
   if (data_depth == 0) {
     publishFan<uint8_t>(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
-      ros_ping_msg.header);
+        ros_ping_msg.header);
   } else {
     publishFan<uint16_t>(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
-      ros_ping_msg.header);
+        ros_ping_msg.header);
   }
 }
 
@@ -60,8 +59,8 @@ void SonarViewer::publishFan(
   // publishFan<data_depth == 0 ? uint8_t : uint16_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(),
   //     ping->data(), ping->master_mode(), ping->range(), header);
   if (data_depth == 0) {
-    publishFan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
-        header);
+    publishFan<uint8_t>(
+        ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(), header);
   } else {
     publishFan<uint8_t>(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(),
         header);  // TODO(hugoyvrn, handle publishFan<uint16_t> for 16bits data depth)

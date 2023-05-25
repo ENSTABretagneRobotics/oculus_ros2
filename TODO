@@ -1,4 +1,4 @@
-# Including a filter 
+# Including a filter
 ```c++
 // function from https://github.com/JaouadROS jaouad@forssea-robotics.fr
 // void SonarViewer::streamAndFilter(const int &width,

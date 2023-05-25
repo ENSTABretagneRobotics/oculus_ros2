@@ -159,9 +159,12 @@ protected:
   SonarParameters currentRosParameters_;
   oculus::SonarDriver::PingConfig currentConfig_;
 
-  bool is_running_;  // Same value as ros parameter "run"
+  bool is_running_;  // State value. Same value as ros parameter "run"
+  bool is_overheating_ = false;  // State value
 
   mutable std::shared_mutex param_mutex_;  // multithreading protection
+
+  int get_subscription_count() const;
 
 private:
   std::shared_ptr<oculus::SonarDriver> sonar_driver_;
@@ -194,10 +197,11 @@ private:
 
   void enableRunMode();
   void disableRunMode();
+  void checkOverheating(const double& new_temperature);
   void checkFlag(uint8_t flags);
-  void publishStatus(const OculusStatusMsg& status) const;
+  void publishStatus(const OculusStatusMsg& status);
   void publishPing(const oculus::PingMessage::ConstPtr& pingMetadata);
-  void handleDummy() const;
+  void handleDummy();
 };
 
 template <class T>

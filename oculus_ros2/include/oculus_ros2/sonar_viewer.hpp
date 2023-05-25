@@ -58,8 +58,7 @@ public:
   explicit SonarViewer(rclcpp::Node* node);
   ~SonarViewer();
   void publishFan(const oculus::PingMessage::ConstPtr& ping, const int& data_depth, const std::string& frame_id = "") const;
-  void publishFan(
-      const oculus_interfaces::msg::Ping& ros_ping_msg, const int& data_depth, const std::string& frame_id = "") const;
+  void publishFan(const oculus_interfaces::msg::Ping& ros_ping_msg, const int& data_depth) const;
   template <typename DataType>
   void publishFan(const int& width,
       const int& height,
@@ -68,6 +67,8 @@ public:
       const int& master_mode,
       const std_msgs::msg::Header& header) const;
 
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
+
 protected:
   const double LOW_FREQUENCY_BEARING_APERTURE_ = 65.;
   const double HIGHT_FREQUENCY_BEARING_APERTURE_ = 40.;
@@ -75,7 +76,6 @@ protected:
 
 private:
   const rclcpp::Node* node_;
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
 };
 
 template <typename DataType>

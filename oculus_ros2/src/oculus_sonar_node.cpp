@@ -118,13 +118,20 @@ OculusSonarNode::~OculusSonarNode() {
 }
 
 void OculusSonarNode::enableRunMode() {
+  this->sonar_driver_->resume();  // Quitting sonar standby mode
   is_running_ = true;
   this->set_parameter(rclcpp::Parameter("run", true));
 }
 
 void OculusSonarNode::disableRunMode() {
+  this->sonar_driver_->standby();  // Going in sonar standby mode
+  RCLCPP_INFO(this->get_logger(), "Going to standby mode");
   is_running_ = false;
   this->set_parameter(rclcpp::Parameter("run", false));
+}
+
+void OculusSonarNode::checkOverheating(const double& new_temperature) {
+  is_overheating_ = new_temperature >= temperature_stop_limit_;
 }
 
 void OculusSonarNode::checkFlag(uint8_t flags) {
@@ -139,7 +146,7 @@ void OculusSonarNode::checkFlag(uint8_t flags) {
   }
 }
 
-void OculusSonarNode::publishStatus(const OculusStatusMsg& status) const {
+void OculusSonarNode::publishStatus(const OculusStatusMsg& status) {
   if (status.partNumber != OculusPartNumberType::partNumberM1200d) {
     RCLCPP_ERROR_STREAM(get_logger(),
         "The sonar version seems to be different than M1200d."
@@ -153,6 +160,7 @@ void OculusSonarNode::publishStatus(const OculusStatusMsg& status) const {
   this->status_publisher_->publish(msg);
 
   if (!is_running_) {
+    checkOverheating(status.temperature6);
     sensor_msgs::msg::Temperature temperature_ros_msg;
     temperature_ros_msg.header.frame_id = frame_id_;
     // temperature_ros_msg.header.stamp = this->get_clock()->now();  // TODO(hugoyvrn)
@@ -194,21 +202,22 @@ void OculusSonarNode::updateRosConfig() {
   updateRosConfigForParam<double>(currentRosParameters_.salinity, currentSonarParameters_.salinity, "salinity");
 }
 
-void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
-  if (this->ping_publisher_->get_subscription_count() == 0) {
-    RCLCPP_INFO(this->get_logger(), "There is no subscriber to the ping topic.");
-    RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-    disableRunMode();
-    this->sonar_driver_->standby();
-  }
-  if (currentSonarParameters_.ping_rate == pingRateStandby) {
-    RCLCPP_INFO_STREAM(this->get_logger(), "ping_rate mode is seted to " << pingRateStandby << ".");
-    RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-    disableRunMode();
-    this->sonar_driver_->standby();
-  }
+int OculusSonarNode::get_subscription_count() const {
+  return this->ping_publisher_->get_subscription_count() + sonar_viewer_.image_publisher_->get_subscription_count();
+}
 
-  if (ping->temperature() >= temperature_stop_limit_) {
+void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
+  // Check if the sonar must go in standby mode
+  checkOverheating(ping->temperature());
+  if (!is_running_) {
+    disableRunMode();
+  } else if (get_subscription_count() == 0) {
+    RCLCPP_INFO(this->get_logger(), "There is no subscriber nor to ping topic neither to image topic.");
+    disableRunMode();
+  } else if (currentSonarParameters_.ping_rate == pingRateStandby) {
+    RCLCPP_INFO_STREAM(this->get_logger(), "ping_rate mode is seted to " << pingRateStandby << ".");
+    disableRunMode();
+  } else if (is_overheating_) {
     RCLCPP_FATAL_STREAM(this->get_logger(), "Temperature of sonar is to high ("
                                                 << ping->temperature()
                                                 << "°C). Make sur the sonar is underwatter. Security limit set at "
@@ -219,12 +228,6 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
                                                << ping->temperature()
                                                << "°C). Make sur the sonar is underwatter. Security limit set at "
                                                << temperature_stop_limit_ << "°C");
-  }
-
-  if (!is_running_) {
-    RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-    this->sonar_driver_->standby();
-    return;
   }
 
   // Update current config with ping information
@@ -256,11 +259,10 @@ void OculusSonarNode::publishPing(const oculus::PingMessage::ConstPtr& ping) {
   sonar_viewer_.publishFan(ping, currentSonarParameters_.data_depth, frame_id_);
 }
 
-void OculusSonarNode::handleDummy() const {
-  if (is_running_ && this->ping_publisher_->get_subscription_count() > 0 &&
-      currentSonarParameters_.ping_rate != pingRateStandby) {
+void OculusSonarNode::handleDummy() {
+  if (is_running_ && get_subscription_count() > 0 && !is_overheating_ && currentSonarParameters_.ping_rate != pingRateStandby) {
     RCLCPP_INFO(this->get_logger(), "Exiting standby mode");
-    this->sonar_driver_->resume();
+    enableRunMode();
   }
 }
 
@@ -447,7 +449,27 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::setConfigCallback(cons
 
   for (const rclcpp::Parameter& param : parameters) {
     if (param.get_name() == "run") {
+      if (!is_running_ || param.as_bool()) {
+        if (get_subscription_count() == 0 || is_overheating_ || currentSonarParameters_.ping_rate == pingRateStandby) {
+          result.successful = false;
+          result.reason = "The condition to go in run mode are not meeted.";
+          if (get_subscription_count() == 0) {
+            result.reason += " There is no subscriber nor to ping topic neither to image topic.";
+          }
+          if (is_overheating_) {
+            result.reason +=
+                " Temperature of sonar is to high."
+                " Make sur the sonar is underwatter. Security limit set at " +
+                std::to_string(temperature_stop_limit_) + "°C";
+          }
+          if (currentSonarParameters_.ping_rate == pingRateStandby) {
+            result.reason += " ping_rate mode is seted to " + std::to_string(pingRateStandby) + ".";
+          }
+          return result;
+        }
+      }
       is_running_ = param.as_bool();
+
     } else if (std::find(dynamic_parameters_names_.begin(), dynamic_parameters_names_.end(), param.get_name()) !=
                dynamic_parameters_names_.end()) {
       sendParamToSonar(param, result);
