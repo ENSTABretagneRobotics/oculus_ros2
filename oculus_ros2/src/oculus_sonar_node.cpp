@@ -1,4 +1,4 @@
-/*
+/**
  * BSD 3-Clause License
  *
  * Copyright (c) 2022, ENSTA-Bretagne
@@ -266,28 +266,29 @@ void OculusSonarNode::handleDummy() {
 
 void OculusSonarNode::updateLocalParameters(SonarParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters) {
   for (const rclcpp::Parameter& new_param : new_parameters) {
-    if (new_param.get_name() == "frequency_mode")
+    if (new_param.get_name() == "frequency_mode") {
       parameters.frequency_mode = new_param.as_int();
-    else if (new_param.get_name() == "ping_rate")
+    } else if (new_param.get_name() == "ping_rate") {
       parameters.ping_rate = new_param.as_int();
-    else if (new_param.get_name() == "nbeams")
+    } else if (new_param.get_name() == "nbeams") {
       parameters.nbeams = new_param.as_int();
-    else if (new_param.get_name() == "gain_assist")
+    } else if (new_param.get_name() == "gain_assist") {
       parameters.gain_assist = new_param.as_bool();
-    else if (new_param.get_name() == "range")
+    } else if (new_param.get_name() == "range") {
       parameters.range = new_param.as_double();
-    else if (new_param.get_name() == "gamma_correction")
+    } else if (new_param.get_name() == "gamma_correction") {
       parameters.gamma_correction = new_param.as_int();
-    else if (new_param.get_name() == "gain_percent")
+    } else if (new_param.get_name() == "gain_percent") {
       parameters.gain_percent = new_param.as_double();
-    else if (new_param.get_name() == "sound_speed")
+    } else if (new_param.get_name() == "sound_speed") {
       parameters.sound_speed = new_param.as_double();
-    else if (new_param.get_name() == "use_salinity")
+    } else if (new_param.get_name() == "use_salinity") {
       parameters.use_salinity = new_param.as_bool();
-    else if (new_param.get_name() == "salinity")
+    } else if (new_param.get_name() == "salinity") {
       parameters.salinity = new_param.as_double();
-    else if (!(new_param.get_name() == "run"))
+    } else if (!(new_param.get_name() == "run")) {
       RCLCPP_WARN_STREAM(get_logger(), "Wrong parameter to set : new_param = " << new_param << ". Not seted");
+    }
   }
 }
 

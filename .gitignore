@@ -2,5 +2,5 @@
 build
 lib
 .vscode
-oculus_ros2/dev/*.oculus
+oculus_ros2/dev/**.oculus
 oculus_ros2/dev/Exampl_Logfiles

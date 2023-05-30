@@ -1,4 +1,4 @@
-/*
+/**
  * BSD 3-Clause License
  *
  * Copyright (c) 2022, ENSTA-Bretagne
@@ -68,7 +68,7 @@ struct SonarParameters {
 
 namespace flagByte {
 const int RANGE_AS_METERS = 0x01;  // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
-// const int ?? = 0x02;  // bit 1: ??
+// const int ?? = 0x02;  // bit 1: ?? const int DATA_DEPTH = 0x02;  // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ? TODO(hugoyvrn)
 const int SEND_GAINS = 0x04;  // bit 2: 0 = won't send gain, 1 = send gain
 const int SIMPLE_PING = 0x08;  // bit 3: 0 = send full return message, 1 = send simple return message
 const int GAIN_ASSIST = 0x10;  // bit 4: gain assist?
@@ -102,7 +102,7 @@ struct IntParam {
   const std::string desc;
 };
 
-const IntParam FREQUENCY_MODE = {"frequency_mode", 0, 1, 0,
+const IntParam FREQUENCY_MODE = {"frequency_mode", 1, 2, 2,
     "Sonar beam frequency mode.\n"
     "\t1: Low frequency (1.2MHz, wide aperture).\n"
     "\t2: High frequency (2.1Mhz, narrow aperture)."};
