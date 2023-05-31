@@ -97,9 +97,6 @@ OculusSonarNode::OculusSonarNode()
     }
   }
 
-  RCLCPP_INFO_STREAM(get_logger(),
-      "this->sonar_driver_->current_ping_config()= " << this->sonar_driver_->current_ping_config());  // TODO(hugoyvrn, to remove)
-
   // Get the current sonar config
   updateLocalParameters(currentSonarParameters_, this->sonar_driver_->current_ping_config());
   for (const std::string& param_name : dynamic_parameters_names_) {
@@ -114,9 +111,6 @@ OculusSonarNode::OculusSonarNode()
   this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publishPing, this, std::placeholders::_1));
   // callback on dummy messages to reactivate the pings as needed
   this->sonar_driver_->add_dummy_callback(std::bind(&OculusSonarNode::handleDummy, this));
-
-  RCLCPP_INFO_STREAM(get_logger(),
-      "this->sonar_driver_->current_ping_config()= " << this->sonar_driver_->current_ping_config());  // TODO(hugoyvrn, to remove)
 }
 
 OculusSonarNode::~OculusSonarNode() {
@@ -145,7 +139,7 @@ void OculusSonarNode::setMinimalFlags(uint8_t& flags) const {
          | flagByte::SEND_GAINS  // force send gain to true this
          | flagByte::SIMPLE_PING;  // use simple ping
 
-  if (currentSonarParameters_.frequency_mode == flagByte::FREQUENCY_MODE.max) {
+  if (currentSonarParameters_.frequency_mode == params::FREQUENCY_MODE.max) {
     // TODO(hugoyvrn, gain_assist not working, to fix)
     // flags |= flagByte::GAIN_ASSIST;
     flags &= ~flagByte::GAIN_ASSIST;
