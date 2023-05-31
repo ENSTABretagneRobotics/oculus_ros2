@@ -97,6 +97,9 @@ OculusSonarNode::OculusSonarNode()
     }
   }
 
+  RCLCPP_INFO_STREAM(get_logger(),
+      "this->sonar_driver_->current_ping_config()= " << this->sonar_driver_->current_ping_config());  // TODO(hugoyvrn, to remove)
+
   // Get the current sonar config
   updateLocalParameters(currentSonarParameters_, this->sonar_driver_->current_ping_config());
   for (const std::string& param_name : dynamic_parameters_names_) {
@@ -111,6 +114,9 @@ OculusSonarNode::OculusSonarNode()
   this->sonar_driver_->add_ping_callback(std::bind(&OculusSonarNode::publishPing, this, std::placeholders::_1));
   // callback on dummy messages to reactivate the pings as needed
   this->sonar_driver_->add_dummy_callback(std::bind(&OculusSonarNode::handleDummy, this));
+
+  RCLCPP_INFO_STREAM(get_logger(),
+      "this->sonar_driver_->current_ping_config()= " << this->sonar_driver_->current_ping_config());  // TODO(hugoyvrn, to remove)
 }
 
 OculusSonarNode::~OculusSonarNode() {
@@ -134,7 +140,30 @@ void OculusSonarNode::checkOverheating(const double& new_temperature) {
   is_overheating_ = new_temperature >= temperature_stop_limit_;
 }
 
-void OculusSonarNode::checkFlag(uint8_t flags) {
+void OculusSonarNode::setMinimalFlags(uint8_t& flags) const {
+  flags |= flagByte::RANGE_AS_METERS  // always in meters
+         | flagByte::SEND_GAINS  // force send gain to true this
+         | flagByte::SIMPLE_PING;  // use simple ping
+
+  if (currentSonarParameters_.frequency_mode == flagByte::FREQUENCY_MODE.max) {
+    // TODO(hugoyvrn, gain_assist not working, to fix)
+    // flags |= flagByte::GAIN_ASSIST;
+    flags &= ~flagByte::GAIN_ASSIST;
+  }
+
+  // flags | 0x02 make wird change (depending of the configuration)
+  // flags |= 0x02;
+  flags &= ~0x02;
+  // flags | 0x20 must be ???
+  // flags |= 0x20;
+  // flags &= ~0x20;
+  // flags | 0x80 must be false to avoid broken connection (Header reception error) and very long param answers. Restart of the
+  // sonar needed (even for IHM). tested with flags = 4d and flags = cd and flags = fd and flags = 19
+  // flags |= 0x80;
+  flags &= ~0x80;
+}
+
+void OculusSonarNode::checkMinimalFlags(const uint8_t& flags) const {
   if (!(flags & flagByte::RANGE_AS_METERS)) {
     RCLCPP_ERROR(get_logger(), "Range is attepreted as percent while ros driver assume range is interpreted as meters.");
   }
@@ -322,7 +351,7 @@ void OculusSonarNode::updateLocalParameters(SonarParameters& parameters, SonarDr
   // double speedOfSound;           // ms-1, if set to zero then internal calc will apply using salinity
   // double salinity;               // ppt, set to zero if we are in fresh water
 
-  checkFlag(feedback.flags);
+  checkMinimalFlags(feedback.flags);
 
   new_parameters.push_back(rclcpp::Parameter("frequency_mode", feedback.masterMode));  // "frequency_mode"
   new_parameters.push_back(rclcpp::Parameter("ping_rate", feedback.pingRate));
@@ -392,9 +421,7 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
     newConfig.salinity = param.as_double();
   }
 
-  newConfig.flags |= flagByte::RANGE_AS_METERS  // always in meters
-                   | flagByte::SEND_GAINS  // force send gain to true
-                   | flagByte::SIMPLE_PING;  // use simple ping
+  setMinimalFlags(newConfig.flags);
 
   // send config to Oculus sonar and wait for feedback
   SonarDriver::PingConfig feedback = this->sonar_driver_->request_ping_config(newConfig);
@@ -402,7 +429,7 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
 
   updateLocalParameters(currentSonarParameters_, feedback);
 
-  checkFlag(feedback.flags);
+  checkMinimalFlags(feedback.flags);
 
   handleFeedbackForParam<double>(result, param, newConfig.masterMode, feedback.masterMode, "frequency_mode");
   // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO(???)

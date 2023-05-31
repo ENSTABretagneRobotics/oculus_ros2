@@ -68,7 +68,8 @@ struct SonarParameters {
 
 namespace flagByte {
 const int RANGE_AS_METERS = 0x01;  // bit 0: 0 = interpret range as percent, 1 = interpret range as meters
-// const int ?? = 0x02;  // bit 1: ?? const int DATA_DEPTH = 0x02;  // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ? TODO(hugoyvrn)
+// const int ?? = 0x02;  // bit 1: ?? const int DATA_DEPTH = 0x02;  // bit 1: 0 = 8 bit data, 1 = 16 bit data  // inverted ?
+// TODO(hugoyvrn)
 const int SEND_GAINS = 0x04;  // bit 2: 0 = won't send gain, 1 = send gain
 const int SIMPLE_PING = 0x08;  // bit 3: 0 = send full return message, 1 = send simple return message
 const int GAIN_ASSIST = 0x10;  // bit 4: gain assist?
@@ -147,8 +148,8 @@ public:
   ~OculusSonarNode();
 
 protected:
-  const std::vector<std::string> dynamic_parameters_names_{"frequency_mode", "ping_rate", "nbeams", "gain_assist",
-      "range", "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run"};
+  const std::vector<std::string> dynamic_parameters_names_{"frequency_mode", "ping_rate", "nbeams", "gain_assist", "range",
+      "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run"};
 
   SonarParameters currentSonarParameters_;
   SonarParameters currentRosParameters_;
@@ -193,7 +194,8 @@ private:
   void enableRunMode();
   void disableRunMode();
   void checkOverheating(const double& new_temperature);
-  void checkFlag(uint8_t flags);
+  void setMinimalFlags(uint8_t& flags) const;
+  void checkMinimalFlags(const uint8_t& flags) const;
   void publishStatus(const OculusStatusMsg& status);
   void publishPing(const oculus::PingMessage::ConstPtr& pingMetadata);
   void handleDummy();

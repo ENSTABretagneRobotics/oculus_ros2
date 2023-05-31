@@ -42,23 +42,17 @@ void SonarViewer::publishFan(const oculus_interfaces::msg::Ping& ros_ping_msg) c
   // const int offset = ping->ping_data_offset(); // TODO(hugoyvrn)
   const int offset = 229;  // quick fix TODO(hugoyvrn, why 229?)
 
-  
-    publishFan(ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode,
-        ros_ping_msg.header);
-  
+  publishFan(
+      ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode, ros_ping_msg.header);
 }
 
-void SonarViewer::publishFan(
-    const oculus::PingMessage::ConstPtr& ping, const std::string& frame_id) const {
+void SonarViewer::publishFan(const oculus::PingMessage::ConstPtr& ping, const std::string& frame_id) const {
   std_msgs::msg::Header header;
   header.stamp = oculus::toMsg(ping->timestamp());
   header.frame_id = frame_id;
 
-    publishFan(
-        ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(), header);
-
+  publishFan(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(), header);
 }
-
 
 void SonarViewer::publishFan(const int& width,
     const int& height,
@@ -110,4 +104,3 @@ void SonarViewer::publishFan(const int& width,
   cv_bridge::CvImage(header, ros_image_encoding, mono_img).toImageMsg(msg);
   image_publisher_->publish(msg);
 }
-
