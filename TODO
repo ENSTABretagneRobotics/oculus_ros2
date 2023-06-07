@@ -1,0 +1,89 @@
+# Including a filter
+```c++
+// function from https://github.com/JaouadROS jaouad@forssea-robotics.fr
+// void SonarViewer::streamAndFilter(const int &width,
+//                                     const int &height,
+//                                     const int &offset,
+//                                     const std::vector<uint8_t> &ping_data,
+//                                     cv::Mat &data)
+void SonarViewer::streamAndFilter(const oculus::PingMessage::ConstPtr& ping, cv::Mat& data) {
+  const int width = ping->bearing_count();
+  const int step = width + SIZE_OF_GAIN_;
+  const int height = ping->range_count();
+  const int offset = ping->ping_data_offset();
+
+  cv::Mat rawDataMat = cv::Mat(height, step, CV_8U);
+#pragma omp parallel for collapse(2)
+  for (int i = 0, k = offset; i < height; i++) {
+    for (int j = 0; j < step; j++) {
+      rawDataMat.at<uint8_t>(i, j) = ping->data()[k++];
+    }
+  }
+
+  data = cv::Mat(height, width, CV_64F);
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < height; i++) {
+    for (int j = SIZE_OF_GAIN_; j < step; j++) {
+      data.at<double>(i, j - SIZE_OF_GAIN_) = rawDataMat.at<uint8_t>(i, j);
+    }
+  }
+
+  cv::Mat img = data;
+  img = img / 255.0;
+
+  cv::Mat img_f;
+  cv::dft(img, img_f, cv::DFT_COMPLEX_OUTPUT);
+
+  cv::Mat beam(1, img.cols, CV_64F, cv::Scalar::all(0));
+
+  // set the values of the beam // TODO(hugoyvrn, to link it with ping data)
+  const int kNumValues = img.cols / 20;  // TODO(JaouadROS, 20 is a magic number, what is it?)
+  double values[kNumValues];
+  for (int i = 0; i < kNumValues / 2; i++) values[i] = 24 + i;  // TODO(JaouadROS, 24 is a magic number, what is it?)
+  values[kNumValues / 2] = 70;  // TODO(JaouadROS, 70 is a magic number, what is it?)
+  for (int i = kNumValues / 2 + 1; i < kNumValues; i++) values[i] = values[kNumValues - i - 1];
+  for (int i = 0; i < kNumValues; i++) beam.at<double>(0, i * img.cols / kNumValues) = values[i];
+
+  // normalize the beam
+  cv::Mat psf = (1.0 / cv::sum(beam)[0]) * beam;
+
+  const int kw = psf.rows;
+  const int kh = psf.cols;
+  cv::Mat psf_padded = cv::Mat::zeros(img.size(), img.type());
+  psf.copyTo(psf_padded(cv::Rect(0, 0, kh, kw)));
+
+  // compute (padded) psf's DFT
+  cv::Mat psf_f;
+  cv::dft(psf_padded, psf_f, cv::DFT_COMPLEX_OUTPUT, kh);
+
+  cv::Mat psf_f_2;
+  cv::pow(psf_f, 2, psf_f_2);
+  cv::transform(psf_f_2, psf_f_2, cv::Matx12f(1, 1));
+
+  const double noise = 0.001;
+  cv::Mat ipsf_f(psf_f.size(), CV_64FC2);
+  for (int i = 0; i < psf_f.rows; i++) {
+    for (int j = 0; j < psf_f.cols; j++) {
+      // compute element-wise division
+      cv::Vec2d val = psf_f.at<cv::Vec2d>(i, j) / (psf_f_2.at<double>(i, j) + noise);
+      // store result in ipsf_f
+      ipsf_f.at<cv::Vec2d>(i, j) = val;
+    }
+  }
+  cv::Mat result_f;
+  cv::mulSpectrums(img_f, ipsf_f, result_f, 0);
+
+  cv::Mat result;
+  cv::idft(result_f, result, cv::DFT_SCALE | cv::DFT_REAL_OUTPUT);
+
+  cv::Mat result_shifted_rows(result.size(), result.type());
+  int shift = ceil(kw / 2.0);
+  // similar to roll with shift = -1
+  for (int i = 0; i < result.rows; i++) result.row(i).copyTo(result_shifted_rows.row((i + shift) % result_shifted_rows.rows));
+
+  shift = ceil(kh / 2.0);
+  for (int i = 0; i < result.cols; i++) result_shifted_rows.col(i).copyTo(result.col((i + shift) % result.cols));
+  result.setTo(0, result < 0);
+  cv::normalize(result, result, 0, 1, cv::NORM_MINMAX);
+}
+```

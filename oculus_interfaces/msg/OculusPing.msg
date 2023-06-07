@@ -17,4 +17,3 @@ uint32  image_size
 uint32  message_size
 
 uint8[] data
-

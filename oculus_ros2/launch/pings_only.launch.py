@@ -1,5 +1,3 @@
-#! /usr/bin/python
-
 # BSD 3-Clause License
 #
 # Copyright (c) 2022, ENSTA-Bretagne
@@ -29,15 +27,50 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import os
 
-from oculus_sonar.cfg import OculusSonarConfig as config
+from ament_index_python.packages import get_package_share_directory
+from launch.actions import DeclareLaunchArgument
+from launch import LaunchDescription
+from launch_ros.actions import Node
+from launch.substitutions import LaunchConfiguration
 
 
-def print_parameter(param):
-    print("Parameter : " + param["name"] + " :")
-    for key in param:
-        print(" - " + key + " : " + str(param[key]))
+def generate_launch_description():
 
+    ld = LaunchDescription()
 
-for param in config.config_description["parameters"]:
-    print_parameter(param)
+    ld.add_action(
+        DeclareLaunchArgument(
+            name="port",
+            default_value="this_is_a_port",
+            description="Filters Configuration",
+        )
+    )
+
+    config = os.path.join(
+        get_package_share_directory("oculus_ros2"), "cfg", "default.yaml"
+    )
+
+    oculus_sonar_node = Node(
+        package="oculus_ros2",
+        executable="oculus_sonar_node",
+        name="oculus_sonar",
+        #  parameters=[config],
+        remappings=[
+            (
+                "ping",
+                "/oculus_sonar/ping",
+            ),  # Topic name where ping messages are published (cf Oculus.h).
+            (
+                "status",
+                "/oculus_sonar/status",
+            ),  # Topic name where status messages are published (cf Oculus.h).
+        ],
+        arguments=["-port", LaunchConfiguration("port")],
+        output="screen",
+    )
+
+    ld.add_action(oculus_sonar_node)
+
+    return ld

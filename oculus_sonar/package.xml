@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="3">
+    <name>oculus_sonar</name>
+    <version>0.0.0</version>
+    <description>ROS 2 package for BluePrint subsea Oculus M1200d sonar</description>
+    <maintainer email="auguste@forssea-robotics.fr">Auguste Bourgois</maintainer>
+
+    <license>proprietary</license>
+
+    <buildtool_depend>ament_cmake</buildtool_depend>
+
+    <exec_depend>oculus_driver</exec_depend>
+    <exec_depend>oculus_interfaces</exec_depend>
+    <exec_depend>oculus_ros2</exec_depend>
+    <exec_depend>oculus_image_converter</exec_depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+</package>

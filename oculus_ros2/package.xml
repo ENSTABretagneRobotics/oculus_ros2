@@ -2,32 +2,30 @@
 <package format="3">
   <name>oculus_ros2</name>
   <version>0.0.1</version>
-  <description>ROS node for BluePrint subsea Oculus sonar</description>
+  <description>ROS 2 nodes for BluePrint subsea Oculus M1200d sonar</description>
 
   <maintainer email="auguste@forssea-robotics.fr">Auguste BOURGOIS</maintainer>
 
   <license>BSD3</license>
 
-
-  <buildtool_depend>ament_cmake</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rospy</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>rospy</build_export_depend>
-  <build_export_depend>std_msgs</build_export_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <build_depend>message_generation</build_depend>
-  <exec_depend>message_runtime</exec_depend>
-
-  <depend>Boost</depend>
-  <depend>oculus_interfaces</depend>
-  <depend>rcl_interfaces</depend>
+  <!-- TODO(hugoyvrn, Cleannig in dependency needed) -->
+  <depend> ament_cmake </depend>
+  <depend> rclcpp </depend>
+  <depend> rclpy </depend>
+  <depend> rcl_interfaces </depend>
+  <depend> std_msgs </depend>
+  <depend> sensor_msgs </depend>
+  <depend> oculus_driver </depend>
+  <depend> oculus_interfaces </depend>
+  <depend> cv_bridge </depend>
+  <depend> OpenCV  </depend>
+  <!-- <depend>message_generation</depend> -->
+  <!-- <depend>message_runtime</depend> -->
+  <!-- <depend>Boost</depend> -->
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
