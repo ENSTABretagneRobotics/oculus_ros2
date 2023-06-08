@@ -1,4 +1,4 @@
-oculus_sonar:
+/**:
   ros__parameters:
     frame_id: "sonar" # Frame of reference for the ping messages. Default value is "sonar".
 
@@ -7,7 +7,7 @@ oculus_sonar:
 
     run: False # If run is False, stanby mode is forced. Default value is False.
 
-    frequency_mode: 1 # Sonar beam frequency mode. Default value is 1.
+    frequency_mode: 2 # Sonar beam frequency mode. Default value is 2.
     # 1: Low frequency (1.2MHz, wide aperture).
     # 2: High frequency (2.1MHz, narrow aperture).
 
