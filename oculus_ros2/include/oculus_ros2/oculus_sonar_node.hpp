@@ -148,8 +148,9 @@ public:
   ~OculusSonarNode();
 
 protected:
-  const std::vector<std::string> dynamic_parameters_names_{"frequency_mode", "ping_rate", "nbeams", "gain_assist", "range",
-      "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run"};
+  const std::vector<std::string> dynamic_parameters_names_{params::FREQUENCY_MODE.name, params::PING_RATE.name,
+      params::NBEAMS.name, params::GAIN_ASSIT.name, params::RANGE.name, params::GAMMA_CORRECTION.name, params::GAIN_PERCENT.name,
+      params::SOUND_SPEED.name, params::USE_SALINITY.name, params::SALINITY.name, "run"};
 
   SonarParameters currentSonarParameters_;
   SonarParameters currentRosParameters_;

@@ -203,24 +203,20 @@ void OculusSonarNode::publishStatus(const OculusStatusMsg& status) {
 void OculusSonarNode::updateRosConfig() {
   std::shared_lock l(param_mutex_);
 
-  updateRosConfigForParam<int>(currentRosParameters_.frequency_mode, currentSonarParameters_.frequency_mode, "frequency_mode");
-
-  updateRosConfigForParam<double>(currentRosParameters_.range, currentSonarParameters_.range, "range");
-
-  updateRosConfigForParam<double>(currentRosParameters_.gain_percent, currentSonarParameters_.gain_percent, "gain_percent");
-
-  updateRosConfigForParam<double>(currentRosParameters_.sound_speed, currentSonarParameters_.sound_speed, "sound_speed");
-
-  updateRosConfigForParam<int>(currentRosParameters_.ping_rate, currentSonarParameters_.ping_rate, "ping_rate");
-
-  updateRosConfigForParam<bool>(currentRosParameters_.gain_assist, currentSonarParameters_.gain_assist, "gain_assist");
-
   updateRosConfigForParam<int>(
-      currentRosParameters_.gamma_correction, currentSonarParameters_.gamma_correction, "gamma_correction");
-
-  updateRosConfigForParam<bool>(currentRosParameters_.use_salinity, currentSonarParameters_.use_salinity, "use_salinity");
-
-  updateRosConfigForParam<double>(currentRosParameters_.salinity, currentSonarParameters_.salinity, "salinity");
+      currentRosParameters_.frequency_mode, currentSonarParameters_.frequency_mode, params::FREQUENCY_MODE.name);
+  updateRosConfigForParam<double>(currentRosParameters_.range, currentSonarParameters_.range, params::RANGE.name);
+  updateRosConfigForParam<double>(
+      currentRosParameters_.gain_percent, currentSonarParameters_.gain_percent, params::GAIN_PERCENT.name);
+  updateRosConfigForParam<double>(
+      currentRosParameters_.sound_speed, currentSonarParameters_.sound_speed, params::SOUND_SPEED.name);
+  updateRosConfigForParam<int>(currentRosParameters_.ping_rate, currentSonarParameters_.ping_rate, params::PING_RATE.name);
+  updateRosConfigForParam<bool>(currentRosParameters_.gain_assist, currentSonarParameters_.gain_assist, params::GAIN_ASSIT.name);
+  updateRosConfigForParam<int>(
+      currentRosParameters_.gamma_correction, currentSonarParameters_.gamma_correction, params::GAMMA_CORRECTION.name);
+  updateRosConfigForParam<bool>(
+      currentRosParameters_.use_salinity, currentSonarParameters_.use_salinity, params::USE_SALINITY.name);
+  updateRosConfigForParam<double>(currentRosParameters_.salinity, currentSonarParameters_.salinity, params::SALINITY.name);
 }
 
 int OculusSonarNode::get_subscription_count() const {
@@ -289,25 +285,25 @@ void OculusSonarNode::handleDummy() {
 
 void OculusSonarNode::updateLocalParameters(SonarParameters& parameters, const std::vector<rclcpp::Parameter>& new_parameters) {
   for (const rclcpp::Parameter& new_param : new_parameters) {
-    if (new_param.get_name() == "frequency_mode") {
+    if (new_param.get_name() == params::FREQUENCY_MODE.name) {
       parameters.frequency_mode = new_param.as_int();
-    } else if (new_param.get_name() == "ping_rate") {
+    } else if (new_param.get_name() == params::PING_RATE.name) {
       parameters.ping_rate = new_param.as_int();
-    } else if (new_param.get_name() == "nbeams") {
+    } else if (new_param.get_name() == params::NBEAMS.name) {
       parameters.nbeams = new_param.as_int();
-    } else if (new_param.get_name() == "gain_assist") {
+    } else if (new_param.get_name() == params::GAIN_ASSIT.name) {
       parameters.gain_assist = new_param.as_bool();
-    } else if (new_param.get_name() == "range") {
+    } else if (new_param.get_name() == params::RANGE.name) {
       parameters.range = new_param.as_double();
-    } else if (new_param.get_name() == "gamma_correction") {
+    } else if (new_param.get_name() == params::GAMMA_CORRECTION.name) {
       parameters.gamma_correction = new_param.as_int();
-    } else if (new_param.get_name() == "gain_percent") {
+    } else if (new_param.get_name() == params::GAIN_PERCENT.name) {
       parameters.gain_percent = new_param.as_double();
-    } else if (new_param.get_name() == "sound_speed") {
+    } else if (new_param.get_name() == params::SOUND_SPEED.name) {
       parameters.sound_speed = new_param.as_double();
-    } else if (new_param.get_name() == "use_salinity") {
+    } else if (new_param.get_name() == params::USE_SALINITY.name) {
       parameters.use_salinity = new_param.as_bool();
-    } else if (new_param.get_name() == "salinity") {
+    } else if (new_param.get_name() == params::SALINITY.name) {
       parameters.salinity = new_param.as_double();
     } else if (!(new_param.get_name() == "run")) {
       RCLCPP_WARN_STREAM(get_logger(), "Wrong parameter to set : new_param = " << new_param << ". Not seted");
@@ -347,61 +343,60 @@ void OculusSonarNode::updateLocalParameters(SonarParameters& parameters, SonarDr
 
   checkMinimalFlags(feedback.flags);
 
-  new_parameters.push_back(rclcpp::Parameter("frequency_mode", feedback.masterMode));  // "frequency_mode"
-  new_parameters.push_back(rclcpp::Parameter("ping_rate", feedback.pingRate));
-  new_parameters.push_back(rclcpp::Parameter("nbeams", static_cast<int>(feedback.flags & flagByte::NBEAMS)));  // nbeams
-  new_parameters.push_back(
-      rclcpp::Parameter("gain_assist", static_cast<bool>(feedback.flags & flagByte::GAIN_ASSIST)));  // gain_assist
-  new_parameters.push_back(rclcpp::Parameter("range", feedback.range));
-  new_parameters.push_back(rclcpp::Parameter("gamma_correction", feedback.gammaCorrection));
-  new_parameters.push_back(rclcpp::Parameter("gain_percent", feedback.gainPercent));
-  new_parameters.push_back(rclcpp::Parameter("sound_speed", feedback.speedOfSound));
+  new_parameters.push_back(rclcpp::Parameter(params::FREQUENCY_MODE.name, feedback.masterMode));
+  new_parameters.push_back(rclcpp::Parameter(params::PING_RATE.name, feedback.pingRate));
+  new_parameters.push_back(rclcpp::Parameter(params::NBEAMS.name, static_cast<int>(feedback.flags & flagByte::NBEAMS)));
+  new_parameters.push_back(rclcpp::Parameter(params::GAIN_ASSIT.name, static_cast<bool>(feedback.flags & flagByte::GAIN_ASSIST)));
+  new_parameters.push_back(rclcpp::Parameter(params::RANGE.name, feedback.range));
+  new_parameters.push_back(rclcpp::Parameter(params::GAMMA_CORRECTION.name, feedback.gammaCorrection));
+  new_parameters.push_back(rclcpp::Parameter(params::GAIN_PERCENT.name, feedback.gainPercent));
+  new_parameters.push_back(rclcpp::Parameter(params::SOUND_SPEED.name, feedback.speedOfSound));
   //  // use_salinity  // TODO(hugoyvrn)
   // {
-  //     rclcpp::Parameter param("use_salinity", );
+  //     rclcpp::Parameter param(params::USE_SALINITY.name, );
   //     new_parameters.push_back(param);
   // }
 
-  new_parameters.push_back(rclcpp::Parameter("salinity", feedback.salinity));
+  new_parameters.push_back(rclcpp::Parameter(params::SALINITY.name, feedback.salinity));
   updateLocalParameters(parameters, new_parameters);
 }
 
 void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::msg::SetParametersResult result) {
   SonarDriver::PingConfig newConfig = currentConfig_;  // To avoid to create a new SonarDriver::PingConfig from ros parameters
-  if (param.get_name() == "frequency_mode") {
+  if (param.get_name() == params::FREQUENCY_MODE.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating frequency_mode to " << param.as_int() << " (1: 1.2MHz, 2: 2.1MHz).");
     newConfig.masterMode = param.as_int();
-  } else if (param.get_name() == "ping_rate") {
+  } else if (param.get_name() == params::PING_RATE.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating ping_rate to " << param.as_int() << " (" + params::PING_RATE.desc + ").");
     newConfig.pingRate = param.as_int();
-  } else if (param.get_name() == "nbeams") {
+  } else if (param.get_name() == params::NBEAMS.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating nbeams to " << param.as_int() << " (0: 256 beams, 1: 512 beams).");
     if (param.as_int() == 0) {
       newConfig.flags &= ~flagByte::NBEAMS;  // 256 beams
     } else {
       newConfig.flags |= flagByte::NBEAMS;  // 512 beams
     }
-  } else if (param.get_name() == "gain_assist") {
+  } else if (param.get_name() == params::GAIN_ASSIT.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating gain_assist to " << param.as_bool());
     if (param.as_bool()) {
       newConfig.flags |= flagByte::GAIN_ASSIST;
     } else {
       newConfig.flags &= ~flagByte::GAIN_ASSIST;
     }
-  } else if (param.get_name() == "range") {
+  } else if (param.get_name() == params::RANGE.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating range to " << param.as_double() << "m.");
     newConfig.range = param.as_double();
-  } else if (param.get_name() == "gamma_correction") {
+  } else if (param.get_name() == params::GAMMA_CORRECTION.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating gamma_correction to " << param.as_int());
     newConfig.gammaCorrection = param.as_int();
-  } else if (param.get_name() == "gain_percent") {
+  } else if (param.get_name() == params::GAIN_PERCENT.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating gain_percent to " << param.as_double() << "%.");
     newConfig.gainPercent = param.as_double();
-  } else if (param.get_name() == "use_salinity") {
+  } else if (param.get_name() == params::USE_SALINITY.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating use_salinity to " << param.as_bool());
     if (param.as_bool())
       newConfig.speedOfSound = 0.0;
-  } else if (param.get_name() == "sound_speed") {
+  } else if (param.get_name() == params::SOUND_SPEED.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating sound_speed to " << param.as_double() << " m/s.");
     if (!currentRosParameters_.use_salinity) {
       if (param.as_double() >= 1400.0 &&
@@ -410,7 +405,7 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
       else
         RCLCPP_INFO_STREAM(this->get_logger(), "Speed of sound must be between 1400.0 and 1600.0.");
     }
-  } else if (param.get_name() == "salinity") {
+  } else if (param.get_name() == params::SALINITY.name) {
     RCLCPP_INFO_STREAM(this->get_logger(), "Updating salinity to " << param.as_double() << " parts per thousand (ppt,ppm,g/kg).");
     newConfig.salinity = param.as_double();
   }
@@ -425,17 +420,17 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
 
   checkMinimalFlags(feedback.flags);
 
-  handleFeedbackForParam<double>(result, param, newConfig.masterMode, feedback.masterMode, "frequency_mode");
+  handleFeedbackForParam<double>(result, param, newConfig.masterMode, feedback.masterMode, params::FREQUENCY_MODE.name);
   // newConfig.pingRate      != feedback.pingRate  // is broken (?) sonar side TODO(???)
   handleFeedbackForParam<bool>(result, param, (newConfig.flags & flagByte::GAIN_ASSIST) ? 1 : 0,
-      (feedback.flags & flagByte::GAIN_ASSIST) ? 1 : 0, "gain_assist");
-  handleFeedbackForParam<int>(
-      result, param, (newConfig.flags & flagByte::NBEAMS) ? 1 : 0, (feedback.flags & flagByte::NBEAMS) ? 1 : 0, "nbeams");
-  handleFeedbackForParam<double>(result, param, newConfig.range, feedback.range, "range");
-  handleFeedbackForParam<int>(result, param, newConfig.gammaCorrection, feedback.gammaCorrection, "gamma_correction");
-  handleFeedbackForParam<double>(result, param, newConfig.gainPercent, feedback.gainPercent, "gain_percent");
-  handleFeedbackForParam<double>(result, param, newConfig.speedOfSound, feedback.speedOfSound, "sound_speed");
-  handleFeedbackForParam<double>(result, param, newConfig.salinity, feedback.salinity, "salinity");
+      (feedback.flags & flagByte::GAIN_ASSIST) ? 1 : 0, params::GAIN_ASSIT.name);
+  handleFeedbackForParam<int>(result, param, (newConfig.flags & flagByte::NBEAMS) ? 1 : 0,
+      (feedback.flags & flagByte::NBEAMS) ? 1 : 0, params::NBEAMS.name);
+  handleFeedbackForParam<double>(result, param, newConfig.range, feedback.range, params::RANGE.name);
+  handleFeedbackForParam<int>(result, param, newConfig.gammaCorrection, feedback.gammaCorrection, params::GAMMA_CORRECTION.name);
+  handleFeedbackForParam<double>(result, param, newConfig.gainPercent, feedback.gainPercent, params::GAIN_PERCENT.name);
+  handleFeedbackForParam<double>(result, param, newConfig.speedOfSound, feedback.speedOfSound, params::SOUND_SPEED.name);
+  handleFeedbackForParam<double>(result, param, newConfig.salinity, feedback.salinity, params::SALINITY.name);
 }
 
 rcl_interfaces::msg::SetParametersResult OculusSonarNode::setConfigCallback(const std::vector<rclcpp::Parameter>& parameters) {
