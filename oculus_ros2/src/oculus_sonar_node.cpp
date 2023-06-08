@@ -431,6 +431,10 @@ void OculusSonarNode::sendParamToSonar(rclcpp::Parameter param, rcl_interfaces::
   handleFeedbackForParam<double>(result, param, newConfig.gainPercent, feedback.gainPercent, params::GAIN_PERCENT.name);
   handleFeedbackForParam<double>(result, param, newConfig.speedOfSound, feedback.speedOfSound, params::SOUND_SPEED.name);
   handleFeedbackForParam<double>(result, param, newConfig.salinity, feedback.salinity, params::SALINITY.name);
+
+  if (feedback.pingRate == pingRateStandby && is_running_) {
+    is_running_ = false;  // Will do disableRunMode() next ping callback
+  }
 }
 
 rcl_interfaces::msg::SetParametersResult OculusSonarNode::setConfigCallback(const std::vector<rclcpp::Parameter>& parameters) {

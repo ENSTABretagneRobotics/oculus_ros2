@@ -112,7 +112,7 @@ const IntParam PING_RATE = {"ping_rate", 0, 5, 2,
     "Frequency of ping fires.\n\t" + std::to_string(pingRateNormal) + ": 10Hz max ping rate.\n\t" + std::to_string(pingRateHigh) +
         ": 15Hz max ping rate.\n\t" + std::to_string(pingRateHighest) + ": 40Hz max ping rate.\n\t" +
         std::to_string(pingRateLow) + ": 5Hz max ping rate.\n\t" + std::to_string(pingRateLowest) + ": 2Hz max ping rate.\n\t" +
-        static_cast<char>(pingRateStandby) + ": Standby mode (no ping fire)."};
+        std::to_string(pingRateStandby) + ": Standby mode (no ping fire)"};
 const IntParam NBEAMS = {"nbeams", 0, 1, 1,
     "Number of ping beams.\n"
     "\t0: Oculus outputs 256 beams.\n"
