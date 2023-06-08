@@ -186,14 +186,14 @@ void OculusSonarNode::publishStatus(const OculusStatusMsg& status) {
     checkOverheating(status.temperature6);
     sensor_msgs::msg::Temperature temperature_ros_msg;
     temperature_ros_msg.header.frame_id = frame_id_;
-    // temperature_ros_msg.header.stamp = this->get_clock()->now();  // TODO(hugoyvrn)
+    temperature_ros_msg.header.stamp = this->now();
     temperature_ros_msg.temperature = status.temperature6;  // Measurement of the Temperature in Degrees Celsius
     temperature_ros_msg.variance = 0;  // 0 is interpreted as variance unknown
     this->temperature_publisher_->publish(temperature_ros_msg);
 
     sensor_msgs::msg::FluidPressure pressure_ros_msg;
     pressure_ros_msg.header.frame_id = frame_id_;
-    // pressure_ros_msg.header.stamp = this->get_clock()->now();  // TODO(hugoyvrn)
+    pressure_ros_msg.header.stamp = this->now();
     pressure_ros_msg.fluid_pressure = status.pressure;  // Pressure reading in Pascals.
     pressure_ros_msg.variance = 0;  // 0 is interpreted as variance unknown
     this->pressure_publisher_->publish(pressure_ros_msg);
