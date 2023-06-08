@@ -479,6 +479,13 @@ rcl_interfaces::msg::SetParametersResult OculusSonarNode::setConfigCallback(cons
 
     } else if (std::find(dynamic_parameters_names_.begin(), dynamic_parameters_names_.end(), param.get_name()) !=
                dynamic_parameters_names_.end()) {
+      // QUICK FIX TODO(hugoyvrn, gain_assist not working, to fix)
+      if (currentSonarParameters_.gain_assist && currentSonarParameters_.frequency_mode &&
+          param.get_name() == params::FREQUENCY_MODE.name) {
+        result.reason = "You must set gain_assist to false before changing frequency TODO(to fix).";
+        return result;
+      }
+      // END QUICK FIX
       sendParamToSonar(param, result);
     }
   }
