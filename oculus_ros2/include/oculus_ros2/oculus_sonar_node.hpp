@@ -117,7 +117,7 @@ const IntParam NBEAMS = {"nbeams", 0, 1, 1,
     "Number of ping beams.\n"
     "\t0: Oculus outputs 256 beams.\n"
     "\t1: Oculus outputs 512 beams."};
-const IntParam GAMMA_CORRECTION = {"gamma_correction", 0, 255, 153, "Gamma correction, min=0, max=255."};
+const IntParam GAMMA_CORRECTION = {"gamma_correction", 1, 255, 153, "Gamma correction, min=1, max=255."};
 
 const std::vector<IntParam> INT = {FREQUENCY_MODE, PING_RATE, NBEAMS, GAMMA_CORRECTION};
 
