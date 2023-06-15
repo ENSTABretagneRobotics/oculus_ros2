@@ -119,15 +119,15 @@ OculusSonarNode::~OculusSonarNode() {
 
 void OculusSonarNode::enableRunMode() {
   this->sonar_driver_->resume();  // Quitting sonar standby mode
-  is_running_ = true;
-  this->set_parameter(rclcpp::Parameter("run", true));
+  this->set_parameter(rclcpp::Parameter("run", true));  // Important to set before is_running_
+  is_running_ = true;  // Important to set after "run" ros parameter
 }
 
 void OculusSonarNode::disableRunMode() {
   this->sonar_driver_->standby();  // Going in sonar standby mode
+  this->set_parameter(rclcpp::Parameter("run", false));  // Important to set before is_running_
+  is_running_ = false;  // Important to set after "run" ros parameter
   RCLCPP_INFO(this->get_logger(), "Going to standby mode");
-  is_running_ = false;
-  this->set_parameter(rclcpp::Parameter("run", false));
 }
 
 void OculusSonarNode::checkOverheating(const double& new_temperature) {
