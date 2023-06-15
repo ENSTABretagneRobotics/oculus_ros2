@@ -40,7 +40,7 @@ SonarViewer::~SonarViewer() {}
 
 void SonarViewer::publishFan(const oculus_interfaces::msg::Ping& ros_ping_msg) const {
   // const int offset = ping->ping_data_offset(); // TODO(hugoyvrn)
-  const int offset = 229;  // quick fix TODO(hugoyvrn, why 229?)
+  const int offset = -16;  // quick fix TODO(hugoyvrn, why 229?)
 
   publishFan(
       ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode, ros_ping_msg.header);
@@ -51,6 +51,9 @@ void SonarViewer::publishFan(const oculus::PingMessage::ConstPtr& ping, const st
   header.stamp = oculus::toMsg(ping->timestamp());
   header.frame_id = frame_id;
 
+  if (!ping->has_gains()) {
+    RCLCPP_WARN(node_->get_logger(), "Gains are not send by the sonar. The conic image view is wrong.");
+  }
   publishFan(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(), header);
 }
 
@@ -68,6 +71,23 @@ void SonarViewer::publishFan(const int& width,
   cv::Mat rawDataMat(height, step, mat_encoding);
 
   std::memcpy(rawDataMat.data, ping_data.data() + offset, height * step);
+
+  {  // Correct range gainsfloat gain_min =
+    float raw_gain_min = std::numeric_limits<float>::max();
+    float raw_gain_max = std::numeric_limits<float>::min();
+    for (int i = 0; i < height; i++) {
+      raw_gain_min = std::min(raw_gain_min, static_cast<float>(rawDataMat.at<uint32_t>(i, 0)));
+      raw_gain_max = std::max(raw_gain_max, static_cast<float>(rawDataMat.at<uint32_t>(i, 0)));
+    }
+    const float gain_nomalization = std::sqrt(raw_gain_max) / 255;
+    for (int i = 0; i < height; i++) {
+      const float gain_i = gain_nomalization / std::sqrt(rawDataMat.at<uint32_t>(i, 0));
+      for (int j = SIZE_OF_GAIN_; j < step; j++) {
+        const float new_pixel_val = rawDataMat.at<uint8_t>(i, j) * gain_i;
+        rawDataMat.at<uint8_t>(i, j) = std::min(std::max(static_cast<float>(0), new_pixel_val), static_cast<float>(255));
+      }
+    }
+  }
 
   const double bearing = (master_mode == 1) ? LOW_FREQUENCY_BEARING_APERTURE_ : HIGHT_FREQUENCY_BEARING_APERTURE_;
   const int image_width = 2 * std::sin(bearing * M_PI / 180) * height;
