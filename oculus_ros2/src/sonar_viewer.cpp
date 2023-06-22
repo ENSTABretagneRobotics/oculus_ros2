@@ -74,8 +74,8 @@ void SonarViewer::publishFan(const int& width,
   const int positive_height = static_cast<int>(std::ceil(height * std::sin(bearing)));
   const int image_width = positive_height - negative_height;
   const int origin_width = abs(negative_height);  // x coordinate of the origin
-  const cv::Size imgSize(image_width, height);
-  cv::Mat map(imgSize, CV_32FC2);
+  const cv::Size image_size(image_width, height);
+  cv::Mat map(image_size, CV_32FC2);
   cv::parallel_for_(cv::Range(0, map.total()), [&](const cv::Range& range)
   {
     for (auto i = range.start; i < range.end; i++)
@@ -100,15 +100,15 @@ void SonarViewer::publishFan(const int& width,
 
   cv::Mat source_map_1, source_map_2;
   cv::convertMaps(map, cv::Mat(), source_map_1, source_map_2, CV_16SC2);
-  cv::Mat rawDataMat(height, width, mat_encoding);
+  cv::Mat sonar_mat_data(height, width, mat_encoding);
   for (int i = 0; i < height; ++i)
   {
     std::copy(ping_data.begin() + offset + i * step + SIZE_OF_GAIN_,  // Start at the first sonar_data after gain_data
         ping_data.begin() + offset + (i + 1) * step,  // End just before the next gain_data
-        rawDataMat.ptr<uint8_t>(i));
+        sonar_mat_data.ptr<uint8_t>(i));
   }
   cv::Mat out = cv::Mat::ones(cv::Size(image_width, height), CV_MAKETYPE(mat_encoding, 1)) * std::numeric_limits<uint8_t>::max();
-  cv::remap(rawDataMat.t(), out, source_map_1, source_map_2, cv::INTER_CUBIC, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+  cv::remap(sonar_mat_data.t(), out, source_map_1, source_map_2, cv::INTER_CUBIC, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
 
   // Publish sonar conic image
   sensor_msgs::msg::Image msg;
