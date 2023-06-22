@@ -118,7 +118,7 @@ void SonarViewer::publishFan(const int& width,
       const float gain_i = gain_nomalization / std::sqrt(sonar_mat_data.at<uint32_t>(i, 0));
       for (int j = SIZE_OF_GAIN_; j < step; j++) {
         const float new_pixel_val = sonar_mat_data.at<uint8_t>(i, j) * gain_i;
-        sonar_mat_data.at<uint8_t>(i, j) = std::min(std::max(static_cast<float>(0), new_pixel_val), static_cast<float>(255));
+        sonar_mat_data.at<uint8_t>(i, j) = std::clamp(new_pixel_val, 0.0f, 255.0f);
       }
     }
   }
