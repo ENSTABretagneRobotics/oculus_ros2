@@ -112,12 +112,12 @@ const IntParam PING_RATE = {"ping_rate", 0, 5, 2,
     "Frequency of ping fires.\n\t" + std::to_string(pingRateNormal) + ": 10Hz max ping rate.\n\t" + std::to_string(pingRateHigh) +
         ": 15Hz max ping rate.\n\t" + std::to_string(pingRateHighest) + ": 40Hz max ping rate.\n\t" +
         std::to_string(pingRateLow) + ": 5Hz max ping rate.\n\t" + std::to_string(pingRateLowest) + ": 2Hz max ping rate.\n\t" +
-        static_cast<char>(pingRateStandby) + ": Standby mode (no ping fire)."};
+        std::to_string(pingRateStandby) + ": Standby mode (no ping fire)"};
 const IntParam NBEAMS = {"nbeams", 0, 1, 1,
     "Number of ping beams.\n"
     "\t0: Oculus outputs 256 beams.\n"
     "\t1: Oculus outputs 512 beams."};
-const IntParam GAMMA_CORRECTION = {"gamma_correction", 0, 255, 153, "Gamma correction, min=0, max=255."};
+const IntParam GAMMA_CORRECTION = {"gamma_correction", 1, 255, 153, "Gamma correction, min=1, max=255."};
 
 const std::vector<IntParam> INT = {FREQUENCY_MODE, PING_RATE, NBEAMS, GAMMA_CORRECTION};
 
@@ -148,8 +148,9 @@ public:
   ~OculusSonarNode();
 
 protected:
-  const std::vector<std::string> dynamic_parameters_names_{"frequency_mode", "ping_rate", "nbeams", "gain_assist", "range",
-      "gamma_correction", "gain_percent", "sound_speed", "use_salinity", "salinity", "run"};
+  const std::vector<std::string> dynamic_parameters_names_{params::FREQUENCY_MODE.name, params::PING_RATE.name,
+      params::NBEAMS.name, params::GAIN_ASSIT.name, params::RANGE.name, params::GAMMA_CORRECTION.name, params::GAIN_PERCENT.name,
+      params::SOUND_SPEED.name, params::USE_SALINITY.name, params::SALINITY.name, "run"};
 
   SonarParameters currentSonarParameters_;
   SonarParameters currentRosParameters_;

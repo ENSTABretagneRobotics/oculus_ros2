@@ -40,7 +40,7 @@ SonarViewer::~SonarViewer() {}
 
 void SonarViewer::publishFan(const oculus_interfaces::msg::Ping& ros_ping_msg) const {
   // const int offset = ping->ping_data_offset(); // TODO(hugoyvrn)
-  const int offset = 229;  // quick fix TODO(hugoyvrn, why 229?)
+  const int offset = -16;  // quick fix TODO(hugoyvrn, why 229?)
 
   publishFan(
       ros_ping_msg.n_beams, ros_ping_msg.n_ranges, offset, ros_ping_msg.ping_data, ros_ping_msg.master_mode, ros_ping_msg.header);
@@ -51,6 +51,9 @@ void SonarViewer::publishFan(const oculus::PingMessage::ConstPtr& ping, const st
   header.stamp = oculus::toMsg(ping->timestamp());
   header.frame_id = frame_id;
 
+  if (!ping->has_gains()) {
+    RCLCPP_WARN(node_->get_logger(), "Gains are not send by the sonar. The conic image view is wrong.");
+  }
   publishFan(ping->bearing_count(), ping->range_count(), ping->ping_data_offset(), ping->data(), ping->master_mode(), header);
 }
 
@@ -65,42 +68,72 @@ void SonarViewer::publishFan(const int& width,
   const int mat_encoding = CV_8U;
   const char* ros_image_encoding = sensor_msgs::image_encodings::MONO8;
 
-  cv::Mat rawDataMat(height, step, mat_encoding);
+  const double bearing =
+      (master_mode == 1) ? LOW_FREQUENCY_BEARING_APERTURE_ * M_PI / 180 : HIGHT_FREQUENCY_BEARING_APERTURE_ * M_PI / 180;
+  const float bearing_ratio = 2 * bearing / width;
+  const int negative_height = static_cast<int>(std::floor(height * std::sin(-bearing)));
+  const int positive_height = static_cast<int>(std::ceil(height * std::sin(bearing)));
+  const int image_width = positive_height - negative_height;
+  const int origin_width = abs(negative_height);  // x coordinate of the origin
+  const cv::Size image_size(image_width, height);
+  cv::Mat map(image_size, CV_32FC2);
+  cv::parallel_for_(cv::Range(0, map.total()), [&](const cv::Range& range) {
+    for (auto i = range.start; i < range.end; i++) {
+      int y = i / map.cols;
+      int x = i % map.cols;
 
-  std::memcpy(rawDataMat.data, ping_data.data() + offset, height * step);
+      // Calculate range and bearing of this pixel from origin
+      const float dx = x - origin_width;
+      const float dy = map.rows - y;
 
-  const double bearing = (master_mode == 1) ? LOW_FREQUENCY_BEARING_APERTURE_ : HIGHT_FREQUENCY_BEARING_APERTURE_;
-  const int image_width = 2 * std::sin(bearing * M_PI / 180) * height;
-  cv::Mat mono_img =
-      cv::Mat::ones(cv::Size(image_width, height), CV_MAKETYPE(mat_encoding, 1)) * std::numeric_limits<uint8_t>::max();
-  const cv::Point origin(image_width / 2, height);
+      const float range = sqrt(dx * dx + dy * dy);
+      const float bearing_x_y = atan2(dx, dy);
 
-  cv::parallel_for_(cv::Range(0, height), [&](const cv::Range& range) {  // TODO(??, optimize for cuda)
-    for (int r = range.start; r < range.end; r++) {
-      std::vector<cv::Point> pts;
-      cv::ellipse2Poly(origin, cv::Size(r, r), theta_shift, -bearing, bearing, 1, pts);
+      float xp = range;
+      // Linear interpolation, TODO: use a better interpolation method
+      float yp = (bearing_x_y + bearing) / bearing_ratio;
 
-      std::vector<cv::Point> arc_points;
-      arc_points.push_back(pts[0]);
-
-      for (size_t k = 0; k < (pts.size() - 1); k++) {
-        cv::LineIterator it(mono_img, pts[k], pts[k + 1], SIZE_OF_GAIN_);
-        for (int i = 1; i < it.count; i++, ++it) {
-          arc_points.push_back(it.pos());
-        }
-      }
-
-      cv::Mat data_rows_resized;
-      cv::resize(rawDataMat.row(r), data_rows_resized, cv::Size(arc_points.size(), arc_points.size()));
-
-      for (size_t k = 0; k < arc_points.size(); k++) {
-        mono_img.at<uint8_t>(arc_points[k]) = data_rows_resized.at<uint8_t>(1, k);
-      }
+      map.at<cv::Vec2f>(cv::Point(x, y)) = cv::Vec2f(xp, yp);
     }
   });
 
+  cv::Mat source_map_1, source_map_2;
+  cv::convertMaps(map, cv::Mat(), source_map_1, source_map_2, CV_16SC2);
+
+  cv::Mat sonar_mat_data(height, step, mat_encoding);  // Note that the width is 'step' to include gain data
+  // Copy the data including gain data
+  for (int i = 0; i < height; ++i)
+    std::copy(ping_data.begin() + offset + i * step, ping_data.begin() + offset + (i + 1) * step, sonar_mat_data.ptr<uint8_t>(i));
+
+  {  // Correct range gainsfloat gain_min =
+    float raw_gain_min = std::numeric_limits<float>::max();
+    float raw_gain_max = std::numeric_limits<float>::min();
+    for (int i = 0; i < height; i++) {
+      raw_gain_min = std::min(raw_gain_min, static_cast<float>(sonar_mat_data.at<uint32_t>(i, 0)));
+      raw_gain_max = std::max(raw_gain_max, static_cast<float>(sonar_mat_data.at<uint32_t>(i, 0)));
+    }
+    const float gain_nomalization = std::sqrt(raw_gain_max) / std::numeric_limits<uint8_t>::max();
+    for (int i = 0; i < height; i++) {
+      const float gain_i = gain_nomalization / std::sqrt(sonar_mat_data.at<uint32_t>(i, 0));
+      for (int j = SIZE_OF_GAIN_; j < step; j++) {
+        const float new_pixel_val = sonar_mat_data.at<uint8_t>(i, j) * gain_i;
+        sonar_mat_data.at<uint8_t>(i, j) = std::clamp(new_pixel_val, 0.0f, 255.0f);
+      }
+    }
+  }
+
+  // Now remove the gain data from sonar_mat_data
+  cv::Mat sonar_mat_data_without_gain(height, width, mat_encoding);
+  for (int i = 0; i < height; ++i)
+    std::copy(sonar_mat_data.ptr<uint8_t>(i) + SIZE_OF_GAIN_, sonar_mat_data.ptr<uint8_t>(i) + step,
+        sonar_mat_data_without_gain.ptr<uint8_t>(i));
+
+  cv::Mat out = cv::Mat::ones(cv::Size(image_width, height), CV_MAKETYPE(mat_encoding, 1)) * std::numeric_limits<uint8_t>::max();
+  cv::remap(sonar_mat_data_without_gain.t(), out, source_map_1, source_map_2, cv::INTER_CUBIC, cv::BORDER_CONSTANT,
+      cv::Scalar(std::numeric_limits<uint8_t>::max(), std::numeric_limits<uint8_t>::max(), std::numeric_limits<uint8_t>::max()));
+
   // Publish sonar conic image
   sensor_msgs::msg::Image msg;
-  cv_bridge::CvImage(header, ros_image_encoding, mono_img).toImageMsg(msg);
+  cv_bridge::CvImage(header, ros_image_encoding, out).toImageMsg(msg);
   image_publisher_->publish(msg);
 }
