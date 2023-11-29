@@ -4,4 +4,3 @@ uint32 firmware_version1
 uint32 firmware_date1
 uint32 firmware_version2
 uint32 firmware_date2
-

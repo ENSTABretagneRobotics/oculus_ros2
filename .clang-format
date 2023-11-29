@@ -1,0 +1,35 @@
+---
+BasedOnStyle:  Google
+
+AccessModifierOffset: -2
+AlignAfterOpenBracket: DontAlign
+AlignOperands: AlignAfterOperator
+AlignTrailingComments: false
+# AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+BinPackParameters: false
+ColumnLimit: 130
+ConstructorInitializerIndentWidth: 2
+DerivePointerAlignment: false
+IncludeCategories:
+  - Regex: '<[^\/]+\.h>'
+    Priority: 1
+  - Regex: '<.*\.h>'
+    Priority: 2
+  - Regex: '<[^\/\.]+\/[^\.]+>'
+    Priority: 3
+  - Regex: '<[^\/\.]+>'
+    Priority: 4
+  - Regex: '<.*\.hpp>'
+    Priority: 5
+  - Regex: '"[^\/]+\.h"'
+    Priority: 6
+  - Regex: '".*\.h"'
+    Priority: 7
+  - Regex: '".*\.hpp"'
+    Priority: 8
+SeparateDefinitionBlocks: Always
+Standard: c++17
+TabWidth: 2
+...
